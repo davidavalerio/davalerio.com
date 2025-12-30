@@ -1,0 +1,232 @@
+/* ============================================
+   David Valerio — Personal Website
+   ============================================ */
+
+:root {
+  --color-bg: #f8f5f0;
+  --color-text: #1a1a1a;
+  --color-accent: #722f37;
+  --color-gold: #b8860b;
+
+  --font-heading: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --font-body: "EB Garamond", Georgia, "Times New Roman", serif;
+
+  --max-width: 640px;
+  --space-unit: 1.5rem;
+}
+
+/* Base
+   -------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 18px;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  padding: calc(var(--space-unit) * 3) var(--space-unit);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  line-height: 1.65;
+}
+
+/* Layout
+   -------------------------------------------- */
+
+main {
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+/* Typography
+   -------------------------------------------- */
+
+h1, h2, h3 {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  line-height: 1.2;
+  margin: 0;
+}
+
+h1 {
+  font-size: 2.4rem;
+  color: var(--color-accent);
+  letter-spacing: 0.02em;
+  margin-bottom: calc(var(--space-unit) * 1.5);
+}
+
+h2 {
+  font-size: 1.4rem;
+  color: var(--color-accent);
+  margin-bottom: var(--space-unit);
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid rgba(184, 134, 11, 0.3);
+}
+
+h3 {
+  font-size: 1.15rem;
+  margin-bottom: 0.75rem;
+}
+
+h3 a {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+h3 a:hover {
+  color: var(--color-accent);
+}
+
+p {
+  margin: 0 0 var(--space-unit);
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* Header
+   -------------------------------------------- */
+
+header {
+  text-align: center;
+  margin-bottom: calc(var(--space-unit) * 1.5);
+}
+
+/* Headshot
+   -------------------------------------------- */
+
+.headshot {
+  display: block;
+  margin: 0 auto calc(var(--space-unit) * 1.5);
+  border-radius: 50%;
+  width: 180px;
+  height: 180px;
+  object-fit: cover;
+  border: 3px solid rgba(184, 134, 11, 0.25);
+}
+
+/* Bio
+   -------------------------------------------- */
+
+.bio {
+  font-size: 1.05rem;
+  margin-bottom: calc(var(--space-unit) * 2.5);
+}
+
+/* Writing Section
+   -------------------------------------------- */
+
+#writing {
+  margin-bottom: calc(var(--space-unit) * 2);
+}
+
+.outlet {
+  margin-bottom: calc(var(--space-unit) * 1.5);
+}
+
+.outlet:last-child {
+  margin-bottom: 0;
+}
+
+.outlet ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.outlet li {
+  position: relative;
+  padding-left: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.outlet li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 5px;
+  height: 5px;
+  background-color: rgba(184, 134, 11, 0.5);
+  border-radius: 50%;
+}
+
+.outlet li a {
+  color: var(--color-text);
+}
+
+.outlet li a:hover {
+  color: var(--color-accent);
+}
+
+.placeholder {
+  font-style: italic;
+  color: #666;
+  margin: 0;
+}
+
+/* Contact Section
+   -------------------------------------------- */
+
+#contact {
+  margin-bottom: calc(var(--space-unit) * 2);
+}
+
+#contact p {
+  margin: 0;
+}
+
+/* Footer
+   -------------------------------------------- */
+
+footer {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding-top: var(--space-unit);
+  border-top: 1px solid rgba(184, 134, 11, 0.2);
+  text-align: center;
+}
+
+footer small {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+/* Responsive
+   -------------------------------------------- */
+
+@media (max-width: 600px) {
+  html {
+    font-size: 16px;
+  }
+
+  body {
+    padding: calc(var(--space-unit) * 2) var(--space-unit);
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  .headshot {
+    width: 140px;
+    height: 140px;
+  }
+
+}
