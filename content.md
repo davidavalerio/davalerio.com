@@ -59,7 +59,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Section heading:** About
 
-**Bio paragraph 1:** I oversee safety across 15+ energy sector facilities in the Williston Basin. That means I spend my days inside operational workflows—compliance tracking, incident documentation, field reporting—the kind of work that's heavy on repetition and ripe for AI.
+**Bio paragraph 1:** I oversee safety across 15+ oil & gas facilities in the Williston Basin. That means I spend my days inside operational workflows—compliance tracking, incident documentation, field reporting—the kind of work that's heavy on repetition and ripe for AI.
 
 **Bio paragraph 2:** I started building AI tools to solve my own problems. Now I help other businesses do the same.
 
