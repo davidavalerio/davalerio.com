@@ -2,11 +2,11 @@
 
 ## What This Is
 
-Professional services hub for David Valerio — safety consulting and applied AI for businesses in the Williston Basin. This is the URL David hands out at presentations and on business cards.
+Professional services hub for David Valerio — applied AI consulting for businesses in the Williston Basin. This is the URL David hands out at presentations and on business cards.
 
 ## Stack
 
-Static HTML with inline CSS. Josefin Sans font via Google Fonts. Remix Icons via CDN. Formspree for contact form. No build step, no framework.
+Static HTML with inline CSS. Josefin Sans font via Google Fonts. Formspree for contact form. No build step, no framework.
 
 ## Files
 
@@ -16,14 +16,18 @@ Static HTML with inline CSS. Josefin Sans font via Google Fonts. Remix Icons via
 
 ## Design System
 
-Purple/gold palette shared with valeriosafety.com (which now redirects here). Josefin Sans typography. CSS custom properties for all color tokens.
+Purple/gold palette aligned with discern.earth. Josefin Sans typography. CSS custom properties for all color tokens. Key color decisions: nav CTA button is deep purple (`--purple-500`), primary CTA and form buttons use bright gold (`--gold-400`), page background is cream (`--gold-100`).
+
+## Layout
+
+Each section is full-viewport height (`100svh`) with vertically centered content. No separate footer — copyright line lives at the bottom of the contact section.
 
 ## Sections
 
 1. **Hero** — Headshot, name, positioning statement, CTA
-2. **Services** — Two columns: Safety Consulting + Applied AI (with pricing)
+2. **Services** — Single card with AI consulting details and pricing
 3. **About** — Bio, credentials, link to Discern Earth
-4. **Contact** — Formspree form, phone, email
+4. **Contact** — Formspree form, phone, email, copyright line
 
 ## Contact Form
 
@@ -35,5 +39,5 @@ Hosted on GitHub Pages. Push to main branch to deploy.
 
 ## Related Properties
 
-- **discern.earth** — David's writing (Ghost). Should link back here with "Work with David" nav link.
-- **valeriosafety.com** — Redirects to this site. All safety content absorbed here.
+- **discern.earth** — David's writing (Ghost). Visual identity is aligned between the two sites (purple/gold palette, Josefin Sans). Discern Earth links back here with "Work with David" nav link.
+- **valeriosafety.com** — Redirects to this site. Safety consulting is mentioned in the About bio but not a separate service offering.
