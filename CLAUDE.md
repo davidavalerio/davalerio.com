@@ -11,12 +11,13 @@ Static HTML with inline CSS. Josefin Sans font via Google Fonts. Formspree for c
 ## Files
 
 - `index.html` — Single-page site with all content and styles inline
+- `content.md` — Plain-text copy for each section (edit here, then sync to index.html)
 - `headshot.jpg` — Professional headshot (used in hero section)
 - `CNAME` — Points to davalerio.com
 
 ## Design System
 
-Purple/gold palette aligned with discern.earth. Josefin Sans typography. CSS custom properties for all color tokens. Key color decisions: nav CTA button is deep purple (`--purple-500`), primary CTA and form buttons use bright gold (`--gold-400`), page background is cream (`--gold-100`).
+Purple/gold palette aligned with discern.earth. Josefin Sans typography. CSS custom properties for all color tokens. Key color decisions: nav CTA button is deep purple (`--purple-500`), primary CTA and form buttons use bright gold (`--gold-400`), nav bottom border is gold (`--gold-400`), page background is cream (`--gold-100`).
 
 ## Layout
 
@@ -26,7 +27,7 @@ Each section is full-viewport height (`100svh`) with vertically centered content
 
 1. **Hero** — Headshot, name, positioning statement, CTA
 2. **Services** — Single card with AI consulting details and pricing
-3. **About** — Bio, credentials, link to Discern Earth
+3. **About** — Bio, "Why Me" credentials sidebar, link to Discern Earth
 4. **Contact** — Formspree form, phone, email, copyright line
 
 ## Contact Form
