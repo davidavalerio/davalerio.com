@@ -13,11 +13,15 @@ Edit any section below, then have Claude push the changes to live.
 
 ## Hero
 
-**Heading:** David Valerio
+**Eyebrow:** David Valerio — Williston, ND
 
-**Body:** I come to your business and we tackle your biggest bottlenecks with AI—working on your real problems, with your actual data, teaching you how to use the tools as we go.
+**Heading:** AI That Works the Next Morning
 
-**Button:** Book an AI Session
+**Body:** I come to your business, find the workflows burning the most time, and build AI solutions your team actually keeps using.
+
+**Button:** Tell Me the Bottleneck
+
+**Phone:** 713-478-9395
 
 ---
 
@@ -25,7 +29,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Section heading:** What I Do
 
-**Card title:** AI That Works the Next Morning
+**Card title:** On-Site AI Consulting
 
 **Card body:** I come to your site, we identify the workflows burning the most time, and we work on them together using AI—building real solutions with your actual data. I teach you how the tools work as we go, so you're not dependent on me when I leave.
 
@@ -37,10 +41,19 @@ Edit any section below, then have Claude push the changes to live.
 - You learn the tools as we use them
 - Follow-up available for deeper implementation
 
+**Common bottlenecks I help with:**
+
+- Repetitive reporting and paperwork
+- Safety documentation and compliance tracking
+- Email drafting and follow-up
+- Meeting notes and action items
+- Converting raw notes into polished deliverables
+
 **Pricing:**
 
-- **Initial session:** $1,500 flat — on-site, half day
-- **Follow-up work:** $250/hour — scoped to what you need
+- **Half-Day On-Site Working Session — $1,500**
+- We pick one high-value workflow, map the bottleneck, and build a usable solution your team keeps using.
+- **Follow-up implementation:** $250/hour, scoped to what you need.
 
 ---
 
@@ -48,9 +61,9 @@ Edit any section below, then have Claude push the changes to live.
 
 **Section heading:** About
 
-**Bio paragraph 1:** I'm an applied AI consultant based in Williston, North Dakota. My day job is overseeing safety across 15+ energy sector facilities which means that I solve operational problems in the real world, not in theory.
+**Bio paragraph 1:** I oversee safety across 15+ energy sector facilities in the Williston Basin. That means I spend my days inside operational workflows—compliance tracking, incident documentation, field reporting—the kind of work that's heavy on repetition and ripe for AI.
 
-**Bio paragraph 2:** That same practical approach is how I do AI work: inside your actual process, working on your real problems, teaching you to use the tools so you're not dependent on me when I leave.
+**Bio paragraph 2:** I started building AI tools to solve my own problems. Now I help other businesses do the same.
 
 **Bio paragraph 3:** I also write about faith, work, and the natural world at [Discern Earth](https://www.discern.earth).
 
@@ -73,7 +86,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Form fields:** Name, Email, "How can I help?"
 
-**Button:** Send Message
+**Button:** Request a Call
 
 **Success message:** Message sent. I'll be in touch shortly.
 
