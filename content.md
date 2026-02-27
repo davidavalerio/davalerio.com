@@ -84,7 +84,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Form fields:** Name, Email, "How can I help?"
 
-**Button:** Request a Call
+**Button:** Send Message
 
 **Success message:** Message sent. I'll be in touch shortly.
 

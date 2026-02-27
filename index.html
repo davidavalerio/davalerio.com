@@ -800,7 +800,7 @@
                 <input type="email" id="email" name="email" placeholder="Email" required>
                 <label for="message" class="sr-only">How can I help?</label>
                 <textarea id="message" name="message" placeholder="How can I help?" required></textarea>
-                <button type="submit">Request a Call</button>
+                <button type="submit">Send Message</button>
             </form>
             <div id="form-success" style="display:none; text-align:center; color:var(--neutral-100); padding:2rem 0;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="2.5rem" height="2.5rem" viewBox="0 0 24 24" style="color:var(--color-accent);" aria-hidden="true"><path fill="currentColor" d="m10 15.17l9.192-9.191l1.414 1.414L10 17.999l-6.364-6.364l1.414-1.414z"/></svg>
@@ -832,12 +832,12 @@
                 form.style.display = 'none';
                 document.getElementById('form-success').style.display = 'block';
             } else {
-                btn.textContent = 'Request a Call';
+                btn.textContent = 'Send Message';
                 btn.disabled = false;
                 alert('Something went wrong. Please try calling instead.');
             }
         }).catch(function() {
-            btn.textContent = 'Request a Call';
+            btn.textContent = 'Send Message';
             btn.disabled = false;
             alert('Something went wrong. Please try calling instead.');
         });
