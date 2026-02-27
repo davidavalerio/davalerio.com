@@ -80,7 +80,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Section heading:** Get in Touch
 
-**Subheading:** If your team is wasting too much time on something that feels like it should be much easier, tell me about it.
+**Subheading:** If your team is wasting too much time on something that feels like it should be easier, tell me about it.
 
 **Form fields:** Name, Email, "How can I help?"
 
