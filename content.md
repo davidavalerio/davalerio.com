@@ -13,8 +13,6 @@ Edit any section below, then have Claude push the changes to live.
 
 ## Hero
 
-**Eyebrow:** David Valerio — Williston, ND
-
 **Heading:** AI That Works the Next Morning
 
 **Body:** I come to your business, find the workflows burning the most time, and build AI solutions your team actually keeps using.
