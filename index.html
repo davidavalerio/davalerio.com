@@ -84,7 +84,7 @@
             --color-border-accent: var(--gold-300);
             --color-link: var(--purple-400);
             --color-bg: var(--gold-100);
-            --color-bg-card: var(--gold-100);
+            --color-bg-card: var(--neutral-100);
             --color-bg-subtle: var(--purple-100);
         }
 
@@ -162,11 +162,11 @@
             position: sticky;
             top: 0;
             background: var(--color-bg);
+            border-bottom: 1px solid var(--color-border);
             padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid var(--color-border);
             z-index: 1000;
         }
 
@@ -208,17 +208,19 @@
         }
 
         .nav-cta {
-            background: var(--gold-500);
+            background: var(--purple-500);
             color: var(--neutral-100) !important;
             padding: 0.5rem 1.25rem;
+            border: none;
             border-radius: 3px;
             font-weight: 600 !important;
             text-transform: uppercase;
             letter-spacing: 0.03em;
+            transition: background 0.2s, color 0.2s;
         }
 
         .nav-cta:hover {
-            background: var(--gold-600);
+            background: var(--purple-400);
             color: var(--neutral-100) !important;
         }
 
@@ -245,7 +247,7 @@
             display: flex;
             align-items: center;
             background: var(--color-brand);
-            padding: 4rem 2rem 5rem;
+            padding: 4rem 2rem 8rem;
         }
 
         .hero-content {
@@ -264,7 +266,7 @@
         }
 
         .hero h1 {
-            font-size: clamp(2.25rem, 5vw, 3.5rem);
+            font-size: clamp(2rem, 4.5vw, 3rem);
             color: var(--neutral-100);
             font-weight: 700;
             line-height: 1.2;
@@ -291,7 +293,7 @@
 
         .btn {
             display: inline-block;
-            background: var(--gold-500);
+            background: var(--gold-400);
             color: var(--neutral-100);
             padding: 0.8em 2em;
             text-decoration: none;
@@ -304,7 +306,7 @@
         }
 
         .btn:hover {
-            background: var(--gold-600);
+            background: var(--gold-500);
             color: var(--neutral-100);
         }
 
@@ -334,12 +336,16 @@
 
         /* Services Section */
         .services {
-            padding: 7rem 2rem;
+            min-height: 100vh;
+            min-height: 100svh;
+            display: flex;
+            align-items: center;
+            padding: 4rem 2rem;
             background: var(--color-bg-subtle);
         }
 
         .service-areas {
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
         }
 
@@ -347,7 +353,6 @@
             background: var(--color-bg-card);
             padding: 2.5rem;
             border-radius: 4px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
         }
 
         .service-area-label {
@@ -402,7 +407,7 @@
             font-size: 0.95rem;
             color: var(--color-text-muted);
             padding-top: 0.5rem;
-            border-top: 1px solid var(--color-border);
+            border-top: 1px solid #e8e8e8;
         }
 
         .pricing-line strong {
@@ -412,8 +417,12 @@
 
         /* About Section */
         .about {
-            padding: 7rem 2rem;
-            background: var(--color-bg-card);
+            min-height: 100vh;
+            min-height: 100svh;
+            display: flex;
+            align-items: center;
+            padding: 4rem 2rem;
+            background: var(--color-bg);
         }
 
         .about-content {
@@ -444,7 +453,7 @@
         }
 
         .credentials {
-            background: var(--color-bg-subtle);
+            background: #FAFAFA;
             padding: 2.5rem;
             border-radius: 4px;
         }
@@ -483,7 +492,11 @@
 
         /* Contact Section */
         .contact {
-            padding: 7rem 2rem;
+            min-height: 100vh;
+            min-height: 100svh;
+            display: flex;
+            align-items: center;
+            padding: 4rem 2rem;
             background: var(--purple-500);
         }
 
@@ -527,7 +540,7 @@
         .contact-form button {
             width: 100%;
             padding: 1rem;
-            background: var(--gold-500);
+            background: var(--gold-400);
             color: var(--neutral-100);
             border: none;
             border-radius: 3px;
@@ -539,7 +552,7 @@
         }
 
         .contact-form button:hover {
-            background: var(--gold-600);
+            background: var(--gold-500);
         }
 
         .contact-info {
@@ -562,26 +575,6 @@
         .contact-info .divider {
             margin: 0 0.75rem;
             color: rgba(255,255,255,0.4);
-        }
-
-        /* Footer */
-        footer {
-            background: var(--purple-500);
-            padding: 2rem;
-            text-align: center;
-        }
-
-        footer p {
-            color: rgba(255,255,255,0.6);
-            font-size: 0.9rem;
-        }
-
-        footer a {
-            color: rgba(255,255,255,0.75);
-        }
-
-        footer a:hover {
-            color: var(--neutral-100);
         }
 
         /* Responsive */
@@ -646,7 +639,8 @@
             .contact {
                 padding: 4.5rem 1.5rem;
             }
-        }
+
+}
     </style>
 </head>
 <body>
@@ -680,7 +674,6 @@
             <img src="headshot.jpg" alt="David Valerio" class="hero-headshot" width="160" height="160">
             <h1>David Valerio</h1>
             <p>I come to your business and we tackle your biggest bottlenecks with AI&mdash;working on your real problems, with your real data, teaching you how to use these tools as we go.</p>
-            <p class="hero-byline">$1,500 Half-Day Session &middot; $250/hr Follow-Up &middot; Williston Basin</p>
             <a href="#contact" class="btn">Book an AI Session</a>
         </div>
     </section>
@@ -694,8 +687,7 @@
             <div class="service-areas">
 
                 <div class="service-area">
-                    <span class="service-area-label">Applied AI</span>
-                    <h3><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" style="color:var(--color-accent); margin-right:0.4rem; vertical-align:-0.125em;" aria-hidden="true"><path fill="currentColor" d="m17 1.208l1.32 2.473L20.792 5L18.32 6.319L17 8.792l-1.318-2.473l-2.473-1.32l2.473-1.318zm-6.333 8.125l5 2.667l-5 2.667l-2.666 5l-2.667-5l-5-2.667l5-2.667l2.667-5zm.75 2.667L9.19 10.812L8.001 8.583l-1.189 2.229L4.584 12l2.228 1.188l1.189 2.229l1.188-2.229zm8.25 4.333l-1.666-3.125l-1.667 3.125L13.209 18l3.125 1.667l1.667 3.125l1.666-3.125L22.792 18z"/></svg>AI That Works the Next Morning</h3>
+                    <h3>AI That Works the Next Morning</h3>
                     <p>I come to your location, we identify the workflows burning the most time, and we work on them together using AI&mdash;building real solutions against your real data. I teach you how the tools work as we go, so you&rsquo;re not dependent on me when I leave.</p>
                     <ul class="service-list">
                         <li>On-site working session at your business</li>
@@ -766,14 +758,12 @@
                 <span class="divider">|</span>
                 <a href="mailto:david@discern.earth">david@discern.earth</a>
             </p>
+            <p style="text-align:center; color:rgba(255,255,255,0.4); font-size:0.85rem; margin-top:3rem;">
+                &copy; 2026 David Valerio
+            </p>
         </div>
     </section>
     </main>
-
-    <!-- Footer -->
-    <footer>
-        <p>&copy; <span id="copyright-year">2026</span> David Valerio</p>
-    </footer>
 
     <script>
     document.getElementById('contact-form').addEventListener('submit', function(e) {
@@ -801,8 +791,6 @@
             alert('Something went wrong. Please try calling instead.');
         });
     });
-
-    document.getElementById('copyright-year').textContent = new Date().getFullYear();
     </script>
 </body>
 </html>
