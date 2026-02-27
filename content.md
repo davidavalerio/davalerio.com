@@ -15,7 +15,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Heading:** David Valerio
 
-**Body:** I come to your business and we tackle your biggest bottlenecks with AI—working on your real problems, with your real data, teaching you how to use these tools as we go.
+**Body:** I come to your business and we tackle your biggest bottlenecks with AI—working on your real problems, with your actual data, teaching you how to use the tools as we go.
 
 **Button:** Book an AI Session
 
@@ -27,7 +27,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Card title:** AI That Works the Next Morning
 
-**Card body:** I come to your site, we identify the workflows burning the most time, and we work on them together using AI—building real solutions against your real data. I teach you how the tools work as we go, so you're not dependent on me when I leave.
+**Card body:** I come to your site, we identify the workflows burning the most time, and we work on them together using AI—building real solutions with your actual data. I teach you how the tools work as we go, so you're not dependent on me when I leave.
 
 **What's included:**
 
@@ -48,7 +48,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Section heading:** About
 
-**Bio paragraph 1:** I'm an applied AI consultant based in Williston, North Dakota. My day job is overseeing safety across 15+ energy sector facilities—which means I solve operational problems in the real world, not in theory.
+**Bio paragraph 1:** I'm an applied AI consultant based in Williston, North Dakota. My day job is overseeing safety across 15+ energy sector facilities which means that I solve operational problems in the real world, not in theory.
 
 **Bio paragraph 2:** That same practical approach is how I do AI work: inside your actual process, working on your real problems, teaching you to use the tools so you're not dependent on me when I leave.
 
