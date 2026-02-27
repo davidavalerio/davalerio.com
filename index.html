@@ -3,25 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>David Valerio | Safety Consulting & Applied AI – Williston Basin</title>
-    <meta name="description" content="Safety consulting and applied AI solutions for businesses in the Williston Basin. On-site sessions that build real systems against your real problems.">
+    <title>David Valerio | Applied AI Consulting – Williston Basin</title>
+    <meta name="description" content="On-site AI consulting for businesses in the Williston Basin. I show up, find the workflows wasting time, and build working solutions on the spot.">
     <link rel="canonical" href="https://davalerio.com/">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="David Valerio | Safety Consulting & Applied AI">
-    <meta property="og:description" content="Safety consulting and applied AI solutions for businesses in the Williston Basin.">
+    <meta property="og:title" content="David Valerio | Applied AI Consulting – Williston Basin">
+    <meta property="og:description" content="On-site AI consulting for businesses in the Williston Basin. I show up, find the workflows wasting time, and build working solutions on the spot.">
     <meta property="og:url" content="https://davalerio.com/">
-    <meta name="twitter:card" content="summary">
+    <meta property="og:image" content="https://davalerio.com/og-image.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><path d='M2 4 L20 36 L38 4 L30 4 L20 24 L10 4 Z' fill='%235F2D9E'/></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css" rel="stylesheet">
+
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
         "@type": "LocalBusiness",
         "name": "David Valerio",
-        "description": "Safety consulting and applied AI solutions for businesses in the Williston Basin.",
+        "description": "On-site AI consulting for businesses in the Williston Basin. I show up, find the workflows wasting time, and build working solutions on the spot.",
         "url": "https://davalerio.com",
         "telephone": "+1-713-478-9395",
         "email": "david@discern.earth",
@@ -41,7 +44,7 @@
             "geoRadius": "200 mi"
         },
         "priceRange": "$$",
-        "serviceType": ["Safety Consulting", "AI Consulting", "Hazard Assessment", "Incident Analysis", "Field Training", "Safety Programs"]
+        "serviceType": ["AI Consulting"]
     }
     </script>
     <style>
@@ -117,6 +120,14 @@
 
         a:hover {
             color: var(--color-brand);
+        }
+
+        a:focus-visible,
+        button:focus-visible,
+        input:focus-visible,
+        textarea:focus-visible {
+            outline: 2px solid var(--color-accent);
+            outline-offset: 2px;
         }
 
         .sr-only {
@@ -229,6 +240,7 @@
 
         /* Hero Section */
         .hero {
+            min-height: calc(100vh - 73px);
             min-height: calc(100svh - 73px);
             display: flex;
             align-items: center;
@@ -327,9 +339,8 @@
         }
 
         .service-areas {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 3rem;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
         .service-area {
@@ -397,18 +408,6 @@
         .pricing-line strong {
             color: var(--color-text-heading);
             font-weight: 600;
-        }
-
-        .compliance-note {
-            text-align: center;
-            margin-top: 3rem;
-            color: var(--color-text-secondary);
-            font-size: 0.95rem;
-        }
-
-        .compliance-note a {
-            color: var(--color-link);
-            font-weight: 500;
         }
 
         /* About Section */
@@ -485,7 +484,7 @@
         /* Contact Section */
         .contact {
             padding: 7rem 2rem;
-            background: var(--purple-400);
+            background: var(--purple-500);
         }
 
         .contact .section-header h2 {
@@ -587,10 +586,6 @@
 
         /* Responsive */
         @media (max-width: 900px) {
-            .service-areas {
-                grid-template-columns: 1fr;
-            }
-
             .about-content {
                 grid-template-columns: 1fr;
                 gap: 3rem;
@@ -670,54 +665,45 @@
             <li><a href="#about" onclick="document.getElementById('nav-links').classList.remove('active')">About</a></li>
             <li><a href="#contact" class="nav-cta" onclick="document.getElementById('nav-links').classList.remove('active')">Contact</a></li>
         </ul>
-        <button class="mobile-menu" aria-label="Toggle navigation menu" onclick="document.getElementById('nav-links').classList.toggle('active')">
+        <button class="mobile-menu" aria-label="Toggle navigation menu" aria-expanded="false" onclick="var n=document.getElementById('nav-links');n.classList.toggle('active');this.setAttribute('aria-expanded',n.classList.contains('active'))">
             <span></span>
             <span></span>
             <span></span>
         </button>
     </nav>
 
+    <main id="main">
+
     <!-- Hero Section -->
     <section class="hero">
         <div class="hero-content">
             <img src="headshot.jpg" alt="David Valerio" class="hero-headshot" width="160" height="160">
             <h1>David Valerio</h1>
-            <p>I help businesses in the Williston Basin work safer and smarter&mdash;through hands-on safety consulting and applied AI that solves real problems.</p>
-            <p class="hero-byline">Safety Consulting &middot; Applied AI &middot; Williston Basin</p>
-            <a href="#contact" class="btn">Get in Touch</a>
+            <p>I come to your business and we tackle your biggest bottlenecks with AI&mdash;working on your real problems, with your real data, teaching you how to use these tools as we go.</p>
+            <p class="hero-byline">$1,500 Half-Day Session &middot; $250/hr Follow-Up &middot; Williston Basin</p>
+            <a href="#contact" class="btn">Book an AI Session</a>
         </div>
     </section>
-
-    <main id="main">
 
     <!-- Services Section -->
     <section class="services" id="services">
         <div class="container">
             <div class="section-header">
                 <h2>What I Do</h2>
-                <p>Two areas of expertise, one approach: show up, understand the problem, and build something that works.</p>
             </div>
             <div class="service-areas">
 
-                <!-- Safety Consulting -->
-                <div class="service-area">
-                    <span class="service-area-label">Safety Consulting</span>
-                    <h3><i class="ri-shield-check-line" style="color:var(--color-accent); margin-right:0.4rem;"></i>Protecting People, Not Paperwork</h3>
-                    <p>I focus on the hazards that actually cause fatalities and serious injuries&mdash;not generating compliance paperwork. I meet regulatory obligations efficiently, but passing an inspection isn&rsquo;t the same as keeping people safe.</p>
-                    <ul class="service-list">
-                        <li>Hazard assessments focused on serious injury and fatality risk</li>
-                        <li>Incident analysis tracing systemic causes</li>
-                        <li>Practical field training on hazard recognition</li>
-                        <li>Custom safety programs built for your operation</li>
-                    </ul>
-                    <p class="compliance-note" style="text-align:left; margin-top:0;">For ISN, Veriforce, and Avetta platform management, I partner with <a href="https://www.cookcompliance.co/" target="_blank" rel="noopener">Cook Compliance</a>.</p>
-                </div>
-
-                <!-- AI Consulting -->
                 <div class="service-area">
                     <span class="service-area-label">Applied AI</span>
-                    <h3><i class="ri-sparkling-2-line" style="color:var(--color-accent); margin-right:0.4rem;"></i>AI That Works the Next Morning</h3>
-                    <p>I show up at your business, figure out where AI can save you the most time, and build working solutions on the spot&mdash;teaching you how it all works as I go. No jargon, no slides. We work on your actual problems, and you walk away with systems you can use immediately.</p>
+                    <h3><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" style="color:var(--color-accent); margin-right:0.4rem; vertical-align:-0.125em;" aria-hidden="true"><path fill="currentColor" d="m17 1.208l1.32 2.473L20.792 5L18.32 6.319L17 8.792l-1.318-2.473l-2.473-1.32l2.473-1.318zm-6.333 8.125l5 2.667l-5 2.667l-2.666 5l-2.667-5l-5-2.667l5-2.667l2.667-5zm.75 2.667L9.19 10.812L8.001 8.583l-1.189 2.229L4.584 12l2.228 1.188l1.189 2.229l1.188-2.229zm8.25 4.333l-1.666-3.125l-1.667 3.125L13.209 18l3.125 1.667l1.667 3.125l1.666-3.125L22.792 18z"/></svg>AI That Works the Next Morning</h3>
+                    <p>I come to your location, we identify the workflows burning the most time, and we work on them together using AI&mdash;building real solutions against your real data. I teach you how the tools work as we go, so you&rsquo;re not dependent on me when I leave.</p>
+                    <ul class="service-list">
+                        <li>On-site working session at your business</li>
+                        <li>We identify your highest-value bottlenecks together</li>
+                        <li>Build working AI solutions on the spot</li>
+                        <li>You learn the tools as we use them</li>
+                        <li>Follow-up available for deeper implementation</li>
+                    </ul>
                     <div style="margin-top:1rem;">
                         <p class="pricing-line"><strong>Initial session:</strong> $1,500 flat &mdash; on-site, half day</p>
                         <p class="pricing-line" style="border-top:none; padding-top:0.25rem;"><strong>Follow-up work:</strong> $250/hour &mdash; scoped to what you need</p>
@@ -734,18 +720,20 @@
             <div class="about-content">
                 <div class="about-text">
                     <h2>About</h2>
-                    <p>I&rsquo;m a safety specialist and AI practitioner working across the Williston Basin. I oversee safety at 15+ energy sector facilities across North Dakota and Montana, and I build AI-powered systems every day&mdash;for safety consulting, compliance reporting, and business operations.</p>
-                    <p>What I bring to your business is the same thing that runs mine: practical expertise applied to real problems, not theory or checkbox exercises.</p>
+                    <p>I&rsquo;m an applied AI consultant based in Williston, North Dakota. My day job is overseeing safety across 15+ energy sector facilities&mdash;which means I solve operational problems in the real world, not in theory.</p>
+                    <p>That same practical approach is how I do AI work: inside your actual process, working on your real problems, teaching you to use the tools so you&rsquo;re not dependent on me when I leave.</p>
                     <p>I also write about faith, work, and the natural world at <a href="https://www.discern.earth">Discern Earth</a>.</p>
                 </div>
                 <div class="credentials">
                     <h3>Background</h3>
                     <ul>
                         <li>15+ energy sector facilities across ND and MT</li>
-                        <li>Rice University MS &mdash; Earth Science</li>
-                        <li>Texas A&M BS &mdash; Earth Science</li>
+                        <li>Rice University MS &mdash; Earth Science (Chevron Energy Fellow)</li>
+                        <li>Texas A&M BS &mdash; Geology (NSF LSAMP Scholar)</li>
                         <li>Byzantine Catholic Seminary &mdash; MA Theology (in progress)</li>
-                        <li>OSHA 511, OSHA 30-Hour, HAZWOPER 40-Hour</li>
+                        <li>Carbon markets &amp; environmental compliance &mdash; Renoster, Validere, BCarbon</li>
+                        <li>SPE Williston Basin Section Officer</li>
+                        <li>OSHA 511, HAZWOPER 40-Hour, IOGP Life-Saving Rules Trainer</li>
                     </ul>
                 </div>
             </div>
@@ -757,7 +745,7 @@
         <div class="container">
             <div class="section-header">
                 <h2>Get in Touch</h2>
-                <p>Whether you need safety consulting or want to see what AI can do for your business, let&rsquo;s talk.</p>
+                <p>If your team is spending too much time on something that feels like it should be easier, tell me about it.</p>
             </div>
             <form class="contact-form" id="contact-form" action="https://formspree.io/f/xnjnkknw" method="POST">
                 <label for="name" class="sr-only">Name</label>
@@ -769,7 +757,7 @@
                 <button type="submit">Send Message</button>
             </form>
             <div id="form-success" style="display:none; text-align:center; color:var(--neutral-100); padding:2rem 0;">
-                <i class="ri-check-line" style="font-size:2.5rem; color:var(--color-accent);"></i>
+                <svg xmlns="http://www.w3.org/2000/svg" width="2.5rem" height="2.5rem" viewBox="0 0 24 24" style="color:var(--color-accent);" aria-hidden="true"><path fill="currentColor" d="m10 15.17l9.192-9.191l1.414 1.414L10 17.999l-6.364-6.364l1.414-1.414z"/></svg>
                 <p style="font-size:1.25rem; font-weight:600; margin-top:1rem;">Message sent.</p>
                 <p style="margin-top:0.5rem; color:rgba(255,255,255,0.85);">I'll be in touch shortly.</p>
             </div>
@@ -781,6 +769,11 @@
         </div>
     </section>
     </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; <span id="copyright-year">2026</span> David Valerio</p>
+    </footer>
 
     <script>
     document.getElementById('contact-form').addEventListener('submit', function(e) {
@@ -809,13 +802,7 @@
         });
     });
 
-    // Set copyright year
     document.getElementById('copyright-year').textContent = new Date().getFullYear();
     </script>
-
-    <!-- Footer -->
-    <footer>
-        <p>&copy; <span id="copyright-year">2026</span> David Valerio. All rights reserved.</p>
-    </footer>
 </body>
 </html>
