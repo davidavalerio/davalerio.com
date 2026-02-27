@@ -1,4 +1,4 @@
-# davidavalerio.com
+# davalerio.com
 
 ## What This Is
 
@@ -12,7 +12,7 @@ Static HTML with inline CSS. Josefin Sans font via Google Fonts. Remix Icons via
 
 - `index.html` — Single-page site with all content and styles inline
 - `headshot.jpg` — Professional headshot (used in hero section)
-- `CNAME` — Points to davidavalerio.com
+- `CNAME` — Points to davalerio.com
 
 ## Design System
 
