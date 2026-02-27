@@ -57,9 +57,9 @@ Edit any section below, then have Claude push the changes to live.
 **Background:**
 
 - Safety advisor at DNOW covering 15+ facilities
-- Environmental startups — Renoster, Validere, BCarbon
-- SPE Williston Basin Section Officer
 - OSHA 511, HAZWOPER 40-Hour, IOGP Life-Saving Rules Trainer
+- SPE Williston Basin Section Officer
+- Environmental startups — Renoster, Validere, BCarbon
 - Rice University MS — Earth Science
 - Texas A&M BS — Geology
 
