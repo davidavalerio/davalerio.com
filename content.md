@@ -47,7 +47,6 @@ Edit any section below, then have Claude push the changes to live.
 - Safety documentation and compliance tracking
 - Email drafting and follow-up
 - Meeting notes and action items
-- SOP lookup and field documentation
 - Converting raw notes into polished deliverables
 
 **Pricing:**
