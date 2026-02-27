@@ -29,7 +29,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Card title:** On-Site AI Consulting
 
-**Card body:** I come to your site, we identify the workflows burning the most time, and we work on them together using AI—building real solutions with your actual data. I teach you how the tools work as we go, so you're not dependent on me when I leave.
+**Card body:** I come to your site, we pick one high-impact process, and we rebuild it together using AI—with your actual data, on your actual systems. You learn the tools as we go, so nothing breaks when I leave.
 
 **What's included:**
 
@@ -65,7 +65,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Bio paragraph 3:** I also write about faith, work, and the natural world at [Discern Earth](https://www.discern.earth).
 
-**Background:**
+**Why Me:**
 
 - Safety advisor at DNOW covering 15+ facilities
 - OSHA 511, HAZWOPER 40-Hour, IOGP Life-Saving Rules Trainer
