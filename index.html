@@ -99,6 +99,12 @@
             overscroll-behavior-y: none;
         }
 
+        #services,
+        #about,
+        #contact {
+            scroll-margin-top: 73px;
+        }
+
         body {
             font-family: 'Josefin Sans', sans-serif;
             font-weight: 300;
@@ -161,13 +167,22 @@
         nav {
             position: sticky;
             top: 0;
+            z-index: 1000;
             background: var(--color-bg);
             border-bottom: 1px solid var(--color-border);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
+        }
+
+        .nav-container {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
             align-items: center;
-            z-index: 1000;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+        }
+
+        .nav-menu {
+            display: contents;
         }
 
         .logo {
@@ -186,20 +201,23 @@
             font-size: 1.25rem;
             font-weight: 700;
             color: var(--purple-400);
-            letter-spacing: 0.02em;
+            letter-spacing: 0.08em;
         }
 
         .nav-links {
             display: flex;
-            gap: 2rem;
+            gap: 1.5rem;
             list-style: none;
+            margin: 0;
+            padding: 0;
         }
 
         .nav-links a {
             text-decoration: none;
             color: var(--color-text);
             font-weight: 400;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
+            letter-spacing: 0.02em;
             transition: color 0.2s;
         }
 
@@ -208,12 +226,15 @@
         }
 
         .nav-cta {
+            justify-self: end;
             background: var(--purple-500);
             color: var(--neutral-100) !important;
             padding: 0.5rem 1.25rem;
             border: none;
             border-radius: 3px;
             font-weight: 600 !important;
+            font-size: 0.9rem;
+            text-decoration: none;
             text-transform: uppercase;
             letter-spacing: 0.03em;
             transition: background 0.2s, color 0.2s;
@@ -318,7 +339,7 @@
 
         .section-header {
             text-align: center;
-            margin-bottom: 4rem;
+            margin-bottom: 2.5rem;
         }
 
         .section-header h2 {
@@ -336,8 +357,6 @@
 
         /* Services Section */
         .services {
-            min-height: 100vh;
-            min-height: 100svh;
             display: flex;
             align-items: center;
             padding: 4rem 2rem;
@@ -351,7 +370,7 @@
 
         .service-area {
             background: var(--color-bg-card);
-            padding: 2.5rem;
+            padding: 2rem;
             border-radius: 4px;
         }
 
@@ -375,16 +394,16 @@
             color: var(--color-text);
             font-size: 0.95rem;
             line-height: 1.7;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
         }
 
         .service-list {
             list-style: none;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
         }
 
         .service-list li {
-            padding: 0.5rem 0;
+            padding: 0.3rem 0;
             padding-left: 1.5rem;
             position: relative;
             font-size: 0.95rem;
@@ -417,11 +436,10 @@
 
         /* About Section */
         .about {
-            min-height: 100vh;
-            min-height: 100svh;
             display: flex;
             align-items: center;
-            padding: 4rem 2rem;
+            min-height: calc(100svh - 73px);
+            padding: 6rem 2rem;
             background: var(--color-bg);
         }
 
@@ -492,10 +510,9 @@
 
         /* Contact Section */
         .contact {
-            min-height: 100vh;
-            min-height: 100svh;
             display: flex;
             align-items: center;
+            min-height: calc(100svh - 73px);
             padding: 4rem 2rem;
             background: var(--purple-500);
         }
@@ -533,7 +550,7 @@
         }
 
         .contact-form textarea {
-            min-height: 120px;
+            min-height: 100px;
             resize: vertical;
         }
 
@@ -557,7 +574,7 @@
 
         .contact-info {
             text-align: center;
-            margin-top: 2rem;
+            margin-top: 1.5rem;
             color: rgba(255,255,255,0.9);
             font-weight: 400;
         }
@@ -586,11 +603,13 @@
         }
 
         @media (max-width: 768px) {
-            nav {
+            .nav-container {
+                display: flex;
+                justify-content: space-between;
                 padding: 1rem 1.5rem;
             }
 
-            .nav-links {
+            .nav-menu {
                 display: none;
                 position: absolute;
                 top: 100%;
@@ -603,8 +622,13 @@
                 border-bottom: 1px solid var(--color-border);
             }
 
-            .nav-links.active {
+            .nav-menu.active {
                 display: flex;
+            }
+
+            .nav-links {
+                flex-direction: column;
+                gap: 0;
             }
 
             .nav-links li {
@@ -612,13 +636,12 @@
                 border-bottom: 1px solid var(--color-border);
             }
 
-            .nav-links li:last-child {
-                border-bottom: none;
-                padding-top: 1rem;
-            }
-
             .nav-cta {
+                justify-self: auto;
+                display: block;
                 text-align: center;
+                padding: 0.75rem;
+                margin-top: 0.75rem;
             }
 
             .mobile-menu {
@@ -637,10 +660,9 @@
             .services,
             .about,
             .contact {
-                padding: 4.5rem 1.5rem;
+                padding: 4rem 1.5rem;
             }
-
-}
+        }
     </style>
 </head>
 <body>
@@ -648,22 +670,26 @@
 
     <!-- Navigation -->
     <nav>
-        <a href="#" class="logo" aria-label="David Valerio home">
-            <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M2 4 L20 36 L38 4 L30 4 L20 24 L10 4 Z" fill="#5F2D9E"/>
-            </svg>
-            <span class="logo-text">DAVID VALERIO</span>
-        </a>
-        <ul class="nav-links" id="nav-links">
-            <li><a href="#services" onclick="document.getElementById('nav-links').classList.remove('active')">Services</a></li>
-            <li><a href="#about" onclick="document.getElementById('nav-links').classList.remove('active')">About</a></li>
-            <li><a href="#contact" class="nav-cta" onclick="document.getElementById('nav-links').classList.remove('active')">Contact</a></li>
-        </ul>
-        <button class="mobile-menu" aria-label="Toggle navigation menu" aria-expanded="false" onclick="var n=document.getElementById('nav-links');n.classList.toggle('active');this.setAttribute('aria-expanded',n.classList.contains('active'))">
-            <span></span>
-            <span></span>
-            <span></span>
-        </button>
+        <div class="nav-container">
+            <a href="#" class="logo" aria-label="David Valerio home">
+                <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M2 4 L20 36 L38 4 L30 4 L20 24 L10 4 Z" fill="#5F2D9E"/>
+                </svg>
+                <span class="logo-text">DAVID VALERIO</span>
+            </a>
+            <div class="nav-menu" id="nav-menu">
+                <ul class="nav-links">
+                    <li><a href="#services" onclick="document.getElementById('nav-menu').classList.remove('active')">Services</a></li>
+                    <li><a href="#about" onclick="document.getElementById('nav-menu').classList.remove('active')">About</a></li>
+                </ul>
+                <a href="#contact" class="nav-cta" onclick="document.getElementById('nav-menu').classList.remove('active')">Contact</a>
+            </div>
+            <button class="mobile-menu" aria-label="Toggle navigation menu" aria-expanded="false" onclick="var n=document.getElementById('nav-menu');n.classList.toggle('active');this.setAttribute('aria-expanded',n.classList.contains('active'))">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
     </nav>
 
     <main id="main">
@@ -719,13 +745,12 @@
                 <div class="credentials">
                     <h3>Background</h3>
                     <ul>
-                        <li>15+ energy sector facilities across ND and MT</li>
-                        <li>Rice University MS &mdash; Earth Science (Chevron Energy Fellow)</li>
-                        <li>Texas A&M BS &mdash; Geology (NSF LSAMP Scholar)</li>
-                        <li>Byzantine Catholic Seminary &mdash; MA Theology (in progress)</li>
-                        <li>Carbon markets &amp; environmental compliance &mdash; Renoster, Validere, BCarbon</li>
+                        <li>Safety advisor for DNOW across 15+ facilities</li>
+                        <li>Environmental startups &mdash; Renoster, Validere, BCarbon</li>
                         <li>SPE Williston Basin Section Officer</li>
                         <li>OSHA 511, HAZWOPER 40-Hour, IOGP Life-Saving Rules Trainer</li>
+                        <li>Rice University MS &mdash; Earth Science</li>
+                        <li>Texas A&M BS &mdash; Geology</li>
                     </ul>
                 </div>
             </div>
@@ -757,9 +782,6 @@
                 <a href="tel:713-478-9395">713-478-9395</a>
                 <span class="divider">|</span>
                 <a href="mailto:david@discern.earth">david@discern.earth</a>
-            </p>
-            <p style="text-align:center; color:rgba(255,255,255,0.4); font-size:0.85rem; margin-top:3rem;">
-                &copy; 2026 David Valerio
             </p>
         </div>
     </section>
