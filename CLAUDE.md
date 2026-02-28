@@ -15,6 +15,12 @@ Static HTML with inline CSS. Josefin Sans font via Google Fonts. Formspree for c
 - `headshot.jpg` — Professional headshot (used in hero section)
 - `CNAME` — Points to davalerio.com
 
+## Brand Identity
+
+**Name:** "David A. Valerio" is the canonical business name. Never abbreviate to "D.A. Valerio" — the full first name keeps it personal and approachable.
+
+**Logo:** Single purple V mark. No monogram or additional initials — the V is distinctive, scales well at all sizes, and works as favicon, card mark, and presentation branding.
+
 ## Design System
 
 Purple/gold palette aligned with discern.earth. Josefin Sans typography. CSS custom properties for all color tokens. Key color decisions: nav CTA button is deep purple (`--purple-500`), primary CTA and form buttons use bright gold (`--gold-400`), nav bottom border is gold (`--gold-400`), page background is cream (`--gold-100`).
@@ -36,7 +42,7 @@ Uses Formspree endpoint `https://formspree.io/f/xnjnkknw`. Do not change this wi
 
 ## Deployment
 
-Hosted on GitHub Pages. Push to main branch to deploy.
+Hosted on GitHub Pages. Use `/deploy` to ship changes (branches, commits, PRs, merges, and pulls back to main in one step).
 
 ## Domains
 

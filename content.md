@@ -49,9 +49,9 @@ Edit any section below, then have Claude push the changes to live.
 
 **Pricing:**
 
-- **Half-Day On-Site Working Session — $1,500**
+- **Half-Day On-Site Working Session — $1,000**
 - We pick one high-value workflow, map the bottleneck, and build a usable solution your team keeps using.
-- **Follow-up implementation:** $250/hour, scoped to what you need.
+- **Follow-up implementation:** $150/hour, scoped to what you need.
 
 ---
 
