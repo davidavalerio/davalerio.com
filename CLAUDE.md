@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Professional services hub for David Valerio — applied AI consulting for businesses in the Williston Basin. This is the URL David hands out at presentations and on business cards.
+Professional services hub for David A. Valerio — applied AI consulting for businesses in the Williston Basin. This is the URL David hands out at presentations and on business cards.
 
 ## Stack
 
@@ -37,6 +37,11 @@ Uses Formspree endpoint `https://formspree.io/f/xnjnkknw`. Do not change this wi
 ## Deployment
 
 Hosted on GitHub Pages. Push to main branch to deploy.
+
+## Domains
+
+- **davalerio.com** — Primary domain, served from this repo.
+- **davidavalerio.com** — Redirects to davalerio.com. Served from a separate GitHub Pages repo ([davidavalerio/davidavalerio.com](https://github.com/davidavalerio/davidavalerio.com)) that contains only a meta-refresh redirect and a matching 404 page.
 
 ## Related Properties
 

@@ -6,7 +6,7 @@ Edit any section below, then have Claude push the changes to live.
 
 ## Site Metadata
 
-- **Title:** David Valerio | Applied AI Consulting – Williston Basin
+- **Title:** David A. Valerio | Applied AI Consulting – Williston Basin
 - **Description:** On-site AI consulting for businesses in the Williston Basin. I show up, find the workflows wasting time, and build working solutions on the spot.
 
 ---
