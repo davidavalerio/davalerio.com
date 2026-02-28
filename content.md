@@ -91,4 +91,4 @@ Edit any section below, then have Claude push the changes to live.
 **Contact info:**
 
 - **Phone:** 713-478-9395
-- **Email:** david@discern.earth
+- **Email:** david@davalerio.com
