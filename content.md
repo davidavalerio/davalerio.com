@@ -6,40 +6,40 @@ Edit any section below, then have Claude push the changes to live.
 
 ## Site Metadata
 
-- **Title:** David A. Valerio | Applied AI Consulting – Williston Basin
-- **Description:** On-site AI consulting for businesses in the Williston Basin. I show up, find the workflows wasting time, and build working solutions on the spot.
+- **Title:** David A. Valerio | AI Training & Coaching – Williston Basin
+- **Description:** On-site AI training for businesses in the Williston Basin. I teach your team to build AI solutions using your actual workflows—skills they keep using long after I leave.
 
 ---
 
 ## Hero
 
-**Heading:** AI That Works the Next Morning
+**Heading:** Learn AI on Your Own Problems
 
-**Body:** I come to your business, find the workflows burning the most time, and build AI solutions your team actually keeps using.
+**Body:** I come to your business, use your actual workflows as the curriculum, and your team walks away knowing how to build AI solutions themselves.
 
-**Button:** Tell Me the Bottleneck
+**Button:** Book a Training Session
 
 **Phone:** 713-478-9395
 
 ---
 
-## Services
+## Training
 
-**Section heading:** What I Do
+**Section heading:** How It Works
 
-**Card title:** On-Site AI Consulting
+**Card title:** On-Site AI Training
 
-**Card body:** I come to your site, we pick one high-impact process, and we rebuild it together using AI—with your actual data, on your actual systems. You learn the tools as we go, so nothing breaks when I leave.
+**Card body:** Bring a real problem your team faces every day. We'll use it as a hands-on exercise to learn AI tools—so you leave knowing how to solve it yourself, and the next one too.
 
 **What's included:**
 
-- On-site working session at your business
-- We identify your highest-value bottlenecks together
-- Build working AI solutions on the spot
-- You learn the tools as we use them
-- Follow-up available for deeper implementation
+- Half-day on-site training session (1-on-1 or small group)
+- We use your actual workflows as hands-on exercises
+- You build a working AI solution with guidance
+- You learn the tools and thinking, not just the output
+- Follow-on coaching available to keep building
 
-**Common bottlenecks I help with:**
+**Common bottlenecks training addresses:**
 
 - Repetitive reporting and paperwork
 - Safety documentation and compliance tracking
@@ -49,9 +49,9 @@ Edit any section below, then have Claude push the changes to live.
 
 **Pricing:**
 
-- **Half-Day On-Site Working Session — $1,000**
-- We pick one high-value workflow, map the bottleneck, and build a usable solution your team keeps using.
-- **Follow-up implementation:** $150/hour, scoped to what you need.
+- **Half-Day On-Site Training Session — $1,500**
+- Bring one real workflow. Your team learns the AI skills to fix it themselves—and every problem like it.
+- **Follow-on coaching:** $150/hour, scheduled or on-demand.
 
 ---
 
@@ -61,7 +61,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Bio paragraph 1:** I oversee safety across 15+ oil & gas facilities in the Williston Basin. That means I spend my days inside operational workflows—compliance tracking, incident documentation, field reporting—the kind of work that's heavy on repetition and ripe for AI.
 
-**Bio paragraph 2:** I started building AI tools to solve my own problems. Now I help other businesses do the same.
+**Bio paragraph 2:** I started building AI tools to solve my own problems. Now I teach other businesses to do the same.
 
 **Bio paragraph 3:** I also write about faith, work, and the natural world at [Discern Earth](https://www.discern.earth).
 
@@ -80,7 +80,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Section heading:** Get in Touch
 
-**Subheading:** If your team is wasting too much time on something that feels like it should be easier, tell me about it.
+**Subheading:** If your team could be using AI but doesn't know where to start, let's talk.
 
 **Form fields:** Name, Email, "How can I help?"
 
