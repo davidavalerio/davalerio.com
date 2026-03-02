@@ -7,7 +7,7 @@ Edit any section below, then have Claude push the changes to live.
 ## Site Metadata
 
 - **Title:** David A. Valerio | AI Training & Coaching – Williston Basin
-- **Description:** On-site AI training for businesses in the Williston Basin. I teach your team to use AI on your real workflows — not just to save time, but to see things you couldn't see before.
+- **Description:** On-site AI training for businesses in the Williston Basin. I teach your team to use AI on your real workflows. Not just to save time, but to see things you couldn't see before.
 
 ---
 
@@ -15,7 +15,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Heading:** Learn AI on Your Own Problems
 
-**Body:** I come to your business, work with your actual data and workflows, and your team walks away with AI skills that change how they operate — not just how fast.
+**Body:** I come to your business, work with your actual data and workflows, and your team walks away knowing how to solve real problems with AI. Not just the routine ones.
 
 **Button:** Book a Training Session
 
@@ -29,7 +29,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Card title:** On-Site AI Training
 
-**Card body:** Bring a real problem your team faces — something that costs you time, visibility, or good decisions. We'll use it as a hands-on exercise, and you'll leave knowing how to solve it yourself and how to spot the next opportunity AI can unlock.
+**Card body:** Bring a real problem your team faces: something that costs you time, visibility, or good decisions. We'll use it as a hands-on exercise, and you'll leave knowing how to solve it yourself and how to spot the next one.
 
 **What's included:**
 
@@ -50,7 +50,7 @@ Edit any section below, then have Claude push the changes to live.
 **Pricing:**
 
 - **Half-Day On-Site Training Session — $1,500**
-- Bring one real workflow. Your team learns to solve it with AI — and starts seeing where else to apply the same thinking.
+- Bring one real workflow. Your team learns to solve it with AI, and starts seeing where else to apply the same thinking.
 - **Follow-on coaching:** $150/hour, scheduled or on-demand.
 
 ---
@@ -59,9 +59,9 @@ Edit any section below, then have Claude push the changes to live.
 
 **Section heading:** About
 
-**Bio paragraph 1:** I oversee safety across 15+ oil & gas facilities in the Williston Basin. That means I spend my days inside operational workflows—compliance tracking, incident documentation, field reporting—the kind of work that's heavy on repetition and ripe for AI.
+**Bio paragraph 1:** I oversee safety across 15+ oil & gas facilities in the Williston Basin. That means I spend my days inside operational workflows: compliance tracking, incident documentation, field reporting. The kind of work that's heavy on repetition and ripe for AI.
 
-**Bio paragraph 2:** I started building AI tools to solve my own problems — then realized the bigger value was teaching others to see their work differently. Now I train businesses to do the same.
+**Bio paragraph 2:** I started building AI tools to solve my own problems. Then I realized the bigger value was teaching others to see their work differently. Now I train businesses to do the same.
 
 **Bio paragraph 3:** I also write about faith, work, and the natural world at [Discern Earth](https://www.discern.earth).
 
