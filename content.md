@@ -7,7 +7,7 @@ Edit any section below, then have Claude push the changes to live.
 ## Site Metadata
 
 - **Title:** David A. Valerio | AI Training & Coaching – Williston Basin
-- **Description:** On-site AI training for businesses in the Williston Basin. I teach your team to build AI solutions using your actual workflows—skills they keep using long after I leave.
+- **Description:** On-site AI training for businesses in the Williston Basin. I teach your team to use AI on your real workflows — not just to save time, but to see things you couldn't see before.
 
 ---
 
@@ -15,7 +15,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Heading:** Learn AI on Your Own Problems
 
-**Body:** I come to your business, use your actual workflows as the curriculum, and your team walks away knowing how to build AI solutions themselves.
+**Body:** I come to your business, work with your actual data and workflows, and your team walks away with AI skills that change how they operate — not just how fast.
 
 **Button:** Book a Training Session
 
@@ -29,28 +29,28 @@ Edit any section below, then have Claude push the changes to live.
 
 **Card title:** On-Site AI Training
 
-**Card body:** Bring a real problem your team faces every day. We'll use it as a hands-on exercise to learn AI tools—so you leave knowing how to solve it yourself, and the next one too.
+**Card body:** Bring a real problem your team faces — something that costs you time, visibility, or good decisions. We'll use it as a hands-on exercise, and you'll leave knowing how to solve it yourself and how to spot the next opportunity AI can unlock.
 
 **What's included:**
 
 - Half-day on-site training session (1-on-1 or small group)
-- We use your actual workflows as hands-on exercises
+- We work with your actual data and workflows
 - You build a working AI solution with guidance
-- You learn the tools and thinking, not just the output
+- You learn the thinking behind the tools, not just the steps
 - Follow-on coaching available to keep building
 
-**Common bottlenecks training addresses:**
+**What teams are using this for:**
 
-- Repetitive reporting and paperwork
-- Safety documentation and compliance tracking
-- Email drafting and follow-up
-- Meeting notes and action items
-- Converting raw notes into polished deliverables
+- Turning field data into trend reports and dashboards
+- Automating repetitive reporting and compliance paperwork
+- Building searchable knowledge bases from scattered documents
+- Analyzing bid history, costs, or production data for patterns
+- Drafting, summarizing, and routing communications faster
 
 **Pricing:**
 
 - **Half-Day On-Site Training Session — $1,500**
-- Bring one real workflow. Your team learns the AI skills to fix it themselves—and every problem like it.
+- Bring one real workflow. Your team learns to solve it with AI — and starts seeing where else to apply the same thinking.
 - **Follow-on coaching:** $150/hour, scheduled or on-demand.
 
 ---
@@ -61,7 +61,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Bio paragraph 1:** I oversee safety across 15+ oil & gas facilities in the Williston Basin. That means I spend my days inside operational workflows—compliance tracking, incident documentation, field reporting—the kind of work that's heavy on repetition and ripe for AI.
 
-**Bio paragraph 2:** I started building AI tools to solve my own problems. Now I teach other businesses to do the same.
+**Bio paragraph 2:** I started building AI tools to solve my own problems — then realized the bigger value was teaching others to see their work differently. Now I train businesses to do the same.
 
 **Bio paragraph 3:** I also write about faith, work, and the natural world at [Discern Earth](https://www.discern.earth).
 
@@ -80,7 +80,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Section heading:** Get in Touch
 
-**Subheading:** If your team could be using AI but doesn't know where to start, let's talk.
+**Subheading:** If your team knows AI could change how they work but doesn't know where to start, let's talk.
 
 **Form fields:** Name, Email, "How can I help?"
 
