@@ -7,7 +7,7 @@ Edit any section below, then have Claude push the changes to live.
 ## Site Metadata
 
 - **Title:** David A. Valerio | AI Training & Coaching – Williston Basin
-- **Description:** On-site AI training for businesses in the Williston Basin. I teach your team to use AI on your real workflows. Not just to save time, but to see things you couldn't see before.
+- **Description:** On-site AI training for businesses in the Williston Basin. I teach your team to use AI on your real problems. Not just to save time, but to see things you couldn't see before.
 
 ---
 
@@ -15,7 +15,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Heading:** Learn AI on Your Own Problems
 
-**Body:** I come to your business, work with your actual data and workflows, and your team walks away knowing how to solve real problems with AI. Not just the routine ones.
+**Body:** I come to your business, work with your actual data and workflows, and your team walks away knowing how to solve real problems with AI.
 
 **Button:** Book a Training Session
 
@@ -50,7 +50,7 @@ Edit any section below, then have Claude push the changes to live.
 **Pricing:**
 
 - **Half-Day On-Site Training Session — $1,500**
-- Bring one real workflow. Your team learns to solve it with AI, and starts seeing where else to apply the same thinking.
+- Bring one real problem. Your team learns to solve it with AI, and starts seeing where else to apply the same thinking.
 - **Follow-on coaching:** $150/hour, scheduled or on-demand.
 
 ---
@@ -67,7 +67,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Why Me:**
 
-- Safety advisor at DNOW covering 15+ facilities
+- Safety advisor at DNOW
 - OSHA 511, HAZWOPER 40-Hour, IOGP Life-Saving Rules Trainer
 - SPE Williston Basin Section Officer
 - Environmental startups — Renoster, Validere, BCarbon
