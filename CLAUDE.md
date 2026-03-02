@@ -29,12 +29,16 @@ Purple/gold palette aligned with discern.earth. Josefin Sans typography. CSS cus
 
 Each section is full-viewport height (`100svh`) with vertically centered content. No separate footer — copyright line lives at the bottom of the contact section.
 
+## Offering
+
+AI training and coaching — not consulting. The value proposition is capability transfer: David teaches teams to build AI solutions themselves using their own workflows as curriculum. He does not build solutions for them. Half-day on-site training sessions ($1,500) plus follow-on coaching ($150/hr). All copy should reinforce "I teach you" not "I build for you."
+
 ## Sections
 
-1. **Hero** — Headshot, name, positioning statement, CTA
-2. **Training** — Single card with AI training details and pricing
+1. **Hero** — Headshot, headline ("Learn AI on Your Own Problems"), CTA ("Book a Training Session")
+2. **Training** — "How It Works" section with single card: on-site training details, included items, bottleneck examples, pricing. Section ID is `#training`; CSS class remains `.services` (structural only).
 3. **About** — Bio, "Why Me" credentials sidebar, link to Discern Earth
-4. **Contact** — Formspree form, phone, email, copyright line
+4. **Contact** — Formspree form, phone, email. Subheading frames the ask around AI adoption, not pain points.
 
 ## Contact Form
 
