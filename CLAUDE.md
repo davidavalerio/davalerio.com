@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Professional services hub for David A. Valerio — applied AI consulting for businesses in the Williston Basin. This is the URL David hands out at presentations and on business cards.
+Professional services hub for David A. Valerio — AI training and coaching for businesses in the Williston Basin. This is the URL David hands out at presentations and on business cards.
 
 ## Stack
 
@@ -32,7 +32,7 @@ Each section is full-viewport height (`100svh`) with vertically centered content
 ## Sections
 
 1. **Hero** — Headshot, name, positioning statement, CTA
-2. **Services** — Single card with AI consulting details and pricing
+2. **Training** — Single card with AI training details and pricing
 3. **About** — Bio, "Why Me" credentials sidebar, link to Discern Earth
 4. **Contact** — Formspree form, phone, email, copyright line
 
@@ -52,4 +52,4 @@ Hosted on GitHub Pages. Use `/deploy` to ship changes (branches, commits, PRs, m
 ## Related Properties
 
 - **discern.earth** — David's writing (Ghost). Visual identity is aligned between the two sites (purple/gold palette, Josefin Sans). Discern Earth links back here with "Work with David" nav link.
-- **valeriosafety.com** — Redirects to this site. Safety consulting is mentioned in the About bio but not a separate service offering.
+- **valeriosafety.com** — Redirects to this site. Safety background is mentioned in the About bio but not a separate service offering.
