@@ -6,7 +6,7 @@ Edit any section below, then have Claude push the changes to live.
 
 ## Site Metadata
 
-- **Title:** David A. Valerio | AI Training & Coaching – Williston Basin
+- **Title:** David Valerio | AI Training & Coaching – Williston Basin
 - **Description:** On-site AI training for businesses in the Williston Basin. I teach your team to use AI on your real problems. Not just to save time, but to see things you couldn't see before.
 
 ---
