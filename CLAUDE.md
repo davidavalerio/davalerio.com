@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Professional services hub for David A. Valerio — AI training and coaching for businesses in the Williston Basin. This is the URL David hands out at presentations and on business cards.
+Professional services hub for David Valerio — AI training and coaching for businesses in the Williston Basin. This is the URL David hands out at presentations and on business cards.
 
 ## Stack
 
@@ -17,7 +17,7 @@ Static HTML with inline CSS. Josefin Sans font via Google Fonts. Formspree for c
 
 ## Brand Identity
 
-**Name:** "David A. Valerio" is the canonical business name. Never abbreviate to "D.A. Valerio" — the full first name keeps it personal and approachable.
+**Name:** "David Valerio" is the canonical business name. No middle initial — keep it clean and direct.
 
 **Logo:** Single purple V mark. No monogram or additional initials — the V is distinctive, scales well at all sizes, and works as favicon, card mark, and presentation branding.
 
