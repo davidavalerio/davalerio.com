@@ -59,7 +59,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Section heading:** About
 
-**Bio paragraph 1:** I oversee safety across 15+ oil & gas facilities in the Williston Basin. That means I spend my days inside operational workflows: compliance tracking, incident documentation, field reporting. The kind of work that's heavy on repetition and ripe for AI.
+**Bio paragraph 1:** I manage HSE programs across 125+ oil & gas locations in the western U.S. That means I spend my days inside operational workflows: compliance tracking, incident documentation, field reporting. The kind of work that's heavy on repetition and ripe for AI.
 
 **Bio paragraph 2:** I started building AI tools to solve my own problems. Then I realized the bigger value was teaching others to see their work differently. Now I train businesses to do the same.
 
@@ -67,7 +67,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Why Me:**
 
-- Safety advisor at DNOW
+- Senior HSE Specialist at DNOW
 - OSHA 511, HAZWOPER 40-Hour, IOGP Life-Saving Rules Trainer
 - SPE Williston Basin Section Officer
 - Environmental startups — Renoster, Validere, BCarbon
