@@ -15,7 +15,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Heading:** Learn AI on Your Own Problems
 
-**Body:** I come to your business, work with your actual problems, and your team walks away knowing how to solve them with AI.
+**Body:** I come to your business, work with your actual issues, and your team walks away knowing how to solve them with AI.
 
 **Primary button:** Book a Training Session
 
@@ -36,21 +36,18 @@ Edit any section below, then have Claude push the changes to live.
 **What's included:**
 
 - Half-day on-site session (1-on-1 or small group, travel included within the Williston Basin)
-- We work with your actual data and workflows
+- We work with your actual questions, data, and workflows
 - You leave seeing where AI can be applied to your operation, and what to build first
 
 **What teams are using this for:**
 
-- Cutting weekly compliance reporting from hours to minutes
-- Reviewing permits, contracts, or regulatory documents in minutes instead of days
-- Building a searchable knowledge base from scattered SOPs and safety docs
-- Spotting patterns in quote history, costs, or sales data that spreadsheets miss
-- Evaluating vendor or customer proposals without waiting on outside expertise
+- Cutting weekly safety compliance reporting from hours to minutes
+- Reviewing contracts and business proposals in minutes instead of days
+- Spotting patterns in quote history, sales, or cost data that spreadsheets miss
 
 **Pricing:**
 
-- **Half-Day On-Site Training Session — $2,000**
-- Bring one real business problem. Your team sees what AI can actually do with it, and starts recognizing opportunities everywhere.
+- **Half-day on-site training session — $2,000:** Bring one real business problem. Your team sees what AI can actually do with it, and starts recognizing opportunities everywhere.
 - **Implementation projects:** After the session, most teams see two or three more opportunities. I scope and build those as fixed-price projects alongside your team.
 
 ---
