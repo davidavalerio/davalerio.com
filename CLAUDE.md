@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Professional services hub for David Valerio — AI training and coaching for businesses in the Williston Basin. This is the URL David hands out at presentations and on business cards.
+Professional services hub for David Valerio — AI training and implementation for businesses in the Williston Basin. This is the URL David hands out at presentations and on business cards.
 
 ## Stack
 
@@ -31,7 +31,7 @@ Each section is full-viewport height (`100svh`) with vertically centered content
 
 ## Offering
 
-AI training and coaching — not consulting. The value proposition is capability transfer: David teaches teams to build AI solutions themselves using their own workflows as curriculum. He does not build solutions for them. Half-day on-site training sessions ($1,500) plus follow-on coaching ($150/hr). All copy should reinforce "I teach you" not "I build for you."
+AI training and implementation — not consulting. The value proposition is capability transfer: David teaches teams to build AI solutions themselves using their own workflows as curriculum. Training is the entry point; implementation projects are the natural next step — scoped, fixed-price engagements built around the client's workflow alongside their team. Half-day on-site training sessions ($1,500). No project pricing on the site; each engagement is scoped individually. All copy should reinforce "I teach you" not "I build for you."
 
 ## Sections
 
