@@ -6,8 +6,8 @@ Edit any section below, then have Claude push the changes to live.
 
 ## Site Metadata
 
-- **Title:** David Valerio | AI Training & Coaching – Williston Basin
-- **Description:** On-site AI training for businesses in the Williston Basin. I teach your team to use AI on your real problems. Not just to save time, but to see things you couldn't see before.
+- **Title:** David Valerio | AI Training & Implementation – Williston Basin
+- **Description:** On-site AI training for businesses in the Williston Basin. I teach your team to use AI on real problems ranging from daily paperwork to strategic decisions.
 
 ---
 
@@ -15,9 +15,11 @@ Edit any section below, then have Claude push the changes to live.
 
 **Heading:** Learn AI on Your Own Problems
 
-**Body:** I come to your business, work with your actual data and workflows, and your team walks away knowing how to solve real problems with AI.
+**Body:** I come to your business, work with your actual problems, and your team walks away knowing how to solve them with AI.
 
-**Button:** Book a Training Session
+**Primary button:** Book a Training Session
+
+**Secondary link:** Or let's talk about what's costing you → #contact
 
 **Phone:** 713-478-9395
 
@@ -29,29 +31,27 @@ Edit any section below, then have Claude push the changes to live.
 
 **Card title:** On-Site AI Training
 
-**Card body:** Bring a real problem your team faces: something that costs you time, visibility, or good decisions. We'll use it as a hands-on exercise, and you'll leave knowing how to solve it yourself and how to spot the next one.
+**Card body:** Bring a real problem your team faces: something that takes too long, costs too much, or requires expertise you don't have on hand. We'll use it as a hands-on exercise, and you'll leave knowing how to solve it yourself and how to spot the next one.
 
 **What's included:**
 
-- Half-day on-site training session (1-on-1 or small group)
+- Half-day on-site session (1-on-1 or small group, travel included within the Williston Basin)
 - We work with your actual data and workflows
-- You build a working AI solution with guidance
-- You learn the thinking behind the tools, not just the steps
-- Follow-on coaching available to keep building
+- You leave seeing where AI can be applied to your operation, and what to build first
 
 **What teams are using this for:**
 
-- Turning field data into trend reports and dashboards
-- Automating repetitive reporting and compliance paperwork
-- Building searchable knowledge bases from scattered documents
-- Analyzing bid history, costs, or production data for patterns
-- Drafting, summarizing, and routing communications faster
+- Cutting weekly compliance reporting from hours to minutes
+- Reviewing permits, contracts, or regulatory documents in minutes instead of days
+- Building a searchable knowledge base from scattered SOPs and safety docs
+- Spotting patterns in quote history, costs, or sales data that spreadsheets miss
+- Evaluating vendor or customer proposals without waiting on outside expertise
 
 **Pricing:**
 
-- **Half-Day On-Site Training Session — $1,500**
-- Bring one real problem. Your team learns to solve it with AI, and starts seeing where else to apply the same thinking.
-- **Follow-on coaching:** $150/hour, scheduled or on-demand.
+- **Half-Day On-Site Training Session — $2,000**
+- Bring one real business problem. Your team sees what AI can actually do with it, and starts recognizing opportunities everywhere.
+- **Implementation projects:** After the session, most teams see two or three more opportunities. I scope and build those as fixed-price projects alongside your team.
 
 ---
 
@@ -59,11 +59,9 @@ Edit any section below, then have Claude push the changes to live.
 
 **Section heading:** About
 
-**Bio paragraph 1:** I manage HSE programs across 125+ oil & gas locations in the western U.S. That means I spend my days inside operational workflows: compliance tracking, incident documentation, field reporting. The kind of work that's heavy on repetition and ripe for AI.
+**Bio paragraph 1:** I manage HSE programs across 125+ oil & gas locations in the western U.S. That means I spend my days inside operational workflows: compliance tracking, incident documentation, field reporting. The kind of work where hours disappear into paperwork that should take minutes.
 
-**Bio paragraph 2:** I started building AI tools to solve my own problems. Then I realized the bigger value was teaching others to see their work differently. Now I train businesses to do the same.
-
-**Bio paragraph 3:** I also write about faith, work, and the natural world at [Discern Earth](https://www.discern.earth).
+**Bio paragraph 2:** I started building AI tools to solve my own problems. Then I realized the bigger value was teaching others to do it themselves. Now I train teams across the Williston Basin to do the same.
 
 **Why Me:**
 
@@ -82,7 +80,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Subheading:** If your team knows AI could change how they work but doesn't know where to start, let's talk.
 
-**Form fields:** Name, Email, "How can I help?"
+**Form fields:** Name, Company, Email, "What's costing your team too much time or money?"
 
 **Button:** Send Message
 
