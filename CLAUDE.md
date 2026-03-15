@@ -37,7 +37,7 @@ AI training and implementation — not consulting. The value proposition is capa
 
 1. **Hero** — Headshot, headline ("Learn AI on Your Own Problems"), CTA ("Book a Training Session"), secondary link ("Or let's talk about what's costing you")
 2. **Training** — "How It Works" section with single card: on-site training details, 3 included items, 3 use cases, pricing. Section ID is `#training`; CSS class remains `.services` (structural only).
-3. **About** — Bio, "Why Me" credentials sidebar
+3. **About** — Bio, "Why Me" credentials block
 4. **Contact** — Formspree form (Name, Company, Email, message), phone, email. Subheading frames the ask around AI adoption, not pain points.
 
 ## Contact Form
