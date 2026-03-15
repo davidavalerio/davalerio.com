@@ -462,69 +462,20 @@
             background: var(--color-bg);
         }
 
-        .about-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 5rem;
-            align-items: start;
+        .services .service-area {
+            border: 1px solid var(--gold-200);
+            background: var(--gold-100);
         }
 
-        .about-text h2 {
-            font-size: clamp(1.75rem, 4vw, 2.5rem);
-            color: var(--color-text-heading);
-            margin-bottom: 1.5rem;
+        .about .service-area {
+            border: 1px solid var(--purple-200);
+            background: var(--purple-100);
         }
 
-        .about-text p {
-            color: var(--color-text);
-            margin-bottom: 1.5rem;
-            font-size: 1.05rem;
-        }
-
-        .about-text p:last-child {
-            margin-bottom: 0;
-        }
-
-        .about-text a {
-            font-weight: 500;
-        }
-
-        .credentials {
-            background: #FAFAFA;
-            padding: 2.5rem;
-            border-radius: 4px;
-        }
-
-        .credentials h3 {
-            color: var(--color-text-heading);
-            font-size: 1.1rem;
-            margin-bottom: 1.25rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 2px solid var(--color-accent);
-        }
-
-        .credentials ul {
-            list-style: none;
-        }
-
-        .credentials li {
-            color: var(--color-text);
-            padding: 0.5rem 0;
-            padding-left: 1.5rem;
-            position: relative;
-            font-size: 0.95rem;
-        }
-
-        .credentials li::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 8px;
-            height: 8px;
-            background: var(--color-accent);
-            border-radius: 50%;
+        .about .service-area h3 {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--purple-200);
         }
 
         /* Contact Section */
@@ -614,13 +565,6 @@
         }
 
         /* Responsive */
-        @media (max-width: 900px) {
-            .about-content {
-                grid-template-columns: 1fr;
-                gap: 3rem;
-            }
-        }
-
         @media (max-width: 768px) {
             .nav-container {
                 display: flex;
@@ -754,16 +698,14 @@
     <!-- About Section -->
     <section class="about" id="about">
         <div class="container">
-            <div class="about-content">
-                <div class="about-text">
-                    <h2>About</h2>
-                    <p>I manage HSE programs across 125+ oil &amp; gas locations in the western U.S. I use AI to handle the repetitive operational work &mdash; compliance tracking, incident documentation, field reporting &mdash; so I can focus on what actually matters.</p>
-                    <p>Now I teach other teams to do the same.</p>
-
-                </div>
-                <div class="credentials">
+            <div class="section-header">
+                <h2>About</h2>
+            </div>
+            <div class="service-areas">
+                <div class="service-area">
+                    <p>I manage HSE programs across 125+ oil &amp; gas locations in the western U.S. I use AI to handle the repetitive operational work &mdash; compliance tracking, incident documentation, field reporting &mdash; so I can focus on what actually matters. Now I teach other teams to do the same.</p>
                     <h3>Why Me</h3>
-                    <ul>
+                    <ul class="service-list">
                         <li>Senior HSE Specialist at DNOW</li>
                         <li>OSHA 511, HAZWOPER 40-Hour, IOGP Life-Saving Rules Trainer</li>
                         <li>SPE Williston Basin Section Officer</li>

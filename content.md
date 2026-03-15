@@ -50,9 +50,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Section heading:** About
 
-**Bio paragraph 1:** I manage HSE programs across 125+ oil & gas locations in the western U.S. I use AI to handle the repetitive operational work — compliance tracking, incident documentation, field reporting — so I can focus on what actually matters.
-
-**Bio paragraph 2:** Now I teach other teams to do the same.
+**Bio:** I manage HSE programs across 125+ oil & gas locations in the western U.S. I use AI to handle the repetitive operational work — compliance tracking, incident documentation, field reporting — so I can focus on what actually matters. Now I teach other teams to do the same.
 
 **Why Me:**
 
