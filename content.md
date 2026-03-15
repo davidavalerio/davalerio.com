@@ -7,7 +7,7 @@ Edit any section below, then have Claude push the changes to live.
 ## Site Metadata
 
 - **Title:** David Valerio | AI Training & Implementation – Williston Basin
-- **Description:** On-site AI training for businesses in the Williston Basin. I teach your team to use AI on real problems ranging from daily paperwork to strategic decisions.
+- **Description:** On-site AI training for businesses in the Williston Basin. I teach your team to use AI to solve real problems ranging from daily paperwork to strategic decisions.
 
 ---
 
@@ -35,20 +35,14 @@ Edit any section below, then have Claude push the changes to live.
 
 **What's included:**
 
-- Half-day on-site session (1-on-1 or small group, travel included within the Williston Basin)
+- Half-day on-site session (1-on-1 or small group, travel included within Western North Dakota/Eastern Montana)
 - We work with your actual questions, data, and workflows
 - You leave seeing where AI can be applied to your operation, and what to build first
 
-**What teams are using this for:**
-
-- Cutting weekly safety compliance reporting from hours to minutes
-- Reviewing contracts and business proposals in minutes instead of days
-- Spotting patterns in quote history, sales, or cost data that spreadsheets miss
-
 **Pricing:**
 
-- **Half-day on-site training session — $2,000:** Bring one real business problem. Your team sees what AI can actually do with it, and starts recognizing opportunities everywhere.
-- **Implementation projects:** After the session, most teams see two or three more opportunities. I scope and build those as fixed-price projects alongside your team.
+- **Half-day on-site training session — $2,000:** Bring one real business problem. Your team sees what AI can actually do with it, and starts recognizing opportunities to apply AI everywhere.
+- **Implementation projects:** I'm available for follow-on engagements scoped to what your team needs.
 
 ---
 
@@ -56,18 +50,17 @@ Edit any section below, then have Claude push the changes to live.
 
 **Section heading:** About
 
-**Bio paragraph 1:** I manage HSE programs across 125+ oil & gas locations in the western U.S. That means I spend my days inside operational workflows: compliance tracking, incident documentation, field reporting. The kind of work where hours disappear into paperwork that should take minutes.
+**Bio paragraph 1:** I manage HSE programs across 125+ oil & gas locations in the western U.S. I use AI to handle the repetitive operational work — compliance tracking, incident documentation, field reporting — so I can focus on what actually matters.
 
-**Bio paragraph 2:** I started building AI tools to solve my own problems. Then I realized the bigger value was teaching others to do it themselves. Now I train teams across the Williston Basin to do the same.
+**Bio paragraph 2:** Now I teach other teams to do the same.
 
 **Why Me:**
 
 - Senior HSE Specialist at DNOW
 - OSHA 511, HAZWOPER 40-Hour, IOGP Life-Saving Rules Trainer
 - SPE Williston Basin Section Officer
-- Environmental startups — Renoster, Validere, BCarbon
-- Rice University MS — Earth Science
-- Texas A&M BS — Geology
+- Early-stage environmental startups: Renoster, Validere, BCarbon
+- Rice University MS in Earth Science, Texas A&M BS in Geology
 
 ---
 
@@ -75,7 +68,7 @@ Edit any section below, then have Claude push the changes to live.
 
 **Section heading:** Get in Touch
 
-**Subheading:** If your team knows AI could change how they work but doesn't know where to start, let's talk.
+**Subheading:** If your team suspects that AI could change how they work but doesn't know where to start, let's talk.
 
 **Form fields:** Name, Company, Email, "What's costing your team too much time or money?"
 
