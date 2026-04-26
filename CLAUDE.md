@@ -2,47 +2,43 @@
 
 ## What This Is
 
-Professional services hub for David Valerio — AI training and implementation for businesses in the Williston Basin. This is the URL David hands out at presentations and on business cards.
+Personal calling card for David Valerio. Single-screen landing page with headshot, name, tagline, and a small set of links (Discern Earth, email, phone, LinkedIn, X). This is the URL David hands out at presentations and on business cards.
+
+The consulting offer (AI training and implementation) is currently paused. The full consulting page is preserved at `consulting.html` and can be promoted back to the homepage when training relaunches.
 
 ## Stack
 
-Static HTML with inline CSS. Josefin Sans font via Google Fonts. Formspree for contact form. No build step, no framework.
+Static HTML with inline CSS. Josefin Sans font via Google Fonts. No build step, no framework, no JavaScript on the homepage.
 
 ## Files
 
-- `index.html` — Single-page site with all content and styles inline
-- `content.md` — Plain-text copy for each section (edit here, then sync to index.html)
-- `headshot.jpg` — Professional headshot (used in hero section)
+- `index.html` — Single-screen calling card with all content and styles inline
+- `consulting.html` — Archived consulting page (former homepage). Reachable at `/consulting.html`. Restore as homepage by copying back to `index.html`.
+- `content.md` — Plain-text copy for the calling card (edit here, then sync to index.html)
+- `headshot.jpg` — Professional headshot
 - `CNAME` — Points to davalerio.com
 
 ## Brand Identity
 
-**Name:** "David Valerio" is the canonical business name. No middle initial — keep it clean and direct.
+**Name:** "David Valerio" is the canonical name. No middle initial.
 
-**Logo:** Single purple V mark. No monogram or additional initials — the V is distinctive, scales well at all sizes, and works as favicon, card mark, and presentation branding.
+**Logo:** Single purple V mark. Used as favicon and on the consulting page; the calling card leans on the headshot instead.
 
 ## Design System
 
-Purple/gold palette aligned with discern.earth. Josefin Sans typography. CSS custom properties for all color tokens. Key color decisions: nav CTA button is deep purple (`--purple-500`), primary CTA and form buttons use bright gold (`--gold-400`), nav bottom border is gold (`--gold-400`), page background is cream (`--gold-100`).
+Purple/gold palette aligned with discern.earth. Josefin Sans typography. CSS custom properties for all color tokens. Calling card uses cream background (`--gold-100`), purple headings (`--purple-500`), gold accent border on the headshot and link hover underline (`--gold-400`).
 
 ## Layout
 
-Each section is full-viewport height (`100svh`) with vertically centered content. No separate footer — copyright line lives at the bottom of the contact section.
+Calling card is centered both vertically and horizontally within `100svh`. No nav, no footer, no scroll. Single `<main>` with headshot, name, tagline, and a wrapping row of link items.
 
-## Offering
+## Restoring the Consulting Page
 
-AI training and implementation — not consulting. The value proposition is capability transfer: David teaches teams to build AI solutions themselves using their own workflows as curriculum. Training is the entry point; implementation projects are the natural next step — scoped, fixed-price engagements built around the client's workflow alongside their team. Half-day on-site training sessions ($2,000). No project pricing on the site; each engagement is scoped individually. All copy should reinforce "I teach you" not "I build for you."
-
-## Sections
-
-1. **Hero** — Headshot, headline ("Learn AI on Your Own Problems"), CTA ("Book a Training Session"), secondary link ("Or let's talk about what's costing you")
-2. **Training** — "How It Works" section with single card: on-site training details, 3 included items, 3 use cases, pricing. Section ID is `#training`; CSS class remains `.services` (structural only).
-3. **About** — Bio, "Why Me" credentials block
-4. **Contact** — Formspree form (Name, Company, Email, message), phone, email. Subheading frames the ask around AI adoption, not pain points.
+When training relaunches, copy `consulting.html` over `index.html` (overwriting the calling card) and restore the consulting-era CLAUDE.md sections from git history (`Sections`, `Offering`, `Contact Form`). The Formspree endpoint and consulting copy in `consulting.html` stay live in the meantime.
 
 ## Contact Form
 
-Uses Formspree endpoint `https://formspree.io/f/xnjnkknw`. Do not change this without explicit direction.
+The Formspree endpoint `https://formspree.io/f/xnjnkknw` is wired up inside `consulting.html`. The calling card has no form — just plain `mailto:` and `tel:` links. Do not change the Formspree endpoint without explicit direction.
 
 ## Deployment
 
@@ -55,5 +51,5 @@ Hosted on GitHub Pages. Use `/deploy` to ship changes (branches, commits, PRs, m
 
 ## Related Properties
 
-- **discern.earth** — David's writing (Ghost). Visual identity is aligned between the two sites (purple/gold palette, Josefin Sans). Discern Earth links back here with "Work with David" nav link.
-- **valeriosafety.com** — Redirects to this site. Safety background is mentioned in the About bio but not a separate service offering.
+- **discern.earth** — David's writing (Ghost). Visual identity is aligned between the two sites (purple/gold palette, Josefin Sans). The calling card links to it directly.
+- **valeriosafety.com** — Redirects to this site.

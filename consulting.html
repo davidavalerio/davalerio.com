@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>David Valerio | AI Training & Implementation – Williston Basin</title>
+    <meta name="description" content="On-site AI training for businesses in the Williston Basin. I teach your team to use AI to solve real problems ranging from daily paperwork to strategic decisions.">
+    <link rel="canonical" href="https://davalerio.com/">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="David Valerio | AI Training & Implementation – Williston Basin">
+    <meta property="og:description" content="On-site AI training for businesses in the Williston Basin. I teach your team to use AI to solve real problems ranging from daily paperwork to strategic decisions.">
+    <meta property="og:url" content="https://davalerio.com/">
+    <meta property="og:image" content="https://davalerio.com/og-image.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><path d='M2 4 L20 36 L38 4 L30 4 L20 24 L10 4 Z' fill='%235F2D9E'/></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "ProfessionalService",
+        "name": "David Valerio",
+        "description": "On-site AI training for businesses in the Williston Basin. I teach your team to use AI to solve real problems ranging from daily paperwork to strategic decisions.",
+        "url": "https://davalerio.com",
+        "telephone": "+1-713-478-9395",
+        "email": "david@davalerio.com",
+        "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Williston",
+            "addressRegion": "ND",
+            "addressCountry": "US"
+        },
+        "areaServed": {
+            "@type": "GeoCircle",
+            "geoMidpoint": {
+                "@type": "GeoCoordinates",
+                "latitude": 48.1470,
+                "longitude": -103.6180
+            },
+            "geoRadius": "200 mi"
+        },
+        "priceRange": "$$",
+        "serviceType": ["AI Training", "AI Implementation"]
+    }
+    </script>
+    <style>
+        :root {
+            /* Purple */
+            --purple-500: #481785;
+            --purple-400: #5F2D9E;
+            --purple-300: #7851A9;
+            --purple-200: #DFC4FF;
+            --purple-100: #F8F3FF;
+
+            /* Gold */
+            --gold-600: #7D5C0D;
+            --gold-500: #A47B11;
+            --gold-400: #E5A502;
+            --gold-300: #F1CB75;
+            --gold-200: #FFF0C9;
+            --gold-100: #FFFCF3;
+
+            /* Neutrals */
+            --neutral-500: #000000;
+            --neutral-400: #6E6E6E;
+            --neutral-300: #CBCBCB;
+            --neutral-200: #EFEFEF;
+            --neutral-100: #FFFFFF;
+
+            /* Semantic */
+            --color-brand: var(--purple-500);
+            --color-brand-hover: var(--purple-400);
+            --color-accent: var(--gold-400);
+            --color-accent-soft: var(--gold-200);
+            --color-text: #333;
+            --color-text-heading: var(--purple-500);
+            --color-text-secondary: var(--neutral-400);
+            --color-text-muted: #5C5C5C;
+            --color-border: var(--neutral-300);
+            --color-border-accent: var(--gold-300);
+            --color-link: var(--purple-400);
+            --color-bg: var(--gold-100);
+            --color-bg-card: var(--neutral-100);
+            --color-bg-subtle: var(--purple-100);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            overscroll-behavior-y: none;
+        }
+
+        #training,
+        #about,
+        #contact {
+            scroll-margin-top: 73px;
+        }
+
+        body {
+            font-family: 'Josefin Sans', sans-serif;
+            font-weight: 300;
+            color: var(--color-text);
+            line-height: 1.7;
+            font-size: 1.125rem;
+            background: var(--color-bg);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3 {
+            font-weight: 700;
+        }
+
+        a {
+            color: var(--color-link);
+            transition: color 0.2s;
+        }
+
+        a:hover {
+            color: var(--color-brand);
+        }
+
+        a:focus-visible,
+        button:focus-visible,
+        input:focus-visible,
+        textarea:focus-visible {
+            outline: 2px solid var(--color-accent);
+            outline-offset: 2px;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .skip-link {
+            position: absolute;
+            top: -100px;
+            left: 0;
+            background: var(--color-brand);
+            color: var(--neutral-100);
+            padding: 0.5rem 1rem;
+            z-index: 1001;
+            text-decoration: none;
+        }
+
+        .skip-link:focus {
+            top: 0;
+        }
+
+        /* Navigation */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: var(--color-bg);
+            border-bottom: 1px solid var(--gold-400);
+        }
+
+        .nav-container {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+        }
+
+        .nav-menu {
+            display: contents;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+        }
+
+        .logo svg {
+            width: 40px;
+            height: 40px;
+        }
+
+        .logo-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--purple-400);
+            letter-spacing: 0.08em;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--color-text);
+            font-weight: 400;
+            font-size: 0.9rem;
+            letter-spacing: 0.02em;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--color-link);
+        }
+
+        .nav-cta {
+            justify-self: end;
+            background: var(--purple-500);
+            color: var(--neutral-100) !important;
+            padding: 0.5rem 1.25rem;
+            border: none;
+            border-radius: 3px;
+            font-weight: 600 !important;
+            font-size: 0.9rem;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .nav-cta:hover {
+            background: var(--purple-400);
+            color: var(--neutral-100) !important;
+        }
+
+        .mobile-menu {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+            padding: 0.5rem;
+            background: none;
+            border: none;
+        }
+
+        .mobile-menu span {
+            width: 24px;
+            height: 2px;
+            background: var(--color-text);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: calc(100vh - 73px);
+            min-height: calc(100svh - 73px);
+            display: flex;
+            align-items: center;
+            background: var(--color-brand);
+            padding: 4rem 2rem;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .hero-headshot {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--gold-400);
+            margin-bottom: 2rem;
+        }
+
+        .hero-eyebrow {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.65);
+            font-weight: 400;
+            letter-spacing: 0.06em;
+            margin-bottom: 1rem;
+        }
+
+        .hero h1 {
+            font-size: clamp(2rem, 4.5vw, 3rem);
+            color: var(--neutral-100);
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero p {
+            font-size: clamp(1rem, 2vw, 1.2rem);
+            color: rgba(255,255,255,0.92);
+            font-weight: 300;
+            margin-bottom: 2rem;
+            max-width: 620px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-phone {
+            display: block;
+            margin-top: 1rem;
+            font-size: 0.95rem;
+            color: rgba(255,255,255,0.75);
+            font-weight: 400;
+        }
+
+        .hero-phone a {
+            color: rgba(255,255,255,0.9);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .hero-phone a:hover {
+            color: var(--neutral-100);
+            text-decoration: underline;
+        }
+
+        .btn {
+            display: inline-block;
+            background: var(--gold-400);
+            color: var(--neutral-100);
+            padding: 0.8em 2em;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            border-radius: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--gold-500);
+            color: var(--neutral-100);
+        }
+
+        /* Section Common */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .section-header h2 {
+            font-size: clamp(1.75rem, 4vw, 2.5rem);
+            color: var(--color-text-heading);
+            margin-bottom: 1rem;
+        }
+
+        .section-header p {
+            color: var(--color-text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+            font-size: 1.1rem;
+        }
+
+        /* Services Section */
+        .services {
+            display: flex;
+            align-items: center;
+            min-height: calc(100svh - 73px);
+            padding: 4rem 2rem;
+            background: var(--color-bg-subtle);
+        }
+
+        .service-areas {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .service-area {
+            background: var(--color-bg-card);
+            padding: 2rem;
+            border-radius: 4px;
+        }
+
+        .service-area-label {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--gold-500);
+            margin-bottom: 0.75rem;
+        }
+
+        .service-area h3 {
+            color: var(--color-text-heading);
+            font-size: 1.4rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .service-area > p {
+            color: var(--color-text);
+            font-size: 0.95rem;
+            line-height: 1.7;
+            margin-bottom: 1rem;
+        }
+
+        .service-list {
+            list-style: none;
+            margin-bottom: 1rem;
+        }
+
+        .service-list li {
+            padding: 0.3rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+            font-size: 0.95rem;
+            color: var(--color-text);
+        }
+
+        .service-list li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 7px;
+            height: 7px;
+            background: var(--color-accent);
+            border-radius: 50%;
+        }
+
+        .pricing-line {
+            font-size: 0.95rem;
+            color: var(--color-text-muted);
+            padding-top: 0.5rem;
+            border-top: 1px solid #e8e8e8;
+        }
+
+        .pricing-line strong {
+            color: var(--color-text-heading);
+            font-weight: 600;
+        }
+
+        /* About Section */
+        .about {
+            display: flex;
+            align-items: center;
+            min-height: calc(100svh - 73px);
+            padding: 6rem 2rem;
+            background: var(--color-bg);
+        }
+
+        .services .service-area {
+            border: 1px solid var(--gold-200);
+            background: var(--gold-100);
+        }
+
+        .about .service-area {
+            border: 1px solid var(--purple-200);
+            background: var(--purple-100);
+        }
+
+        .about .service-area h3 {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--purple-200);
+        }
+
+        /* Contact Section */
+        .contact {
+            display: flex;
+            align-items: center;
+            min-height: calc(100svh - 73px);
+            padding: 4rem 2rem;
+            background: var(--purple-500);
+        }
+
+        .contact .section-header h2 {
+            color: var(--neutral-100);
+        }
+
+        .contact .section-header p {
+            color: rgba(255,255,255,0.9);
+            font-weight: 400;
+        }
+
+        .contact-form {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .contact-form input,
+        .contact-form textarea {
+            width: 100%;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 2px solid transparent;
+            border-radius: 3px;
+            font-family: inherit;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .contact-form input:focus,
+        .contact-form textarea:focus {
+            border-color: var(--color-accent);
+        }
+
+        .contact-form textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .contact-form button {
+            width: 100%;
+            padding: 1rem;
+            background: var(--gold-400);
+            color: var(--neutral-100);
+            border: none;
+            border-radius: 3px;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .contact-form button:hover {
+            background: var(--gold-500);
+        }
+
+        .contact-info {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: rgba(255,255,255,0.9);
+            font-weight: 400;
+        }
+
+        .contact-info a {
+            color: var(--neutral-100);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .contact-info a:hover {
+            text-decoration: underline;
+        }
+
+        .contact-info .divider {
+            margin: 0 0.75rem;
+            color: rgba(255,255,255,0.4);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-container {
+                display: flex;
+                justify-content: space-between;
+                padding: 1rem 1.5rem;
+            }
+
+            .nav-menu {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: var(--color-bg);
+                flex-direction: column;
+                padding: 1rem 1.5rem;
+                gap: 0;
+                border-bottom: 1px solid var(--color-border);
+            }
+
+            .nav-menu.active {
+                display: flex;
+            }
+
+            .nav-links {
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .nav-links li {
+                padding: 0.75rem 0;
+                border-bottom: 1px solid var(--color-border);
+            }
+
+            .nav-cta {
+                justify-self: auto;
+                display: block;
+                text-align: center;
+                padding: 0.75rem;
+                margin-top: 0.75rem;
+            }
+
+            .mobile-menu {
+                display: flex;
+            }
+
+            .hero {
+                padding: 3rem 1.5rem 4rem;
+            }
+
+            .hero-headshot {
+                width: 130px;
+                height: 130px;
+            }
+
+            .services,
+            .about,
+            .contact {
+                padding: 4rem 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <a href="#" class="logo" aria-label="David Valerio home">
+                <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M2 4 L20 36 L38 4 L30 4 L20 24 L10 4 Z" fill="#5F2D9E"/>
+                </svg>
+                <span class="logo-text">DAVID VALERIO</span>
+            </a>
+            <div class="nav-menu" id="nav-menu">
+                <ul class="nav-links">
+                    <li><a href="#training" onclick="document.getElementById('nav-menu').classList.remove('active')">Training</a></li>
+                    <li><a href="#about" onclick="document.getElementById('nav-menu').classList.remove('active')">About</a></li>
+                </ul>
+                <a href="#contact" class="nav-cta" onclick="document.getElementById('nav-menu').classList.remove('active')">Book Training</a>
+            </div>
+            <button class="mobile-menu" aria-label="Toggle navigation menu" aria-expanded="false" onclick="var n=document.getElementById('nav-menu');n.classList.toggle('active');this.setAttribute('aria-expanded',n.classList.contains('active'))">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <main id="main">
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <img src="headshot.jpg" alt="David Valerio" class="hero-headshot" width="160" height="160">
+            <h1>Learn AI on Your Own Problems</h1>
+            <p>I come to your business, work with your actual issues, and your team walks away knowing how to solve them with AI.</p>
+            <a href="#contact" class="btn">Book a Training Session</a>
+            <span class="hero-phone" style="display:block; margin-top:1rem;"><a href="#contact" style="color:rgba(255,255,255,0.85); text-decoration:none; font-size:0.95rem; font-weight:400;">Or let&rsquo;s talk about what&rsquo;s costing you</a></span>
+            <span class="hero-phone"><a href="tel:713-478-9395">713-478-9395</a></span>
+        </div>
+    </section>
+
+    <!-- Training Section -->
+    <section class="services" id="training">
+        <div class="container">
+            <div class="section-header">
+                <h2>How It Works</h2>
+            </div>
+            <div class="service-areas">
+
+                <div class="service-area">
+                    <h3>On-Site AI Training</h3>
+                    <p>Bring a real problem your team faces: something that takes too long, costs too much, or requires expertise you don&rsquo;t have on hand. We&rsquo;ll use it as a hands-on exercise, and you&rsquo;ll leave knowing how to solve it yourself and how to spot the next one.</p>
+                    <ul class="service-list">
+                        <li>Half-day on-site session (1-on-1 or small group, travel included within Western North Dakota/Eastern Montana)</li>
+                        <li>We work with your actual questions, data, and workflows</li>
+                        <li>You leave seeing where AI can be applied to your operation, and what to build first</li>
+                    </ul>
+                    <div style="margin-top:1.5rem;">
+                        <p class="pricing-line"><strong>Half-day on-site training session &mdash; $2,000:</strong> Bring one real business problem. Your team sees what AI can actually do with it, and starts recognizing opportunities to apply AI everywhere.</p>
+                        <p class="pricing-line" style="border-top:none; padding-top:0.5rem;"><strong>Implementation projects:</strong> I&rsquo;m available for follow-on engagements scoped to what your team needs.</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about" id="about">
+        <div class="container">
+            <div class="section-header">
+                <h2>About</h2>
+            </div>
+            <div class="service-areas">
+                <div class="service-area">
+                    <p>I manage HSE programs across 125+ oil &amp; gas locations in the western U.S. I use AI to handle the repetitive operational work &mdash; compliance tracking, incident documentation, field reporting &mdash; so I can focus on what actually matters. Now I teach other teams to do the same.</p>
+                    <h3>Why Me</h3>
+                    <ul class="service-list">
+                        <li>Senior HSE Specialist at DNOW</li>
+                        <li>OSHA 511, HAZWOPER 40-Hour, IOGP Life-Saving Rules Trainer</li>
+                        <li>SPE Williston Basin Section Officer</li>
+                        <li>Early-stage environmental startups: Renoster, Validere, BCarbon</li>
+                        <li>Rice University MS in Earth Science, Texas A&amp;M BS in Geology</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact" id="contact">
+        <div class="container">
+            <div class="section-header">
+                <h2>Get in Touch</h2>
+                <p>If your team suspects AI could change how they work but doesn&rsquo;t know where to start, let&rsquo;s talk.</p>
+            </div>
+            <form class="contact-form" id="contact-form" action="https://formspree.io/f/xnjnkknw" method="POST">
+                <label for="name" class="sr-only">Name</label>
+                <input type="text" id="name" name="name" placeholder="Name" required>
+                <label for="company" class="sr-only">Company</label>
+                <input type="text" id="company" name="company" placeholder="Company">
+                <label for="email" class="sr-only">Email</label>
+                <input type="email" id="email" name="email" placeholder="Email" required>
+                <label for="message" class="sr-only">What's costing your team too much time or money?</label>
+                <textarea id="message" name="message" placeholder="What's costing your team too much time or money?" required></textarea>
+                <button type="submit">Send Message</button>
+            </form>
+            <div id="form-success" style="display:none; text-align:center; color:var(--neutral-100); padding:2rem 0;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="2.5rem" height="2.5rem" viewBox="0 0 24 24" style="color:var(--color-accent);" aria-hidden="true"><path fill="currentColor" d="m10 15.17l9.192-9.191l1.414 1.414L10 17.999l-6.364-6.364l1.414-1.414z"/></svg>
+                <p style="font-size:1.25rem; font-weight:600; margin-top:1rem;">Message sent.</p>
+                <p style="margin-top:0.5rem; color:rgba(255,255,255,0.85);">I'll be in touch shortly.</p>
+            </div>
+            <p class="contact-info">
+                <a href="tel:713-478-9395">713-478-9395</a>
+                <span class="divider">|</span>
+                <a href="mailto:david@davalerio.com">david@davalerio.com</a>
+            </p>
+        </div>
+    </section>
+    </main>
+
+    <script>
+    document.getElementById('contact-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var form = this;
+        var btn = form.querySelector('button');
+        btn.textContent = 'Sending...';
+        btn.disabled = true;
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: { 'Accept': 'application/json' }
+        }).then(function(r) {
+            if (r.ok) {
+                form.style.display = 'none';
+                document.getElementById('form-success').style.display = 'block';
+            } else {
+                btn.textContent = 'Send Message';
+                btn.disabled = false;
+                alert('Something went wrong. Please try calling instead.');
+            }
+        }).catch(function() {
+            btn.textContent = 'Send Message';
+            btn.disabled = false;
+            alert('Something went wrong. Please try calling instead.');
+        });
+    });
+    </script>
+</body>
+</html>
