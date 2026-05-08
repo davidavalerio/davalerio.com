@@ -24,7 +24,6 @@ The full consulting page lives at `consulting.html` and can be restored as the h
 **Links:**
 
 - Discern Earth → https://discern.earth
-- Email → david@davalerio.com
-- Phone → 713-478-9395
+- david@davalerio.com
 - LinkedIn → https://www.linkedin.com/in/davidavalerio/
 - X → https://x.com/davidavalerio
