@@ -9,7 +9,7 @@ The full consulting page lives at `consulting.html` and can be restored as the h
 ## Site Metadata
 
 - **Title:** David Valerio
-- **Description:** David Valerio. HSE professional and writer in Williston, North Dakota.
+- **Description:** David Valerio. Environmental, health, and safety professional and writer in Williston, North Dakota.
 
 ---
 
@@ -19,7 +19,7 @@ The full consulting page lives at `consulting.html` and can be restored as the h
 
 **Name:** David Valerio
 
-**Tagline:** HSE professional and writer in Williston, ND
+**Tagline:** Environmental, health, and safety professional and writer in Williston, ND
 
 **Links:**
 
