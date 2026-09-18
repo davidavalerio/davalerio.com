@@ -4,45 +4,39 @@
 
 Personal calling card for David Valerio. Single-screen landing page with headshot, name, tagline, and a small set of links (Discern Earth, email, phone, LinkedIn, X). This is the URL David hands out at presentations and on business cards.
 
-The consulting offer (AI training and implementation) is currently paused. The full consulting page is preserved at `consulting.html` and can be promoted back to the homepage when training relaunches.
+This is a personal site, not a services site. Don't propose services sections, contact forms, pricing, or training-related copy for it; "update the homepage" means extending the personal page.
 
-## Pause Context
-
-The site shipped in March 2026 as a consulting landing page for AI training and implementation. In April 2026, David paused that offer and converted the homepage to a personal calling card so the URL still works for cards, presentations, and inbound traffic from `valeriosafety.com` / `davidavalerio.com` redirects and the Discern Earth nav. The pause is open-ended: when David is ready to resume the training offer, the consulting page comes back as the homepage. Until then, treat this as a personal site, not a services site. Do not propose new services sections, contact forms, pricing, or training-related copy on the calling card. If asked to "update the homepage," default to extending the personal page; restoring the consulting page requires an explicit ask.
-
-The consulting work was an intentional commercial offer (half-day on-site sessions in the Williston Basin), not a side project, so the archived `consulting.html` represents real positioning that may return verbatim or with edits. Don't delete it or rewrite it speculatively.
-
-History reference: PR [#20](https://github.com/davidavalerio/davalerio.com/pull/20) made the swap.
+The AI consulting offer is not running. Its page is archived at `consulting.html`, reachable at `/consulting.html`, and stays as filed — it represents real positioning, so don't delete or rewrite it speculatively. Bringing it back to the homepage happens only if David asks for it. Earlier narrative is in `HISTORY.md`.
 
 ## Stack
 
-Static HTML with inline CSS. Josefin Sans font via Google Fonts. No build step, no framework, no JavaScript on the homepage.
+Static HTML with inline CSS. Source Serif 4 via Google Fonts. No build step, no framework, no JavaScript on the homepage.
 
 ## Files
 
-- `index.html` — Single-screen calling card with all content and styles inline
-- `consulting.html` — Archived consulting page (former homepage). Reachable at `/consulting.html`. Restore as homepage by copying back to `index.html`.
-- `content.md` — Plain-text copy for the calling card (edit here, then sync to index.html)
-- `headshot.jpg` — Professional headshot
-- `CNAME` — Points to davalerio.com
+- `index.html` — single-screen calling card with all content and styles inline
+- `consulting.html` — archived consulting page (former homepage), reachable at `/consulting.html`
+- `content.md` — plain-text copy for the calling card (edit here, then sync to index.html)
+- `headshot.jpg` — professional headshot
+- `CNAME` — points to davalerio.com
+
+## Restoring the Consulting Page
+
+Mechanically it is one move: copy `consulting.html` over `index.html`, and pull the consulting-era CLAUDE.md sections (`Sections`, `Offering`, `Contact Form`) back from git history. Only on an explicit ask from David.
 
 ## Brand Identity
 
 **Name:** "David Valerio" is the canonical name. No middle initial.
 
-**Logo:** Single purple V mark. Used as favicon and on the consulting page; the calling card leans on the headshot instead.
+**Logo:** Single V mark. Slate ink as the favicon; purple on the archived consulting page. The calling card leans on the headshot instead.
 
 ## Design System
 
-Purple/gold palette aligned with discern.earth. Josefin Sans typography. CSS custom properties for all color tokens. Calling card uses cream background (`--gold-100`), purple headings (`--purple-500`), gold accent border on the headshot and link hover underline (`--gold-400`).
+David's house style, shared with his documents and utility emails and separate from the Discern Earth brand: Source Serif 4 alone (regular text, semibold name), slate ink (`--ink`), stone gray tagline (`--stone`), barely warm paper (`--paper`), and one iron-oxide accent (`--accent`, `#97592F`) on the links and their hover underline. Square headshot with a hairline border. The archived `consulting.html` keeps its original purple and gold.
 
 ## Layout
 
 Calling card is centered both vertically and horizontally within `100svh`. No nav, no footer, no scroll. Single `<main>` with headshot, name, tagline, and a wrapping row of link items.
-
-## Restoring the Consulting Page
-
-When training relaunches, copy `consulting.html` over `index.html` (overwriting the calling card) and restore the consulting-era CLAUDE.md sections from git history (`Sections`, `Offering`, `Contact Form`). The Formspree endpoint and consulting copy in `consulting.html` stay live in the meantime.
 
 ## Contact Form
 
@@ -54,10 +48,10 @@ Hosted on GitHub Pages. Use `/deploy` to ship changes (branches, commits, PRs, m
 
 ## Domains
 
-- **davalerio.com** — Primary domain, served from this repo.
-- **davidavalerio.com** — Redirects to davalerio.com. Served from a separate GitHub Pages repo ([davidavalerio/davidavalerio.com](https://github.com/davidavalerio/davidavalerio.com)) that contains only a meta-refresh redirect and a matching 404 page.
+- **davalerio.com** — primary domain, served from this repo.
+- **davidavalerio.com** — redirects to davalerio.com. Served from a separate GitHub Pages repo ([davidavalerio/davidavalerio.com](https://github.com/davidavalerio/davidavalerio.com)) that contains only a meta-refresh redirect and a matching 404 page.
+- **valeriosafety.com** — redirects to this site.
 
 ## Related Properties
 
-- **discern.earth** — David's writing (Ghost). Visual identity is aligned between the two sites (purple/gold palette, Josefin Sans). The calling card links to it directly.
-- **valeriosafety.com** — Redirects to this site.
+- **discern.earth** — David's writing (Ghost). It keeps its own purple-and-gold brand; this site does not share it. The calling card links to it directly.

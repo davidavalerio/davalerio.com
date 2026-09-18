@@ -14,10 +14,10 @@
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><path d='M2 4 L20 36 L38 4 L30 4 L20 24 L10 4 Z' fill='%235F2D9E'/></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><path d='M2 4 L20 36 L38 4 L30 4 L20 24 L10 4 Z' fill='%2322282B'/></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
 
     <script type="application/ld+json">
     {
@@ -44,35 +44,11 @@
     </script>
     <style>
         :root {
-            /* Purple */
-            --purple-500: #481785;
-            --purple-400: #5F2D9E;
-            --purple-300: #7851A9;
-            --purple-200: #DFC4FF;
-            --purple-100: #F8F3FF;
-
-            /* Gold */
-            --gold-600: #7D5C0D;
-            --gold-500: #A47B11;
-            --gold-400: #E5A502;
-            --gold-300: #F1CB75;
-            --gold-200: #FFF0C9;
-            --gold-100: #FFFCF3;
-
-            /* Neutrals */
-            --neutral-500: #000000;
-            --neutral-400: #6E6E6E;
-            --neutral-300: #CBCBCB;
-            --neutral-200: #EFEFEF;
-            --neutral-100: #FFFFFF;
-
-            /* Semantic */
-            --color-text: #333;
-            --color-text-heading: var(--purple-500);
-            --color-text-secondary: var(--neutral-400);
-            --color-link: var(--purple-400);
-            --color-bg: var(--gold-100);
-            --color-accent: var(--gold-400);
+            --ink: #22282B;
+            --stone: #6B7075;
+            --hair: #D8D4CC;
+            --paper: #FDFCFA;
+            --accent: #97592F;
         }
 
         * {
@@ -86,11 +62,12 @@
         }
 
         body {
-            font-family: 'Josefin Sans', sans-serif;
-            font-weight: 300;
-            color: var(--color-text);
-            line-height: 1.5;
-            background: var(--color-bg);
+            font-family: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+            font-optical-sizing: auto;
+            font-weight: 400;
+            color: var(--ink);
+            line-height: 1.55;
+            background: var(--paper);
             -webkit-font-smoothing: antialiased;
             min-height: 100vh;
             min-height: 100svh;
@@ -101,84 +78,80 @@
         }
 
         a:focus-visible {
-            outline: 2px solid var(--color-accent);
+            outline: 2px solid var(--accent);
             outline-offset: 3px;
-            border-radius: 2px;
         }
 
         .card {
             text-align: center;
-            max-width: 600px;
+            max-width: 640px;
             width: 100%;
         }
 
         .headshot {
-            width: 140px;
-            height: 140px;
-            border-radius: 50%;
+            width: 132px;
+            height: 132px;
             object-fit: cover;
-            border: 3px solid var(--gold-400);
-            margin-bottom: 1.75rem;
+            border: 1px solid var(--hair);
+            margin-bottom: 2rem;
         }
 
         .name {
-            font-size: clamp(2rem, 5vw, 2.75rem);
-            font-weight: 700;
-            color: var(--color-text-heading);
-            letter-spacing: 0.02em;
-            margin-bottom: 0.5rem;
+            font-size: clamp(2rem, 5vw, 2.6rem);
+            font-weight: 600;
+            line-height: 1.1;
+            letter-spacing: 0.004em;
+            margin-bottom: 0.9rem;
         }
 
         .tagline {
-            font-size: 1.05rem;
-            color: var(--color-text-secondary);
-            font-weight: 400;
-            margin-bottom: 2rem;
+            font-size: 1.08rem;
+            color: var(--stone);
+            margin-bottom: 2.2rem;
+            text-wrap: balance;
         }
 
         .links {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 0.5rem 1.75rem;
+            gap: 0.5rem 2.1rem;
             list-style: none;
         }
 
         .links a {
-            color: var(--color-link);
+            color: var(--accent);
             text-decoration: none;
-            font-weight: 500;
-            font-size: 0.95rem;
+            font-size: 1rem;
             letter-spacing: 0.04em;
-            transition: color 0.2s, border-color 0.2s;
             padding-bottom: 2px;
             border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
         }
 
         .links a:hover {
-            color: var(--purple-500);
-            border-bottom-color: var(--gold-400);
+            border-bottom-color: var(--accent);
         }
 
         @media (max-width: 480px) {
             .headshot {
-                width: 120px;
-                height: 120px;
+                width: 116px;
+                height: 116px;
             }
 
             .links {
-                gap: 0.5rem 1.25rem;
+                gap: 0.5rem 1.4rem;
             }
 
             .links a {
-                font-size: 0.9rem;
+                font-size: 0.95rem;
             }
         }
     </style>
 </head>
 <body>
     <main class="card">
-        <img src="headshot.jpg" alt="David Valerio" class="headshot" width="140" height="140">
+        <img src="headshot.jpg" alt="David Valerio" class="headshot" width="132" height="132">
         <h1 class="name">David Valerio</h1>
         <p class="tagline">Environmental, health, and safety professional and writer in Williston, ND</p>
         <ul class="links">
