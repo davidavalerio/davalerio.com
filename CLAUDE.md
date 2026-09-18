@@ -18,6 +18,7 @@ Static HTML with inline CSS. Source Serif 4 via Google Fonts. No build step, no 
 - `consulting.html` — archived consulting page (former homepage), reachable at `/consulting.html`
 - `content.md` — plain-text copy for the calling card (edit here, then sync to index.html)
 - `headshot.jpg` — professional headshot
+- `favicon.png`, `apple-touch-icon.png` — DV favicon fallbacks
 - `CNAME` — points to davalerio.com
 
 ## Restoring the Consulting Page
@@ -28,7 +29,7 @@ Mechanically it is one move: copy `consulting.html` over `index.html`, and pull 
 
 **Name:** "David Valerio" is the canonical name. No middle initial.
 
-**Logo:** Single V mark. Slate ink as the favicon; purple on the archived consulting page. The calling card leans on the headshot instead.
+**Favicon:** the initials DV in Source Serif bold, iron oxide (`#97592F`), drawn as outlines inline in `index.html`; `favicon.png` and `apple-touch-icon.png` (same mark on the paper color) cover Safari and the iOS home screen. The archived consulting page keeps its purple V mark.
 
 ## Design System
 
