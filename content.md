@@ -23,7 +23,7 @@ The full consulting page lives at `consulting.html` and can be restored as the h
 
 **Links:**
 
-- Discern Earth → https://discern.earth
+- Writing → /writing/
 - Email → david@davalerio.com
 - LinkedIn → https://www.linkedin.com/in/davidavalerio/
 - X → https://x.com/davidavalerio
