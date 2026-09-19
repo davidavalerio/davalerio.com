@@ -23,7 +23,8 @@ The full consulting page lives at `consulting.html` and can be restored as the h
 
 **Links:**
 
-- Writing → /writing/
+- Writing → #writing (the list below the card, generated from `_writing/posts/`)
 - Email → david@davalerio.com
 - LinkedIn → https://www.linkedin.com/in/davidavalerio/
+- Substack → https://substack.com/@valerio
 - X → https://x.com/davidavalerio

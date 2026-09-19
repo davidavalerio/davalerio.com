@@ -73,73 +73,6 @@ header.site .home:hover {
     border-bottom-color: var(--ink);
 }
 
-/* Index */
-
-main.index {
-    padding: 3.5rem 0 5rem;
-}
-
-main.index h1 {
-    font-size: clamp(2rem, 5vw, 2.6rem);
-    font-weight: 600;
-    line-height: 1.1;
-    margin-bottom: 0.9rem;
-}
-
-nav.kinds {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem 1.8rem;
-    letter-spacing: 0.04em;
-}
-
-main.index section {
-    margin-top: 3.2rem;
-    scroll-margin-top: 1.5rem;
-}
-
-main.index h2 {
-    font-size: 0.85rem;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--stone);
-    padding-bottom: 0.7rem;
-    border-bottom: 1px solid var(--hair);
-}
-
-main.index ul {
-    list-style: none;
-}
-
-main.index li {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 1.5rem;
-    padding: 0.7rem 0;
-    border-bottom: 1px solid var(--hair);
-    line-height: 1.4;
-}
-
-main.index li a {
-    color: var(--ink);
-    font-size: 1.1rem;
-    text-wrap: pretty;
-}
-
-main.index li a:hover {
-    color: var(--accent);
-    border-bottom-color: transparent;
-}
-
-main.index time {
-    color: var(--stone);
-    font-size: 0.92rem;
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-}
-
 /* Piece */
 
 header.post {
@@ -373,14 +306,6 @@ footer.post {
         font-size: 1.08rem;
     }
 
-    main.index {
-        padding-top: 2.4rem;
-    }
-
-    main.index li {
-        flex-direction: column;
-        gap: 0.15rem;
-    }
 }
 
 @media print {
