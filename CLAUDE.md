@@ -63,7 +63,7 @@ Hosted on GitHub Pages. Use `/deploy` to ship changes (branches, commits, PRs, m
 - **davalerio.com** — primary domain, served from this repo.
 - **davidavalerio.com** — redirects to davalerio.com. Served from a separate GitHub Pages repo ([davidavalerio/davidavalerio.com](https://github.com/davidavalerio/davidavalerio.com)) that contains only a meta-refresh redirect and a matching 404 page.
 - **valeriosafety.com** — redirects to this site.
-- **discern.earth** — the former Discern Earth publication's domain. Served from [davidavalerio/discern.earth-redirect](https://github.com/davidavalerio/discern.earth-redirect) (local `~/Projects/discern.earth-redirect`), which holds one forwarding page per old address pointing at the same slug under `/writing/`. The domain stays registered because `alerts@discern.earth` (the daily tools) and the `david@discern.earth` alias depend on it.
+- **discern.earth** — the former Discern Earth publication's domain. Served from [davidavalerio/discern.earth-redirect](https://github.com/davidavalerio/discern.earth-redirect) (local `~/Projects/discern.earth-redirect`), which holds one forwarding page per old address pointing at the same slug under `/writing/`. The domain stays registered for the forwarding and because the `david@discern.earth` alias depends on it. The daily tools (Weather Outlook, Leo Reader, OSHA Monitor) send from `alerts@davalerio.com` through Resend, which is why this domain's DNS (Cloudflare) carries Resend's `send` and `resend._domainkey` records — leave them in place.
 
 ## Related Properties
 
