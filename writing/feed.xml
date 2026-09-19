@@ -2,7 +2,7 @@
 <rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>David Valerio — Writing</title>
-    <link>https://davalerio.com/writing/</link>
+    <link>https://davalerio.com/#writing</link>
     <atom:link href="https://davalerio.com/writing/feed.xml" rel="self" type="application/rss+xml"/>
     <description>Essays, papers, and conversations by David Valerio.</description>
     <language>en</language>
