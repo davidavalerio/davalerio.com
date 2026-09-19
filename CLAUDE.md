@@ -20,13 +20,15 @@ Static HTML. Source Serif 4 via Google Fonts. The homepage is hand-made with inl
 - `headshot.jpg` — professional headshot
 - `favicon.png`, `apple-touch-icon.png` — DV favicon fallbacks
 - `CNAME` — points to davalerio.com
-- `_writing/posts/` — one source file per piece; the filename is the slug. YAML frontmatter (`title`, `date`, `kind`: essay | paper | conversation, optional `subtitle`, `image`, `image_alt`, `image_caption`), then the body. `.html` bodies are used as they are (the pieces carried over from Ghost); `.md` bodies go through Pandoc.
+- `_writing/posts/` — one source file per piece; the filename is the slug. YAML frontmatter (`title`, `date`, `kind`: essay | paper | conversation, optional `subtitle`), then the body. `.html` bodies are used as they are (the pieces carried over from Ghost); `.md` bodies go through Pandoc.
 - `_writing/build.py` — builds `writing/` (index, one page per piece, `feed.xml`) and `sitemap.xml`. The underscore folder is not published.
-- `writing/style.css` — the writing section's stylesheet; `writing/images/`, `writing/files/` — images and downloadable PDFs the pieces use
+- `writing/style.css` — the writing section's stylesheet; `writing/files/` — downloadable PDFs the pieces link to
 
 ## Publishing a Piece
 
-Essays are drafted in the Strata vault (`2_Write/Essays/`). To publish one: copy the note to `_writing/posts/<slug>.md`, keep `title`, `subtitle`, and `date` in the frontmatter and add `kind` (defaults to essay), put any feature image in `writing/images/` and reference it as `image: /writing/images/<file>` (cap width at 2000px), run `python3 _writing/build.py`, then `/deploy`. There is no newsletter; readers follow `/writing/feed.xml`.
+Essays are drafted in the Strata vault (`2_Write/Essays/`). To publish one: copy the note to `_writing/posts/<slug>.md`, keep `title`, `subtitle`, and `date` in the frontmatter and add `kind` (defaults to essay), run `python3 _writing/build.py`, then `/deploy`. There is no newsletter; readers follow `/writing/feed.xml`.
+
+**No images on pieces.** The writing is text only — no header images, no inline photos or figures — so there is no image-rights exposure. Don't add one when publishing, and strip any that come in with a draft. Embedded podcast players and linked PDFs of David's own papers are fine.
 
 ## Restoring the Consulting Page
 
@@ -42,7 +44,7 @@ Mechanically it is one move: copy `consulting.html` over `index.html`, and pull 
 
 David's house style, shared with his documents and utility emails and separate from the Discern Earth brand: Source Serif 4 alone (regular text, semibold name), slate ink (`--ink`), stone gray tagline (`--stone`), barely warm paper (`--paper`), and one iron-oxide accent (`--accent`, `#97592F`) on the links and their hover underline. Square headshot with a hairline border. The archived `consulting.html` keeps its original purple and gold.
 
-The writing pages use the same tokens in `writing/style.css`: a 41rem measure, a hairline masthead (name left, Writing right), small-caps stone labels, italic stone subtitles, hairline-bordered images. Light only, with a print stylesheet.
+The writing pages use the same tokens in `writing/style.css`: a 41rem measure, a hairline masthead (name left, Writing right), small-caps stone labels, italic stone subtitles. Light only, with a print stylesheet.
 
 ## Layout
 
