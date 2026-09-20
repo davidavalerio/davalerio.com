@@ -42,7 +42,7 @@ Mechanically it is one move: copy `consulting.html` over `index.html`, and pull 
 
 ## Design System
 
-David's house style, shared with his documents and utility emails and separate from the Discern Earth brand: Source Serif 4 alone (regular text, semibold name), slate ink (`--ink`), stone gray tagline (`--stone`), barely warm paper (`--paper`), and one iron-oxide accent (`--accent`, `#97592F`) on the links and their hover underline. Square headshot with a hairline border. The archived `consulting.html` keeps its original purple and gold.
+David's house style, shared with his documents and utility emails and separate from the Discern Earth brand: Source Serif 4 alone (regular text, semibold name), slate ink (`--ink`), stone gray tagline (`--stone`), barely warm paper (`--paper`), and one iron-oxide accent (`--accent`, `#97592F`) on the links and their hover underline. Circular headshot with a hairline border. The archived `consulting.html` keeps its original purple and gold.
 
 The writing pages use the same tokens in `writing/style.css`: a 41rem measure, a hairline masthead (name left, Writing right), small-caps stone labels, italic stone subtitles, and a print stylesheet.
 
