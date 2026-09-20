@@ -4,7 +4,19 @@
     --hair: #D8D4CC;
     --paper: #FDFCFA;
     --accent: #97592F;
+    --quote: #3A4145;
     --measure: 41rem;
+}
+
+@media screen and (prefers-color-scheme: dark) {
+    :root {
+        --ink: #E4E0D8;
+        --stone: #9BA0A4;
+        --hair: #32383C;
+        --paper: #16191B;
+        --accent: #CB8B5C;
+        --quote: #C2C0BA;
+    }
 }
 
 * {
@@ -182,7 +194,7 @@ figcaption {
     border-left: 2px solid var(--accent);
     padding-left: 1.3em;
     font-style: italic;
-    color: #3A4145;
+    color: var(--quote);
 }
 
 .body blockquote > * + * {

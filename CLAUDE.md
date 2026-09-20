@@ -38,13 +38,15 @@ Mechanically it is one move: copy `consulting.html` over `index.html`, and pull 
 
 **Name:** "David Valerio" is the canonical name. No middle initial.
 
-**Favicon:** the initials DV in Source Serif bold, iron oxide (`#97592F`), drawn as outlines inline in `index.html`; `favicon.png` and `apple-touch-icon.png` (same mark on the paper color) cover Safari and the iOS home screen. The archived consulting page keeps its purple V mark.
+**Favicon:** the initials DV in Source Serif bold, iron oxide (`#97592F`), on a clear background, drawn as outlines inline in `index.html` (source in `_writing/favicon.txt`; the drawing switches itself to the dark-mode accent in a dark browser). `favicon.png` is the same mark as a transparent 64px fallback for Safari, rendered from the drawing with headless Chrome (`--default-background-color=00000000`). `apple-touch-icon.png` keeps the mark on the paper color, because iOS paints transparent areas black. The archived consulting page keeps its purple V mark.
 
 ## Design System
 
 David's house style, shared with his documents and utility emails and separate from the Discern Earth brand: Source Serif 4 alone (regular text, semibold name), slate ink (`--ink`), stone gray tagline (`--stone`), barely warm paper (`--paper`), and one iron-oxide accent (`--accent`, `#97592F`) on the links and their hover underline. Square headshot with a hairline border. The archived `consulting.html` keeps its original purple and gold.
 
-The writing pages use the same tokens in `writing/style.css`: a 41rem measure, a hairline masthead (name left, Writing right), small-caps stone labels, italic stone subtitles. Light only, with a print stylesheet.
+The writing pages use the same tokens in `writing/style.css`: a 41rem measure, a hairline masthead (name left, Writing right), small-caps stone labels, italic stone subtitles, and a print stylesheet.
+
+**Dark mode** follows the device setting, with no toggle: a `prefers-color-scheme: dark` block (screen only, so print stays light) swaps the token values in both `index.html` and `writing/style.css` — paper `#16191B`, ink `#E4E0D8`, stone `#9BA0A4`, hairline `#32383C`, accent `#CB8B5C` (iron oxide lightened to stay readable), block quotes `#C2C0BA`. Keep every color on a token so both modes stay in step; the two files' values must match.
 
 ## Layout
 
