@@ -6,24 +6,10 @@
     --accent: #97592F;
     --quote: #3A4145;
     --measure: 41rem;
-    color-scheme: light;
 }
 
 @media screen and (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-        color-scheme: dark;
-        --ink: #E4E0D8;
-        --stone: #9BA0A4;
-        --hair: #32383C;
-        --paper: #16191B;
-        --accent: #CB8B5C;
-        --quote: #C2C0BA;
-    }
-}
-
-@media screen {
-    :root[data-theme="dark"] {
-        color-scheme: dark;
+    :root {
         --ink: #E4E0D8;
         --stone: #9BA0A4;
         --hair: #32383C;
@@ -93,32 +79,6 @@ header.site .home {
     font-weight: 600;
     letter-spacing: 0.004em;
     font-size: 1.1rem;
-}
-
-header.site nav {
-    display: flex;
-    align-items: baseline;
-    gap: 1.6rem;
-}
-
-.theme-toggle {
-    font: inherit;
-    font-size: 0.92rem;
-    letter-spacing: 0.04em;
-    color: var(--stone);
-    background: none;
-    border: 0;
-    cursor: pointer;
-    transition: color 0.2s;
-}
-
-.theme-toggle:hover {
-    color: var(--ink);
-}
-
-.theme-toggle:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 3px;
 }
 
 header.site .home:hover {
@@ -361,10 +321,6 @@ footer.post {
 }
 
 @media print {
-    :root {
-        color-scheme: light;
-    }
-
     header.site,
     footer.post,
     .body iframe {
