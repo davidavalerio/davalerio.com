@@ -46,7 +46,6 @@
         ]
     }
     </script>
-    <script src="/theme.js"></script>
     <style>
         :root {
             --ink: #22282B;
@@ -54,23 +53,10 @@
             --hair: #D8D4CC;
             --paper: #FDFCFA;
             --accent: #97592F;
-            color-scheme: light;
         }
 
         @media screen and (prefers-color-scheme: dark) {
-            :root:not([data-theme="light"]) {
-                color-scheme: dark;
-                --ink: #E4E0D8;
-                --stone: #9BA0A4;
-                --hair: #32383C;
-                --paper: #16191B;
-                --accent: #CB8B5C;
-            }
-        }
-
-        @media screen {
-            :root[data-theme="dark"] {
-                color-scheme: dark;
+            :root {
                 --ink: #E4E0D8;
                 --stone: #9BA0A4;
                 --hair: #32383C;
@@ -107,44 +93,11 @@
             align-items: center;
             justify-content: center;
             padding: 2rem 1.5rem;
-            position: relative;
         }
 
         a:focus-visible {
             outline: 2px solid var(--accent);
             outline-offset: 3px;
-        }
-
-        .theme-toggle {
-            font: inherit;
-            font-size: 0.92rem;
-            letter-spacing: 0.04em;
-            color: var(--stone);
-            background: none;
-            border: 0;
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-
-        .theme-toggle:hover {
-            color: var(--ink);
-        }
-
-        .theme-toggle:focus-visible {
-            outline: 2px solid var(--accent);
-            outline-offset: 3px;
-        }
-
-        .card-screen .theme-toggle {
-            position: absolute;
-            top: 1.4rem;
-            right: 1.5rem;
-        }
-
-        @media print {
-            .theme-toggle {
-                display: none;
-            }
         }
 
         .card {
@@ -315,7 +268,6 @@
 <body>
     <main>
     <div class="card-screen">
-    <button type="button" class="theme-toggle" aria-label="Switch between light and dark" hidden></button>
     <div class="card">
         <img src="headshot.jpg" alt="David Valerio" class="headshot" width="132" height="132">
         <h1 class="name">David Valerio</h1>
