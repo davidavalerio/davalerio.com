@@ -54,7 +54,7 @@ The calling card is centered both vertically and horizontally in a first section
 
 ## Contact Form
 
-The Formspree endpoint `https://formspree.io/f/xnjnkknw` is wired up inside `consulting.html`. The calling card has no form — just plain `mailto:` and `tel:` links. Do not change the Formspree endpoint without explicit direction.
+The Formspree endpoint is wired up inside `consulting.html`. The calling card has no form — just plain `mailto:` and `tel:` links. Do not change the Formspree endpoint without explicit direction.
 
 ## Deployment
 
@@ -62,11 +62,10 @@ Hosted on GitHub Pages. Use `/deploy` to ship changes (branches, commits, PRs, m
 
 ## Domains
 
-- **davalerio.com** — primary domain, served from this repo.
+- **davalerio.com** — primary domain, served from this repo. Its DNS (Cloudflare) carries Resend's `send` and `resend._domainkey` records because Leo Reader and OSHA Monitor send from `digest@davalerio.com` through Resend — leave them in place.
 - **davidavalerio.com** — redirects to davalerio.com. Served from a separate GitHub Pages repo ([davidavalerio/davidavalerio.com](https://github.com/davidavalerio/davidavalerio.com)) that contains only a meta-refresh redirect and a matching 404 page.
 - **valeriosafety.com** — redirects to this site.
-- **discern.earth** — the former Discern Earth publication's domain. Served from [davidavalerio/discern.earth-redirect](https://github.com/davidavalerio/discern.earth-redirect) (local `~/Projects/discern.earth-redirect`), which holds one forwarding page per old address pointing at the same slug under `/writing/`. The domain stays registered for the forwarding and because the `david@discern.earth` alias depends on it. The daily tools (Weather Outlook, Leo Reader, OSHA Monitor) send from `digest@davalerio.com` through Resend, which is why this domain's DNS (Cloudflare) carries Resend's `send` and `resend._domainkey` records — leave them in place.
-
+- **discern.earth** — the former Discern Earth publication's domain. Served from [davidavalerio/discern.earth-redirect](https://github.com/davidavalerio/discern.earth-redirect) (local `~/Projects/discern.earth-redirect`), which holds one forwarding page per old address pointing at the same slug under `/writing/`. The domain stays registered for the forwarding and because the `david@discern.earth` alias depends on it.
 ## Related Properties
 
 - **Discern Earth podcast** — dormant; its feed and audio live on Substack (discernearth.substack.com), which Apple Podcasts and Spotify read. The conversation pages here embed the Apple player. The Substack account must stay open.
