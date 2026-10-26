@@ -65,10 +65,6 @@ def esc(s):
     return html.escape(s or "", quote=True)
 
 
-def long_date(d):
-    return "{} {}, {}".format(d.strftime("%B"), d.day, d.year)
-
-
 def load():
     posts = []
     for name in sorted(os.listdir(SRC)):
@@ -114,7 +110,7 @@ def post_page(p):
                       og_image=og_image, favicon=FAVICON)
     out += '    <main>\n        <article>\n            <header class="post">\n'
     out += '                <p class="meta">{} · <time datetime="{}">{}</time></p>\n'.format(
-        KIND_LABEL[p["kind"]], p["date"].isoformat(), long_date(p["date"]))
+        KIND_LABEL[p["kind"]], p["date"].isoformat(), p["date"].isoformat())
     out += '                <h1>{}</h1>\n'.format(esc(p["title"]))
     if p["subtitle"]:
         out += '                <p class="subtitle">{}</p>\n'.format(esc(p["subtitle"]))
@@ -155,8 +151,7 @@ def homepage_list(posts):
         out += '        <section id="{}">\n            <h3>{}</h3>\n            <ul>\n'.format(label.lower(), label)
         for p in (x for x in posts if x["kind"] == kind):
             out += '                <li><a href="/writing/{}/">{}</a><time datetime="{}">{}</time></li>\n'.format(
-                p["slug"], esc(p["title"]), p["date"].isoformat(),
-                "{} {}".format(p["date"].strftime("%b"), p["date"].year))
+                p["slug"], esc(p["title"]), p["date"].isoformat(), p["date"].isoformat())
         out += '            </ul>\n        </section>\n'
     return out + '    </section>\n'
 

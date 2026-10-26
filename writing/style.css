@@ -44,12 +44,11 @@ body {
 a {
     color: var(--accent);
     text-decoration: none;
-    border-bottom: 1px solid transparent;
-    transition: border-color 0.2s;
+    transition: color 0.2s;
 }
 
 a:hover {
-    border-bottom-color: var(--accent);
+    color: var(--ink);
 }
 
 a:focus-visible {
@@ -71,7 +70,6 @@ header.site {
     align-items: baseline;
     padding: 2rem 0 1.1rem;
     border-bottom: 1px solid var(--hair);
-    letter-spacing: 0.04em;
 }
 
 header.site .home {
@@ -81,10 +79,6 @@ header.site .home {
     font-size: 1.1rem;
 }
 
-header.site .home:hover {
-    border-bottom-color: var(--ink);
-}
-
 /* Piece */
 
 header.post {
@@ -92,9 +86,8 @@ header.post {
 }
 
 header.post .meta {
-    font-size: 0.85rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
     color: var(--stone);
     margin-bottom: 1rem;
 }
@@ -161,14 +154,6 @@ figcaption {
 .body h2 { font-size: 1.55rem; }
 .body h3 { font-size: 1.32rem; }
 .body h4 { font-size: 1.16rem; }
-
-.body a {
-    border-bottom-color: var(--hair);
-}
-
-.body a:hover {
-    border-bottom-color: var(--accent);
-}
 
 .body strong a,
 .body a strong {
@@ -298,7 +283,6 @@ footer.post {
     margin-top: 4rem;
     padding: 1.4rem 0 4rem;
     border-top: 1px solid var(--hair);
-    letter-spacing: 0.04em;
 }
 
 @media (max-width: 560px) {
