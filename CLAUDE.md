@@ -42,9 +42,9 @@ Mechanically it is one move: copy `consulting.html` over `index.html`, and pull 
 
 ## Design System
 
-David's house style, shared with his documents and utility emails and separate from the Discern Earth brand: Source Serif 4 alone (regular text, semibold name), slate ink (`--ink`), stone gray tagline (`--stone`), barely warm paper (`--paper`), and one muted-plum accent (`--accent`, `#5E4B8B`) on the links and their hover underline. Circular headshot with a hairline border. The archived `consulting.html` keeps its original purple and gold.
+The site follows the Practice Design System, David's house style shared with his documents and utility emails and separate from the Discern Earth brand. Its live version is the Design System artifact of that name (read it fresh when the site's look is in question): Source Serif 4 alone (regular text, semibold name and headings), slate ink (`--ink`), stone gray for the tagline and metadata (`--stone`), barely warm paper (`--paper`), and one muted-plum accent (`--accent`, `#5E4B8B`) on the links, which carry no underline and turn ink on hover. Square headshot with a hairline border; corners are square everywhere. Nothing on the site is set in all caps: metadata lines (kind and date above a piece, the dates in the list) are stone at 0.78rem with 0.02em tracking in normal case, and dates are written `YYYY-MM-DD`. The archived `consulting.html` keeps its original purple and gold.
 
-The writing pages use the same tokens in `writing/style.css`: a 41rem measure, a hairline masthead (name left, Writing right), small-caps stone labels, italic stone subtitles, and a print stylesheet.
+The writing pages use the same tokens in `writing/style.css`: a 41rem measure and the site's own reading scale (the system's 15px screen scale is sized for emails), a hairline masthead (name left, Writing right), italic stone subtitles, and a print stylesheet.
 
 **Dark mode** follows the device setting, with no toggle: a `prefers-color-scheme: dark` block (screen only, so print stays light) swaps the token values in both `index.html` and `writing/style.css` — paper `#16191B`, ink `#E4E0D8`, stone `#9BA0A4`, hairline `#32383C`, accent `#A08CD0` (plum lightened to stay readable), block quotes `#C2C0BA`. Keep every color on a token so both modes stay in step; the two files' values must match.
 
