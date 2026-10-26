@@ -42,7 +42,7 @@ Mechanically it is one move: copy `consulting.html` over `index.html`, and pull 
 
 ## Design System
 
-The site follows the Practice Design System, David's house style shared with his documents and utility emails and separate from the Discern Earth brand. Its live version is the Design System artifact of that name (read it fresh when the site's look is in question): Source Serif 4 alone (regular text, semibold name and headings), slate ink (`--ink`), stone gray for the tagline and metadata (`--stone`), barely warm paper (`--paper`), and one muted-plum accent (`--accent`, `#5E4B8B`) on the links, which carry no underline and turn ink on hover. Square headshot with a hairline border; corners are square everywhere. Nothing on the site is set in all caps: metadata lines (kind and date above a piece, the dates in the list) are stone at 0.78rem with 0.02em tracking in normal case, and dates are written `YYYY-MM-DD`. The archived `consulting.html` keeps its original purple and gold.
+The site follows the Practice Design System, David's house style shared with his documents and utility emails and separate from the Discern Earth brand. Its live version is the Design System artifact of that name (read it fresh when the site's look is in question): Source Serif 4 alone (regular text, semibold name and headings), slate ink (`--ink`), stone gray for the tagline and metadata (`--stone`), barely warm paper (`--paper`), and one muted-plum accent (`--accent`, `#5E4B8B`) on the links, which carry no underline and turn ink on hover. Circular headshot with a hairline border, the one round shape on the site; everything else has square corners. Nothing on the site is set in all caps: metadata lines (kind and date above a piece, the dates in the list) are stone at 0.78rem with 0.02em tracking in normal case, and dates are written `YYYY-MM-DD`. The archived `consulting.html` keeps its original purple and gold.
 
 The writing pages use the same tokens in `writing/style.css`: a 41rem measure and the site's own reading scale (the system's 15px screen scale is sized for emails), a hairline masthead (name left, Writing right), italic stone subtitles, and a print stylesheet.
 
@@ -50,7 +50,7 @@ The writing pages use the same tokens in `writing/style.css`: a 41rem measure an
 
 ## Layout
 
-The calling card is centered both vertically and horizontally in a first section that is exactly one screen (`.card-screen`, `100svh`), so the page opens as the card alone — no nav, no footer, and none of the writing list showing. The card's Writing link scrolls to `#writing`, the section below: a 41rem column with the heading, jump links to Essays / Papers / Conversations, and the three grouped lists, newest first (dates drop under titles on phones).
+The calling card is centered both vertically and horizontally in a first section that is exactly one screen (`.card-screen`, `100svh`), so the page opens as the card alone — no nav, no footer, and none of the writing list showing. The card's Writing link scrolls to `#writing`, the section below: a 56rem column (wider than the 41rem reading measure of the pieces, so the title-and-date rows have room on desktop) with the heading, jump links to Essays / Papers / Conversations, and the three grouped lists, newest first (dates drop under titles on phones).
 
 ## Contact Form
 
