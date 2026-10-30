@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Personal calling card for David Valerio, plus his writing. The homepage opens on a single-screen calling card with headshot, name, tagline, and a small set of links (Writing, email, LinkedIn, Substack, X); this is the URL David hands out at presentations and on business cards. Below the card, on the same page, is the full list of his writing — essays, papers, and podcast conversations, everything formerly published as Discern Earth. Each piece has its own page at `/writing/<slug>/`; there is no separate Writing index (`/writing/` forwards to the homepage's `#writing` section).
+Personal calling card for David Valerio, plus his writing. The homepage opens on a single-screen calling card with headshot, name, tagline, and a small set of links (Writing, email, LinkedIn, Substack, Twitter); this is the URL David hands out at presentations and on business cards. Below the card, on the same page, is the full list of his writing — essays, papers, and podcast conversations, everything formerly published as Discern Earth. Each piece has its own page at `/writing/<slug>/`; there is no separate Writing index (`/writing/` forwards to the homepage's `#writing` section).
 
 This is a personal site, not a services site. Don't propose services sections, contact forms, pricing, or training-related copy for it; "update the homepage" means extending the personal page.
 

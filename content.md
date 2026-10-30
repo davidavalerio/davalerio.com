@@ -27,4 +27,4 @@ The full consulting page lives at `consulting.html` and can be restored as the h
 - Email → david@davalerio.com
 - LinkedIn → https://www.linkedin.com/in/davidavalerio/
 - Substack → https://substack.com/@valerio
-- X → https://x.com/davidavalerio
+- Twitter → https://x.com/davidavalerio
