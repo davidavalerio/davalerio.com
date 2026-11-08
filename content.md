@@ -19,7 +19,7 @@ The full consulting page lives at `consulting.html` and can be restored as the h
 
 **Name:** David Valerio
 
-**Tagline:** Consultant and writer in Williston, ND
+**Tagline:** Consultant and writer in Williston, North Dakota
 
 **Links:**
 
