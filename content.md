@@ -1,8 +1,6 @@
 # davalerio.com Content
 
-The site is currently a minimal personal calling card while the consulting offer is paused. Edit this file, then have Claude push changes live.
-
-The full consulting page lives at `consulting.html` and can be restored as the homepage when training relaunches.
+The site is a minimal personal calling card. Edit this file, then have Claude push changes live.
 
 ---
 

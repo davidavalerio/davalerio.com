@@ -6,7 +6,7 @@ Personal calling card for David Valerio, plus his writing. The homepage opens on
 
 This is a personal site, not a services site. Don't propose services sections, contact forms, pricing, or training-related copy for it; "update the homepage" means extending the personal page.
 
-The AI consulting offer is not running. Its page is archived at `consulting.html`, reachable at `/consulting.html`, and stays as filed — it represents real positioning, so don't delete or rewrite it speculatively. Bringing it back to the homepage happens only if David asks for it. Earlier narrative is in `HISTORY.md`.
+There is no consulting page: the former AI consulting page is removed and survives only in git history.
 
 ## Stack
 
@@ -15,7 +15,6 @@ Static HTML. Source Serif 4 via Google Fonts. The homepage is hand-made with inl
 ## Files
 
 - `index.html` — the calling card plus the writing list, all styles inline. The block between the `writing:start` / `writing:end` comments is rewritten by `_writing/build.py` on every build; never edit it by hand. Everything else in the file is hand-edited
-- `consulting.html` — archived consulting page (former homepage), reachable at `/consulting.html`
 - `content.md` — plain-text copy for the calling card (edit here, then sync to index.html)
 - `headshot.jpg` — professional headshot
 - `favicon.png`, `apple-touch-icon.png` — DV favicon fallbacks
@@ -30,19 +29,15 @@ Essays are drafted in the Strata vault (`3_Write/Essays/`). To publish one: copy
 
 **No images on pieces.** The writing is text only — no header images, no inline photos or figures — so there is no image-rights exposure. Don't add one when publishing, and strip any that come in with a draft. Embedded podcast players and linked PDFs of David's own papers are fine.
 
-## Restoring the Consulting Page
-
-Mechanically it is one move: copy `consulting.html` over `index.html`, and pull the consulting-era CLAUDE.md sections (`Sections`, `Offering`, `Contact Form`) back from git history. Only on an explicit ask from David.
-
 ## Brand Identity
 
 **Name:** "David Valerio" is the canonical name. No middle initial.
 
-**Favicon:** the initials DV in Source Serif bold, muted plum (`#5E4B8B`), on a clear background, drawn as outlines inline in `index.html` (source in `_writing/favicon.txt`; the drawing switches itself to the dark-mode accent in a dark browser). `favicon.png` is the same mark as a transparent 64px fallback for Safari, rendered from the drawing with headless Chrome (`--default-background-color=00000000`). `apple-touch-icon.png` keeps the mark on the paper color, because iOS paints transparent areas black. The archived consulting page keeps its purple V mark.
+**Favicon:** the initials DV in Source Serif bold, muted plum (`#5E4B8B`), on a clear background, drawn as outlines inline in `index.html` (source in `_writing/favicon.txt`; the drawing switches itself to the dark-mode accent in a dark browser). `favicon.png` is the same mark as a transparent 64px fallback for Safari, rendered from the drawing with headless Chrome (`--default-background-color=00000000`). `apple-touch-icon.png` keeps the mark on the paper color, because iOS paints transparent areas black.
 
 ## Design System
 
-The site follows the Practice Design System, David's house style shared with his documents and utility emails and separate from the Discern Earth brand. Its live version is the Design System artifact of that name (read it fresh when the site's look is in question): Source Serif 4 alone (regular text, semibold name and headings), slate ink (`--ink`), stone gray for the tagline and metadata (`--stone`), barely warm paper (`--paper`), and one muted-plum accent (`--accent`, `#5E4B8B`) on the links, which carry no underline and turn ink on hover. Circular headshot with a hairline border, the one round shape on the site; everything else has square corners. Nothing on the site is set in all caps: metadata lines (kind and date above a piece, the dates in the list) are stone at 0.78rem with 0.02em tracking in normal case, and dates are written `YYYY-MM-DD`. The archived `consulting.html` keeps its original purple and gold.
+The site follows the Practice Design System, David's house style shared with his documents and utility emails and separate from the Discern Earth brand. Its live version is the Design System artifact of that name (read it fresh when the site's look is in question): Source Serif 4 alone (regular text, semibold name and headings), slate ink (`--ink`), stone gray for the tagline and metadata (`--stone`), barely warm paper (`--paper`), and one muted-plum accent (`--accent`, `#5E4B8B`) on the links, which carry no underline and turn ink on hover. Circular headshot with a hairline border, the one round shape on the site; everything else has square corners. Nothing on the site is set in all caps: metadata lines (kind and date above a piece, the dates in the list) are stone at 0.78rem with 0.02em tracking in normal case, and dates are written `YYYY-MM-DD`.
 
 The writing pages use the same tokens in `writing/style.css`: a 41rem measure and the site's own reading scale (the system's 15px screen scale is sized for emails), a hairline masthead (name left, Writing right), italic stone subtitles, and a print stylesheet.
 
@@ -52,9 +47,9 @@ The writing pages use the same tokens in `writing/style.css`: a 41rem measure an
 
 The calling card is centered both vertically and horizontally in a first section that is exactly one screen (`.card-screen`, `100svh`), so the page opens as the card alone — no nav, no footer, and none of the writing list showing. The card's Writing link scrolls to `#writing`, the section below: a 56rem column (wider than the 41rem reading measure of the pieces, so the title-and-date rows have room on desktop) with the heading, jump links to Essays / Papers / Conversations, and the three grouped lists, newest first (dates drop under titles on phones).
 
-## Contact Form
+## Contact
 
-The Formspree endpoint is wired up inside `consulting.html`. The calling card has no form — just plain `mailto:` and `tel:` links. Do not change the Formspree endpoint without explicit direction.
+The calling card has no form, just plain `mailto:` and `tel:` links.
 
 ## Deployment
 

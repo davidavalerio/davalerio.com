@@ -15,3 +15,7 @@ History reference: PR [#20](https://github.com/davidavalerio/davalerio.com/pull/
 When training relaunches, copy `consulting.html` over `index.html` (overwriting the calling card) and restore the consulting-era CLAUDE.md sections from git history (`Sections`, `Offering`, `Contact Form`). The Formspree endpoint and consulting copy in `consulting.html` stay live in the meantime.
 
 Also retired: "The consulting offer (AI training and implementation) is currently paused. The full consulting page is preserved at `consulting.html` and can be promoted back to the homepage when training relaunches." and, from the Files list, "Restore as homepage by copying back to `index.html`."
+
+## Consulting Page Removed
+
+In November 2026 David had the archived `consulting.html` removed from the site. It remains in git history (last version in PR [#47](https://github.com/davidavalerio/davalerio.com/pull/47)).
