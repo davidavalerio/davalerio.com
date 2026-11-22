@@ -321,7 +321,7 @@ def homepage_list(posts, maps):
     out += "".join(row(p) for p in posts[:shown])
     out += '        </ul>\n'
     if len(posts) > shown:
-        out += '        <details>\n        <summary>All writing</summary>\n        <ul>\n'
+        out += '        <details>\n        <summary>All Writing</summary>\n        <ul>\n'
         out += "".join(row(p) for p in posts[shown:])
         out += '        </ul>\n        </details>\n'
     return out + '    </section>\n'
