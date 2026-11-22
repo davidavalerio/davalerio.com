@@ -62,7 +62,7 @@ views:
     center: [-103.6244, 48.0071]
     zoom: 9.36
     terrain: true
-    show: [waterlines, shoreline, contours, streams, streets, williston, missouri, upper, yellowstone, sakakawea]
+    show: [waterlines, shoreline, contours, streams, streets, williston, missouri, yellowstone, sakakawea]
     alt: Line drawing seen from above of the Missouri River winding east from the west edge, joined by the Yellowstone from the south, past the delta at Williston to the head of Lake Sakakawea, with contours crowding the bluffs south of the river.
     caption: The Missouri from the Yellowstone to Lake Sakakawea, contours every 100 feet.
   williston:

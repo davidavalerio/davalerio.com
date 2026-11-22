@@ -150,7 +150,8 @@ def post_page(p, maps):
             out += '<figcaption>{}</figcaption>'.format(p["image_caption"])
         out += '</figure>\n'
     out += '            <div class="body">\n{}\n            </div>\n        </article>\n'.format(p["body"])
-    out += '        <footer class="post"><a href="/#writing">← Writing</a></footer>\n    </main>\n'
+    back = ("/#podcasts", "Podcasts") if p["kind"] == "conversation" else ("/#writing", "Writing")
+    out += '        <footer class="post"><a href="{}">← {}</a></footer>\n    </main>\n'.format(*back)
     return out + FOOT
 
 
