@@ -143,6 +143,8 @@ async function turnable(view) {
     const stage = el('div', 'model-stage', null);
     view.insertBefore(stage, view.firstChild);
     const canvas = el('canvas', 'model-canvas', stage);
+    canvas.setAttribute('role', 'img');   // the image it replaces lends it its description
+    canvas.setAttribute('aria-label', view.querySelector('.showpiece img')?.alt || '');
     const marks = svg('svg', stage, { class: 'model-marks', 'aria-hidden': 'true' });
     const labels = el('div', 'model-labels', stage);
     labels.setAttribute('aria-hidden', 'true');
@@ -233,6 +235,7 @@ async function turnable(view) {
         H = stage.clientHeight;
         renderer.setSize(W, H, false);
         column = W < 560 ? 92 : 170;
+        stage.classList.toggle('narrow', W < 560);
         camera.updateMatrixWorld();
         right.setFromMatrixColumn(camera.matrixWorld, 0);
         up.setFromMatrixColumn(camera.matrixWorld, 1);
@@ -371,6 +374,12 @@ async function turnable(view) {
     }
 
     controls.addEventListener('change', () => (dirty = true));
+    // If the browser takes the drawing context away, the image returns until it is given back.
+    canvas.addEventListener('webglcontextlost', () => view.classList.remove('ready'));
+    canvas.addEventListener('webglcontextrestored', () => {
+        view.classList.add('ready');
+        fit();
+    });
     view.classList.add('ready');   // the stage takes the image's place, so it has a size to fit to
     new ResizeObserver(fit).observe(stage);
     setSpacing(1);

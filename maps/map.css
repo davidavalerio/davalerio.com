@@ -290,6 +290,7 @@ body.wide .map-downloads {
     position: relative;
     height: min(86svh, 60rem);
     min-height: 26rem;
+    overflow: hidden;
 }
 
 .model-view:not(.ready) .model-stage,
@@ -322,7 +323,6 @@ body.wide .map-downloads {
 .model-marks,
 .model-labels {
     pointer-events: none;
-    overflow: visible;
 }
 
 .model-marks line,
@@ -390,6 +390,13 @@ body.wide .map-downloads {
 .model-label.layer {
     font-size: 0.95rem;
     font-weight: 600;
+}
+
+/* A narrow stage (set by model.js from the stage's own width) keeps a narrow column for the names. */
+.model-stage.narrow .model-label.layer {
+    font-size: 0.8rem;
+    white-space: normal;
+    width: 5.4rem;
 }
 
 .model-bar {
@@ -465,12 +472,6 @@ body.wide .map-downloads {
     .model-stage {
         height: 66svh;
         min-height: 22rem;
-    }
-
-    .model-label.layer {
-        font-size: 0.8rem;
-        white-space: normal;
-        width: 5.4rem;
     }
 
     .model-spacing {
