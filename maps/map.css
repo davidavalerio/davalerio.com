@@ -284,6 +284,218 @@ body.wide .map-downloads {
     border: 1px solid var(--hair);
 }
 
+/* Turnable models: the stack on its canvas, the spacing slider and the key. The image stays until the model draws. */
+
+.model-stage {
+    position: relative;
+    height: min(86svh, 60rem);
+    min-height: 26rem;
+    overflow: hidden;
+}
+
+.model-view:not(.ready) .model-stage,
+.model-view:not(.ready) .model-bar,
+.model-view:not(.ready) .model-key {
+    display: none;
+}
+
+.model-view.ready .showpiece {
+    display: none;
+}
+
+.model-canvas,
+.model-marks,
+.model-labels {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.model-canvas {
+    cursor: grab;
+}
+
+.model-canvas:active {
+    cursor: grabbing;
+}
+
+.model-marks,
+.model-labels {
+    pointer-events: none;
+}
+
+.model-marks line,
+.model-marks path {
+    stroke: var(--ink);
+    stroke-width: 0.8;
+    fill: none;
+}
+
+/* Town pins stand on the pale ground sheet in both themes, so they carry a halo of the page colour. */
+.model-marks .halo {
+    stroke: var(--paper);
+    stroke-width: 2.6;
+}
+
+.model-marks .dot {
+    fill: var(--ink);
+    stroke: var(--paper);
+    stroke-width: 1.2;
+}
+
+.model-marks .leader {
+    stroke: var(--stone);
+    stroke-width: 0.6;
+}
+
+.model-marks .north path {
+    fill: var(--ink);
+    stroke: none;
+}
+
+.model-marks .ring {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 1;
+}
+
+.model-marks .ring.light {
+    stroke: #B59F86;
+}
+
+.model-marks text {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 0.75rem;
+    fill: var(--ink);
+    text-anchor: middle;
+}
+
+.model-label {
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-family: 'Source Serif 4', Georgia, serif;
+    line-height: 1.15;
+    color: var(--ink);
+    white-space: nowrap;
+}
+
+.model-label.town {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-shadow: 0 0 3px var(--paper), 0 0 3px var(--paper), 0 0 6px var(--paper);
+}
+
+.model-label.layer {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+/* A narrow stage (set by model.js from the stage's own width) keeps a narrow column for the names. */
+.model-stage.narrow .model-label.layer {
+    font-size: 0.8rem;
+    white-space: normal;
+    width: 5.4rem;
+}
+
+.model-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 1.6rem;
+    margin-top: 0.8rem;
+    font-size: 0.9rem;
+    color: var(--stone);
+}
+
+.model-spacing {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--ink);
+}
+
+.model-spacing input {
+    width: 12rem;
+    accent-color: var(--accent);
+}
+
+.model-note {
+    margin: 0;
+}
+
+.model-key {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: 1rem 1.2rem;
+    margin: 1.4rem 0 0;
+    padding: 0;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    color: var(--stone);
+}
+
+.model-key li {
+    display: flex;
+    gap: 0.6rem;
+    margin: 0;
+}
+
+.model-key .swatch {
+    flex: none;
+    width: 0.8rem;
+    height: 0.8rem;
+    margin-top: 0.3rem;
+    border-radius: 2px;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--stone) 45%, transparent);
+}
+
+.model-key strong {
+    display: block;
+    color: var(--ink);
+    font-weight: 600;
+}
+
+.model-key span:not(.swatch) {
+    display: block;
+}
+
+@media (min-width: 1100px) {
+    .model-key {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+@media (max-width: 560px) {
+    .model-stage {
+        height: 66svh;
+        min-height: 22rem;
+    }
+
+    .model-spacing {
+        width: 100%;
+    }
+
+    .model-spacing input {
+        flex: 1;
+        width: auto;
+    }
+}
+
+@media print {
+    .model-stage,
+    .model-bar,
+    .model-key {
+        display: none !important;
+    }
+
+    .model-view .showpiece {
+        display: block !important;
+    }
+}
+
 /* Still mode: the page reduced to one view, for capturing images */
 
 html.still-mode body > :not(.map-full),

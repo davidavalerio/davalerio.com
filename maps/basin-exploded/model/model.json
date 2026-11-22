@@ -1,0 +1,117 @@
+{
+ "side": 196.0,
+ "ve": 20.0,
+ "thick": 1.25,
+ "sheets": [
+  {
+   "key": "ground",
+   "name": "Ground Surface",
+   "lines": [
+    "Elevation 2,110 ft"
+   ],
+   "n": 290,
+   "verts": 66025,
+   "exploded": 0.0,
+   "true": 0.0,
+   "wall": "#A8A499",
+   "watford_z": -0.8684
+  },
+  {
+   "key": "pierre",
+   "name": "Pierre Shale and Colorado Group",
+   "lines": [
+    "Cretaceous, 97–70 Million Years",
+    "1,960 ft Deep"
+   ],
+   "n": 290,
+   "verts": 66025,
+   "exploded": -74.0,
+   "true": -5.7996,
+   "wall": "#647B54",
+   "watford_z": -2.5188
+  },
+  {
+   "key": "bakken",
+   "name": "Bakken Formation",
+   "lines": [
+    "Devonian–Mississippian",
+    "368–357 Million Years",
+    "11,020 ft Deep"
+   ],
+   "n": 290,
+   "verts": 44658,
+   "exploded": -148.0,
+   "true": -36.2718,
+   "wall": "#2A231F",
+   "watford_z": -6.3382
+  },
+  {
+   "key": "redriver",
+   "name": "Red River Formation",
+   "lines": [
+    "Ordovician, 458–445 Million Years",
+    "13,960 ft Deep"
+   ],
+   "n": 290,
+   "verts": 66025,
+   "exploded": -222.0,
+   "true": -43.4028,
+   "wall": "#3E6D66",
+   "watford_z": -10.3446
+  },
+  {
+   "key": "basement",
+   "name": "Precambrian Basement",
+   "lines": [
+    "Over 542 Million Years",
+    "15,570 ft Deep"
+   ],
+   "n": 290,
+   "verts": 66025,
+   "exploded": -296.0,
+   "true": -48.7818,
+   "wall": "#905A5E",
+   "watford_z": -11.0596
+  }
+ ],
+ "camera": {
+  "azimuth": 22.5,
+  "elevation": 25.0
+ },
+ "light": {
+  "key": [
+   -0.85661,
+   0.35482,
+   0.37461
+  ],
+  "fill": [
+   0.35355,
+   -0.61237,
+   0.70711
+  ],
+  "ambient": 0.56,
+  "key_strength": 0.6,
+  "fill_strength": 0.2
+ },
+ "towns": {
+  "Williston": [
+   -10.378,
+   41.904,
+   -1.855
+  ],
+  "Watford City": [
+   3.391,
+   17.109,
+   -0.877
+  ],
+  "Dickinson": [
+   21.971,
+   -47.836,
+   0.271
+  ]
+ },
+ "watford": [
+  3.391,
+  17.109
+ ]
+}
