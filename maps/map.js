@@ -124,7 +124,7 @@ function scrolly(el) {
     const stage = el.querySelector('.map-stage');
     const steps = [...el.querySelectorAll('.map-step')];
     el.classList.add('live');
-    const state = makeMap(stage, name, { view: steps[0].dataset.view, interactive: true });
+    const state = makeMap(stage, name, { view: (location.hash && steps.find(s => s.id === location.hash.slice(1)) || steps[0]).dataset.view, interactive: true });
     const { map } = state;
     const handlers = ['dragPan', 'scrollZoom', 'boxZoom', 'dragRotate', 'keyboard', 'doubleClickZoom', 'touchZoomRotate', 'touchPitch'];
     const lock = on => handlers.forEach(h => (on ? map[h].disable() : map[h].enable()));
@@ -135,7 +135,9 @@ function scrolly(el) {
     button.className = 'map-explore';
     button.textContent = 'Explore Map';
     stage.append(button);
-    let active = steps[0].dataset.view;
+    // A link to a passage (#view-…) opens the map on that passage's view.
+    const linked = location.hash && steps.find(s => s.id === location.hash.slice(1));
+    let active = (linked || steps[0]).dataset.view;
     let ready = false;
     button.addEventListener('click', () => {
         const exploring = el.classList.toggle('exploring');

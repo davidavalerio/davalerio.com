@@ -130,6 +130,11 @@
     padding-top: 12svh;
 }
 
+/* A link to a passage lands it below a pinned map, not under it. */
+.scrolly .map-step {
+    scroll-margin-top: 1rem;
+}
+
 .scrolly.live .map-step:last-child {
     min-height: 0;
     padding-bottom: 35svh;
@@ -194,6 +199,10 @@
 
     .scrolly.live .map-step:first-child {
         padding-top: 4svh;
+    }
+
+    .scrolly.live .map-step {
+        scroll-margin-top: calc(40svh + 1rem);
     }
 }
 
