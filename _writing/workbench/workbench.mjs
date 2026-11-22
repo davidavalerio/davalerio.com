@@ -114,7 +114,8 @@ function saveTerrain(p, values) {
     let text = readFileSync(file, 'utf8');
     const before = piece(p.name).settings;
     const changed = before.filter(s => JSON.stringify(s.value) !== JSON.stringify(values[s.key]) && s.key in values);
-    let pal = palette(), css = pal.css;
+    const pal = palette();
+    let css = pal.css;
     for (const s of changed) {
         const v = values[s.key];
         if (s.key === 'exaggeration') text = text.replace(/^exaggeration:.*$/m, 'exaggeration: ' + num(v, 2));
@@ -127,11 +128,17 @@ function saveTerrain(p, values) {
         }
     }
     if (!changed.length) return 0;
+    const original = readFileSync(file, 'utf8');
     writeFileSync(file, text);
     writeFileSync(CSS, css);
-    // The map's page carries its definition, so rebuild the map pages for the workbench (and the site) to read it
+    // The map's page carries its definition, so rebuild the map pages for the workbench (and the site) to read it;
+    // if that fails, the definition and palette go back as they were
     const r = spawnSync('uv', ['run', '-q', '--no-project', '--with', 'pyyaml', 'python3', '_writing/build.py', '--maps-only'], { cwd: ROOT, encoding: 'utf8' });
-    if (r.status !== 0) throw new Error('build.py: ' + (r.stderr || r.stdout).trim().split('\n').pop());
+    if (r.status !== 0) {
+        writeFileSync(file, original);
+        writeFileSync(CSS, pal.css);
+        throw new Error('build.py: ' + (r.stderr || r.stdout || 'failed').trim().split('\n').pop());
+    }
     return changed.length;
 }
 
@@ -153,8 +160,12 @@ function saveModel(p, values) {
 const json = (res, code, body) => res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }).end(JSON.stringify(body));
 
 const server = createServer((req, res) => {
-    const url = new URL(req.url, 'http://x');
-    const path = normalize(decodeURIComponent(url.pathname));
+    let path;
+    try {
+        path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname));
+    } catch {
+        return res.writeHead(400).end();
+    }
     if (path.includes('..')) return res.writeHead(400).end();
     try {
         if (path === '/api/pieces') return json(res, 200, pieces());
@@ -164,6 +175,11 @@ const server = createServer((req, res) => {
             return p ? json(res, 200, p) : json(res, 404, { error: 'no such piece' });
         }
         if (m && req.method === 'POST') {
+            // Saves come only from the workbench's own page: JSON (which another site's page cannot send without
+            // asking first, and is never answered) from the same origin it is served at
+            const origin = req.headers.origin;
+            if (!/^application\/json\b/.test(req.headers['content-type'] || '') || (origin && new URL(origin).host !== req.headers.host))
+                return json(res, 403, { error: 'not from the workbench' });
             let body = '';
             req.on('data', d => (body += d));
             req.on('end', () => {

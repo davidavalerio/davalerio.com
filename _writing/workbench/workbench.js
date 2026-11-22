@@ -5,7 +5,7 @@ import GUI from './lib/lil-gui.esm.min.js';
 
 const $ = id => document.getElementById(id);
 const stage = $('stage'), panel = $('panel'), status = $('status'), saveBtn = $('save'), revertBtn = $('revert'), select = $('piece');
-let gui = null, current = null, saved = null, values = null, adapter = null;
+let gui = null, current = null, saved = null, values = null, adapter = null, generation = 0;
 
 const say = (text, cls = '') => {
     status.textContent = text;
@@ -25,7 +25,8 @@ async function modelAdapter(piece) {
     const view = document.createElement('div');
     view.className = 'model-view';
     stage.append(view);
-    const api = await turnable(view, { base: '/build/' + piece.name + '/', fields: true });
+    // drawn from the build's web copy, with the settings as saved, which may be newer than that build
+    const api = await turnable(view, { base: '/build/' + piece.name + '/', fields: true, settings: Object.fromEntries(piece.settings.map(s => [s.key, s.value])) });
     return {
         set: (k, v) => api.set(k, v),
         view: () => api.view(),
@@ -48,13 +49,18 @@ async function terrainAdapter(piece) {
     const el = document.createElement('div');
     el.className = 'wb-map';
     stage.append(el);
-    const def = piece.def;
-    const state = makeMap(el, piece.name, { view: def.start });
+    const state = makeMap(el, piece.name, { view: piece.def.start });
+    const def = state.def;   // the copy the live map reads, so edits reach show() and restyle()
     state.map.addControl(new maplibre.NavigationControl({ visualizePitch: true }), 'top-right');
     await new Promise(ok => state.map.once('load', ok));
     show(state, def.start, false);
-    // Palette edits go onto the page as overrides of the tokens, for whichever mode the screen is in
+    // The palette goes onto the page as overrides of the tokens, both modes seeded from the settings,
+    // applied for whichever mode the screen is in
     const tokens = {};
+    for (const s of piece.settings) {
+        const m = /^token\.(--map-[\w-]+)\.(light|dark)$/.exec(s.key);
+        if (m) (tokens[m[1]] ||= {})[m[2]] = s.value;
+    }
     const dark = matchMedia('(prefers-color-scheme: dark)');
     let timer = 0;
     const paint = () => {
@@ -66,6 +72,7 @@ async function terrainAdapter(piece) {
         timer = setTimeout(() => restyle(state), 150);
     };
     dark.addEventListener('change', paint);
+    paint();
     // A view is saved as it would be framed on a 1200 x 800 map: the zoom the site takes off for a smaller map is put back
     const cam = () => {
         const m = state.map, c = m.getCenter(), fit = camera({ center: [0, 0], zoom: 0 }, el).zoom;
@@ -138,19 +145,30 @@ function build(piece) {
 }
 
 async function open(name) {
+    const mine = ++generation;   // a later choice of piece wins over a load still under way
     say('Loading…');
+    select.disabled = true;
     adapter?.cleanup?.();
+    adapter = null;
+    gui?.destroy();
+    gui = null;
     stage.replaceChildren();
-    const res = await fetch('/api/piece/' + name);
-    if (!res.ok) return say('Could not read ' + name, 'error');
-    current = await res.json();
-    saved = Object.fromEntries(current.settings.map(s => [s.key, s.value]));
-    values = structuredClone(saved);
     try {
-        adapter = await ADAPTERS[current.kind](current);
+        const res = await fetch('/api/piece/' + name);
+        if (!res.ok) throw new Error('could not read it');
+        const piece = await res.json();
+        const drawn = await ADAPTERS[piece.kind](piece);
+        if (mine !== generation) return drawn.cleanup?.();
+        current = piece;
+        adapter = drawn;
+        saved = Object.fromEntries(current.settings.map(s => [s.key, s.value]));
+        values = structuredClone(saved);
     } catch (e) {
         console.error(e);
-        return say('Could not draw ' + current.title + ': ' + e.message, 'error');
+        if (mine === generation) say('Could not open ' + name + ': ' + e.message, 'error');
+        return;
+    } finally {
+        if (mine === generation) select.disabled = false;
     }
     build(current);
     history.replaceState(null, '', '?piece=' + name);
@@ -160,11 +178,11 @@ async function open(name) {
 saveBtn.addEventListener('click', async () => {
     saveBtn.disabled = true;
     say('Saving…');
-    const res = await fetch('/api/piece/' + current.name, { method: 'POST', body: JSON.stringify({ values }) });
+    const res = await fetch('/api/piece/' + current.name, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ values }) });
     const body = await res.json();
     if (!res.ok) return say('Not saved: ' + body.error, 'error') || (saveBtn.disabled = false);
     saved = Object.fromEntries(body.piece.settings.map(s => [s.key, s.value]));
-    values = structuredClone(saved);
+    Object.assign(values, structuredClone(saved));   // in place: the controls stay bound to this object
     gui.controllersRecursive().forEach(c => c.updateDisplay());
     changed();
     say(current.kind === 'model' ? 'Saved. The next rebuild uses these settings.' : 'Saved. The site changes when the map is deployed.');

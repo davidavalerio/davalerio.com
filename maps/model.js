@@ -152,7 +152,7 @@ function svg(tag, parent, attrs) {
 export async function turnable(view, opts = {}) {
     const base = opts.base || view.dataset.model;
     const model = await (await fetch(base + 'model.json', { cache: opts.fields ? 'no-store' : 'default' })).json();
-    const S = { ...model.settings };
+    const S = { ...model.settings, ...(opts.settings || {}) };   // the workbench passes the settings as saved
     const loader = new THREE.TextureLoader();
     const fielded = s => opts.fields && s.key !== 'ground';
     const [bufs, texs] = await Promise.all([
@@ -254,7 +254,8 @@ export async function turnable(view, opts = {}) {
         dirty = true;
     }
     colours();
-    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', colours);
+    const scheme = matchMedia('(prefers-color-scheme: dark)');
+    scheme.addEventListener('change', colours);
 
     function light() {
         shared.keyDir.value.copy(toward(S['light.key.azimuth'], S['light.key.elevation']));
@@ -466,7 +467,8 @@ export async function turnable(view, opts = {}) {
         fit();
     });
     view.classList.add('ready');   // the stage takes the image's place, so it has a size to fit to
-    new ResizeObserver(fit).observe(stage);
+    const resize = new ResizeObserver(fit);
+    resize.observe(stage);
     light();
     paint();
     layout();
@@ -509,7 +511,14 @@ export async function turnable(view, opts = {}) {
         },
         stop() {
             running = false;
+            resize.disconnect();
+            scheme.removeEventListener('change', colours);
             controls.dispose();
+            scene.traverse(o => {
+                o.geometry?.dispose();
+                o.material?.uniforms?.map?.value?.dispose();
+                o.material?.dispose();
+            });
             renderer.dispose();
         },
         parts: () => [...sheets.map(x => ({ id: x.s.key, label: x.s.name })), { id: 'towns', label: 'Towns' }, { id: 'plumb', label: 'Plumb Line' }, { id: 'labels', label: 'Layer Names' }],

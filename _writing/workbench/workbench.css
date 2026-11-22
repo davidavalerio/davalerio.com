@@ -101,3 +101,27 @@ body {
 .wb-map .map-label.off {
     visibility: hidden;
 }
+
+/* On a narrow screen the panel goes below the piece */
+@media (max-width: 900px) {
+    .wb-bar {
+        flex-wrap: wrap;
+    }
+
+    .wb-main {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #stage {
+        padding: 1rem;
+    }
+
+    #panel,
+    #panel .lil-gui {
+        position: static;
+        width: 100%;
+        --width: 100%;
+        max-height: none;
+    }
+}
