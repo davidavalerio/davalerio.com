@@ -342,10 +342,15 @@ def homepage_list(posts, maps):
     """The Writing column (essays and papers) and the Podcasts column (the conversations), each newest
     first, the first seven shown and the rest behind an All toggle."""
     def row(p):
-        # A conversation is listed by its guest's name ("Candice Ammori on ..." becomes "Candice Ammori").
-        title = p["title"].split(" on ")[0] if p["kind"] == "conversation" else p["title"]
-        return '            <li><a href="/writing/{}/">{}</a><time datetime="{}">{}</time></li>\n'.format(
-            p["slug"], esc(title), p["date"].isoformat(), p["date"].isoformat())
+        # A conversation is listed by its guest's name ("Candice Ammori on ..." becomes "Candice Ammori"),
+        # an appearance on another show by the show's name, linked to its episode.
+        if p["kind"] == "appearance":
+            href, title = p["url"], p["show"]
+        else:
+            href = "/writing/{}/".format(p["slug"])
+            title = p["title"].split(" on ")[0] if p["kind"] == "conversation" else p["title"]
+        return '            <li><a href="{}">{}</a><time datetime="{}">{}</time></li>\n'.format(
+            href, esc(title), p["date"].isoformat(), p["date"].isoformat())
 
     def column(ident, title, items, shown=7):
         out = '    <section id="{}">\n        <h2>{}</h2>\n        <ul class="list">\n'.format(ident, title)
@@ -356,7 +361,20 @@ def homepage_list(posts, maps):
         return out + '    </section>\n'
 
     return (column("writing", "Writing", [p for p in posts if p["kind"] != "conversation"])
-            + column("podcasts", "Podcasts", [p for p in posts if p["kind"] == "conversation"]))
+            + column("podcasts", "Podcasts", sorted([p for p in posts if p["kind"] == "conversation"] + appearances(),
+                                                    key=lambda p: p["date"], reverse=True)))
+
+
+def appearances():
+    """Episodes of other shows David was a guest on (_writing/appearances.yaml)."""
+    path = os.path.join(HERE, "appearances.yaml")
+    if not os.path.exists(path):
+        return []
+    out = []
+    for a in yaml.safe_load(open(path, encoding="utf-8")) or []:
+        d = a["date"]
+        out.append(dict(a, kind="appearance", date=d if isinstance(d, datetime.date) else datetime.date.fromisoformat(str(d))))
+    return out
 
 
 def update_homepage(posts, maps):
