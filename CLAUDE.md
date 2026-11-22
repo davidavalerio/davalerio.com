@@ -27,7 +27,7 @@ Static HTML. Source Serif 4 via Google Fonts. The homepage is hand-made with inl
 
 Essays are drafted in the Strata vault (`3_Write/Essays/`). To publish one: copy the note to `_writing/posts/<slug>.md`, keep `title`, `subtitle`, and `date` in the frontmatter and add `kind` (defaults to essay), run `python3 _writing/build.py`, then `/deploy`. There is no newsletter; readers follow `/writing/feed.xml`.
 
-**No images on pieces.** The writing is text only — no header images, no inline photos or figures — so there is no image-rights exposure. Don't add one when publishing, and strip any that come in with a draft. Embedded podcast players and linked PDFs of David's own papers are fine.
+**Images on pieces are David's own work only.** Maps, figures, renders and photos David made himself may appear on a piece, including maps built from public-domain data (USGS, NDGS, Census) or other data whose license allows publishing, credited in the caption. Nothing made by anyone else goes on a piece (no stock or borrowed photos, no header images from elsewhere), so there is no image-rights exposure; strip any that come in with a draft. Embedded podcast players and linked PDFs of David's own papers are fine.
 
 ## Brand Identity
 
