@@ -44,13 +44,17 @@ def vectors(layers, out, scratch, minzoom, maxzoom, layer_zooms=None):
     for name, (src, sql) in layers.items():
         gdal.VectorTranslate(tmp, src, format="GPKG", SQLStatement=sql, layerName=name,
                              dstSRS="EPSG:4326", accessMode="append" if os.path.exists(tmp) else None)
-    if os.path.exists(out):
-        os.remove(out)
     import json
     conf = json.dumps({k: {"minzoom": v[0], "maxzoom": v[1]} for k, v in (layer_zooms or {}).items()})
-    gdal.VectorTranslate(out, tmp, format="PMTiles",
+    mb = os.path.join(scratch, "vectors.mbtiles")
+    for f in (mb, out):
+        if os.path.exists(f):
+            os.remove(f)
+    # Written as MBTiles and converted, since not every GDAL build carries a PMTiles writer.
+    gdal.VectorTranslate(mb, tmp, format="MBTiles",
                          datasetCreationOptions=["MINZOOM={}".format(minzoom), "MAXZOOM={}".format(maxzoom),
                                                  "CONF=" + conf, "NAME=" + os.path.basename(out)])
+    subprocess.run(["pmtiles", "convert", mb, out], check=True, capture_output=True)
 
 
 def feather(fine, coarse, out, trim=30, cells=80):

@@ -31,7 +31,7 @@
 }
 
 .map-label {
-    font-family: 'Source Serif 4', Georgia, serif;
+    font-family: 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif;
     font-size: 0.9rem;
     line-height: 1.2;
     white-space: nowrap;
@@ -365,7 +365,7 @@ body.wide .map-downloads {
 }
 
 .model-marks text {
-    font-family: 'Source Serif 4', Georgia, serif;
+    font-family: 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif;
     font-size: 0.75rem;
     fill: var(--ink);
     text-anchor: middle;
@@ -375,7 +375,7 @@ body.wide .map-downloads {
     position: absolute;
     left: 0;
     top: 0;
-    font-family: 'Source Serif 4', Georgia, serif;
+    font-family: 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif;
     line-height: 1.15;
     color: var(--ink);
     white-space: nowrap;
@@ -556,4 +556,104 @@ html.still-mode .map-full.live {
         min-height: 0;
         border: 0;
     }
+}
+
+/* What a reader sees on clicking a feature, in the map's own type */
+
+.maplibregl-popup-content {
+    font-family: 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 0.85rem;
+    line-height: 1.35;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--hair);
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0.6rem 1.7rem 0.6rem 0.8rem;
+}
+
+.maplibregl-popup-tip {
+    display: none;
+}
+
+.maplibregl-popup-close-button {
+    color: var(--stone);
+    font-size: 1.1rem;
+    padding: 0 0.4rem;
+}
+
+.map-popup-title {
+    font-weight: 600;
+}
+
+.map-popup-line {
+    color: var(--stone);
+}
+
+/* The key beneath a map page's map */
+
+.map-legend {
+    margin-top: 1.4rem;
+    font-family: 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 0.85rem;
+    line-height: 1.3;
+    columns: 3 17rem;
+    column-gap: 2.5rem;
+}
+
+.map-legend h3 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin: 0 0 0.35rem;
+    break-after: avoid;
+}
+
+.map-legend ul {
+    list-style: none;
+    margin: 0 0 1rem;
+    padding: 0;
+}
+
+.map-legend li {
+    display: flex;
+    align-items: baseline;
+    gap: 0.55rem;
+    padding: 0.14rem 0;
+    break-inside: avoid;
+}
+
+.map-legend .swatch {
+    flex: none;
+    width: 1.15rem;
+    height: 0.75rem;
+    border: 1px solid var(--hair);
+    transform: translateY(0.12rem);
+}
+
+.map-legend .swatch.dot {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 50%;
+    border-color: var(--paper);
+}
+
+.map-legend .swatch.line {
+    height: 0;
+    border: 0;
+    border-top: 2px solid;
+    transform: translateY(-0.2rem);
+}
+
+.map-legend .swatch.line.dashed {
+    border-top-style: dashed;
+}
+
+.map-legend .swatch.line.dotted {
+    border-top-style: dotted;
+}
+
+.map-legend .code {
+    flex: none;
+    min-width: 2.4rem;
+    color: var(--stone);
 }

@@ -75,9 +75,31 @@ export function makeMap(el, name, opts = {}) {
         labels[id] = new maplibregl.Marker({ element: div }).setLngLat(l.at).addTo(map);
     }
     const state = { map, def, labels, name, current: null };
+    if (def.popup && opts.popups) popups(map, def.popup);
     // Restyle when the device switches between light and dark.
     dark.addEventListener('change', () => restyle(state));
     return state;
+}
+
+// Clicking a feature of the named layer shows its title and lines, each a template of {field} names;
+// a line that comes out empty is left out.
+function popups(map, { layer, title, lines = [] }) {
+    const fill = (t, p) => t.replace(/\{(\w+)\}/g, (_, k) => p[k] ?? '').replace(/^[\s,·]+|[\s,·]+$/g, '');
+    map.on('click', layer, e => {
+        const p = e.features[0].properties;
+        const box = document.createElement('div');
+        [[title, 'map-popup-title'], ...lines.map(l => [l, 'map-popup-line'])].forEach(([t, cls]) => {
+            const text = fill(t, p);
+            if (!text) return;
+            const row = document.createElement('div');
+            row.className = cls;
+            row.textContent = text;
+            box.append(row);
+        });
+        new maplibregl.Popup({ maxWidth: '18rem' }).setLngLat(e.lngLat).setDOMContent(box).addTo(map);
+    });
+    map.on('mouseenter', layer, () => (map.getCanvas().style.cursor = 'pointer'));
+    map.on('mouseleave', layer, () => (map.getCanvas().style.cursor = ''));
 }
 
 // Read the palette again and repaint every layer with it.
@@ -186,7 +208,7 @@ function scrolly(el) {
 
 function embed(el) {
     el.classList.add('live');
-    const state = makeMap(el, el.dataset.map, { view: el.dataset.view, cooperative: true });
+    const state = makeMap(el, el.dataset.map, { view: el.dataset.view, cooperative: true, popups: true });
     state.map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
     state.map.once('load', () => show(state, el.dataset.view, false));
     whenDrawn(state, el);
@@ -197,7 +219,7 @@ function full(el) {
     if (stillView) document.documentElement.classList.add('still-mode');
     el.classList.add('live');
     // On a touch screen the page must still scroll past the map, so moving it takes two fingers.
-    const state = makeMap(el, el.dataset.map, { view, interactive: !stillView, cooperative: matchMedia('(pointer: coarse)').matches });
+    const state = makeMap(el, el.dataset.map, { view, interactive: !stillView, cooperative: matchMedia('(pointer: coarse)').matches, popups: !stillView });
     if (!stillView) state.map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
     state.map.once('load', () => {
         show(state, view, false);
