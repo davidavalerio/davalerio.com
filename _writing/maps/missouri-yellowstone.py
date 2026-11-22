@@ -32,17 +32,17 @@ maptiles.vectors({name: (gpkg, "SELECT * FROM " + name) for name in
                  layer_zooms={"contours": (8, 14), "waterlines": (8, 14), "streets": (8, 14)})
 
 # 3DEP at 100 m over 160 km around the drawing, so tilted views have land past its edge.
-coarse = os.path.join(scratch, "region-dem-missouri.tif")
+coarse = os.path.join(scratch, "region-dem-missouri-2.tif")
 if not os.path.exists(coarse):
     time.sleep(2)
     urllib.request.urlretrieve(
         "https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer/exportImage"
-        "?bbox=508000,5244000,668000,5404000&bboxSR=32613&imageSR=32613&size=1600,1600"
+        "?bbox=508000,5234000,688000,5404000&bboxSR=32613&imageSR=32613&size=1800,1700"
         "&format=tiff&pixelType=F32&interpolation=RSP_BilinearInterpolation&f=image", coarse)
 fine = os.path.join(scratch, "fine-dem.tif")
 maptiles.feather(os.path.join(SRC, "Elevation 10m.tif"), coarse, fine, trim=5, cells=150)
 n = maptiles.terrain([coarse, fine], os.path.join(OUT, "terrain.pmtiles"), scratch,
-                     region=(-104.65, 47.33, -102.75, 48.78), core=(-104.45, 47.78, -103.33, 48.52),
+                     region=(-104.65, 47.33, -102.6, 48.78), core=(-104.45, 47.68, -102.9, 48.42),
                      region_maxzoom=10, core_maxzoom=12)
 print("terrain tiles:", n)
 for f in ("vectors.pmtiles", "terrain.pmtiles"):

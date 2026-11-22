@@ -150,7 +150,8 @@ def post_page(p, maps):
             out += '<figcaption>{}</figcaption>'.format(p["image_caption"])
         out += '</figure>\n'
     out += '            <div class="body">\n{}\n            </div>\n        </article>\n'.format(p["body"])
-    out += '        <footer class="post"><a href="/#writing">← Writing</a></footer>\n    </main>\n'
+    back = ("/#podcasts", "Podcasts") if p["kind"] == "conversation" else ("/#writing", "Writing")
+    out += '        <footer class="post"><a href="{}">← {}</a></footer>\n    </main>\n'.format(*back)
     return out + FOOT
 
 
@@ -338,19 +339,24 @@ FORWARD = """<!DOCTYPE html>
 
 
 def homepage_list(posts, maps):
-    """The Writing column: every piece, newest first, the first 14 shown and the rest behind All Writing."""
+    """The Writing column (essays and papers) and the Podcasts column (the conversations), each newest
+    first, the first seven shown and the rest behind an All toggle."""
     def row(p):
+        # A conversation is listed by its guest's name ("Candice Ammori on ..." becomes "Candice Ammori").
+        title = p["title"].split(" on ")[0] if p["kind"] == "conversation" else p["title"]
         return '            <li><a href="/writing/{}/">{}</a><time datetime="{}">{}</time></li>\n'.format(
-            p["slug"], esc(p["title"]), p["date"].isoformat(), p["date"].isoformat())
-    shown = 14
-    out = '    <section id="writing">\n        <h2>Writing</h2>\n        <ul>\n'
-    out += "".join(row(p) for p in posts[:shown])
-    out += '        </ul>\n'
-    if len(posts) > shown:
-        out += '        <details>\n        <summary>All Writing</summary>\n        <ul>\n'
-        out += "".join(row(p) for p in posts[shown:])
-        out += '        </ul>\n        </details>\n'
-    return out + '    </section>\n'
+            p["slug"], esc(title), p["date"].isoformat(), p["date"].isoformat())
+
+    def column(ident, title, items, shown=7):
+        out = '    <section id="{}">\n        <h2>{}</h2>\n        <ul class="list">\n'.format(ident, title)
+        out += "".join(row(p) for p in items[:shown]) + '        </ul>\n'
+        if len(items) > shown:
+            out += '        <details>\n        <summary>All {}</summary>\n        <ul class="list">\n'.format(title)
+            out += "".join(row(p) for p in items[shown:]) + '        </ul>\n        </details>\n'
+        return out + '    </section>\n'
+
+    return (column("writing", "Writing", [p for p in posts if p["kind"] != "conversation"])
+            + column("podcasts", "Podcasts", [p for p in posts if p["kind"] == "conversation"]))
 
 
 def update_homepage(posts, maps):
