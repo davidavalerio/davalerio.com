@@ -56,7 +56,7 @@ maptiles.vectors({
 
 # 3DEP at 600 m over 600 km around the project, so the relief runs on past the project's own
 # elevation instead of ending at a cliff, and the project's 150 m faded into it.
-coarse = os.path.join(scratch, "region-dem.tif")
+coarse = os.path.join(scratch, "region-dem-geology.tif")
 if not os.path.exists(coarse):
     time.sleep(2)
     urllib.request.urlretrieve(

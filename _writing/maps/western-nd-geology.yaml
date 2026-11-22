@@ -311,6 +311,7 @@ views:
   west:
     center: [-102.3, 47.45]
     zoom: 6.25
+    terrain: true
     show: [units, hillshade, counties, ice-known, ice-uncertain, erratics, eskers, towns, bismarck, minot, williston, dickinson, lake-sakakawea,
       missouri-river, little-missouri-river, yellowstone-river]
     alt: 'Western North Dakota colored by surface geology: greens and blues of glacial sediment north and east of the Missouri River, tans and

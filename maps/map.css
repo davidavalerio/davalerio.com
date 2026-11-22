@@ -586,6 +586,12 @@ html.still-mode .map-full.live {
     font-weight: 600;
 }
 
+.map-popup-item + .map-popup-item {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--hair);
+}
+
 .map-popup-line {
     color: var(--stone);
 }
@@ -623,6 +629,8 @@ html.still-mode .map-full.live {
 }
 
 .map-legend .swatch {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
     flex: none;
     width: 1.15rem;
     height: 0.75rem;

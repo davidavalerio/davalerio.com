@@ -86,16 +86,25 @@ export function makeMap(el, name, opts = {}) {
 function popups(map, { layer, title, lines = [] }) {
     const fill = (t, p) => t.replace(/\{(\w+)\}/g, (_, k) => p[k] ?? '').replace(/^[\s,·]+|[\s,·]+$/g, '');
     map.on('click', layer, e => {
-        const p = e.features[0].properties;
+        // Several features can share a point (two parishes at one address): each gets its own block.
         const box = document.createElement('div');
-        [[title, 'map-popup-title'], ...lines.map(l => [l, 'map-popup-line'])].forEach(([t, cls]) => {
-            const text = fill(t, p);
-            if (!text) return;
-            const row = document.createElement('div');
-            row.className = cls;
-            row.textContent = text;
-            box.append(row);
-        });
+        const seen = new Set();
+        for (const f of e.features) {
+            const key = JSON.stringify(f.properties);
+            if (seen.has(key)) continue;
+            seen.add(key);
+            const block = document.createElement('div');
+            block.className = 'map-popup-item';
+            [[title, 'map-popup-title'], ...lines.map(l => [l, 'map-popup-line'])].forEach(([t, cls]) => {
+                const text = fill(t, f.properties);
+                if (!text) return;
+                const row = document.createElement('div');
+                row.className = cls;
+                row.textContent = text;
+                block.append(row);
+            });
+            box.append(block);
+        }
         new maplibregl.Popup({ maxWidth: '18rem' }).setLngLat(e.lngLat).setDOMContent(box).addTo(map);
     });
     map.on('mouseenter', layer, () => (map.getCanvas().style.cursor = 'pointer'));

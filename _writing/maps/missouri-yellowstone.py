@@ -32,7 +32,7 @@ maptiles.vectors({name: (gpkg, "SELECT * FROM " + name) for name in
                  layer_zooms={"contours": (8, 14), "waterlines": (8, 14), "streets": (10, 14)})
 
 # 3DEP at 100 m over 160 km around the drawing, so tilted views have land past its edge.
-coarse = os.path.join(scratch, "region-dem.tif")
+coarse = os.path.join(scratch, "region-dem-missouri.tif")
 if not os.path.exists(coarse):
     time.sleep(2)
     urllib.request.urlretrieve(

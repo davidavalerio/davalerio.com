@@ -286,7 +286,8 @@ def map_page(name, m):
     url = "{}/maps/{}/".format(SITE, name)
     interactive = "views" in m
     share = still_url(name, m["start"]) if interactive else "/maps/{}/{}".format(name, m["image"])
-    head = '\n    <link rel="stylesheet" href="/maps/map.css">'
+    head = ('\n    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">'
+            '\n    <link rel="stylesheet" href="/maps/map.css">')
     if m.get("model"):
         head += '\n    <script type="module" src="/maps/model.js"></script>'
     out = HEAD.format(title=esc(m["title"]) + " — David Valerio", og_title=esc(m["title"]),
