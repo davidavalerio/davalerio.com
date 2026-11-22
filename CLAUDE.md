@@ -21,11 +21,11 @@ Static HTML. Source Serif 4 via Google Fonts. The homepage is hand-made with inl
 - `CNAME` — points to davalerio.com
 - `_writing/posts/` — one source file per piece; the filename is the slug. YAML frontmatter (`title`, `date`, `kind`: essay | paper | conversation, optional `subtitle`), then the body. `.html` bodies are used as they are (the pieces carried over from Ghost); `.md` bodies go through Pandoc.
 - `_writing/build.py` — builds `writing/` (one page per piece, `feed.xml`, the `/writing/` forward), refreshes the homepage's writing list, and writes `sitemap.xml`. The underscore folder is not published.
-- `writing/style.css` — the writing section's stylesheet; `writing/files/` — downloadable PDFs the pieces link to
+- `writing/style.css` — the writing section's stylesheet; `writing/files/` — downloadable PDFs the pieces link to and the images they show
 
 ## Publishing a Piece
 
-Essays are drafted in the Strata vault (`3_Write/Essays/`). To publish one: copy the note to `_writing/posts/<slug>.md`, keep `title`, `subtitle`, and `date` in the frontmatter and add `kind` (defaults to essay), run `python3 _writing/build.py`, then `/deploy`. There is no newsletter; readers follow `/writing/feed.xml`.
+Essays are drafted in the Strata vault (`3_Write/Essays/`). To publish one: copy the note to `_writing/posts/<slug>.md`, keep `title`, `subtitle`, and `date` in the frontmatter and add `kind` (defaults to essay), copy any image the note shows into `writing/files/` and point its link at `/writing/files/<name>`, run `python3 _writing/build.py`, then `/deploy`. There is no newsletter; readers follow `/writing/feed.xml`.
 
 **Images on pieces are David's own work only.** Maps, figures, renders and photos David made himself may appear on a piece, including maps built from public-domain data (USGS, NDGS, Census) or other data whose license allows publishing, credited in the caption. Nothing made by anyone else goes on a piece (no stock or borrowed photos, no header images from elsewhere), so there is no image-rights exposure; strip any that come in with a draft. Embedded podcast players and linked PDFs of David's own papers are fine.
 
