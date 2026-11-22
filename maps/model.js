@@ -2,26 +2,45 @@
 // Drive build writes into maps/<name>/<model>/ (model.json, and per sheet a .bin and a .jpg;
 // the format is described in the build's web.py). Readers turn and zoom the stack, and a
 // slider moves the sheets between the print's even spacing and their true depths. Without
-// WebGL 2, or if anything fails, the page keeps its image and PDF.
+// WebGL 2, or if anything fails, the page keeps its image.
+//
+// The workbench (_writing/workbench) uses the same viewer through `turnable`, with
+// `fields: true` to colour the sheets live from their -field.png files, and changes the
+// build's settings through the returned `set`, `show` and `view`.
 import * as THREE from './lib/three.module.min.js';
 import { OrbitControls } from './lib/OrbitControls.js';
 
 const TAN = '#B59F86';
 const PINS = { 'Williston': 54, 'Watford City': 38, 'Dickinson': 22 };
+const SHAPE = ['ve', 'gap', 'thick'];
 const rad = d => (d * Math.PI) / 180;
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const coarse = matchMedia('(pointer: coarse)').matches;
 const SVG = 'http://www.w3.org/2000/svg';
 
-const VERT = `varying vec2 vUv; varying vec3 vN;
-void main() { vUv = uv; vN = normal; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+const VERT = `attribute float bottom; uniform float veScale; uniform float thick; varying vec2 vUv; varying vec3 vN;
+void main() {
+    vUv = uv;
+    vec3 p = position;
+    p.z = p.z * veScale - bottom * thick;
+    vN = vec3(normal.xy, normal.z / veScale);   // a surface stretched upward tilts its normals toward the side
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+}`;
 // The print's lighting: each sheet's colour times ambient plus a key and a fill light, matte, no shadows.
-const FRAG = `uniform sampler2D map; uniform bool useMap; uniform vec3 color; uniform vec3 keyDir; uniform vec3 fillDir;
-uniform float ambient; uniform float keyStrength; uniform float fillStrength; varying vec2 vUv; varying vec3 vN;
+// mode 0: the sheet's coloured texture; 1: one colour; 2: a field (red rim to bowl, green contour line)
+// coloured here, mixed in sRGB as the build mixes it.
+const FRAG = `uniform sampler2D map; uniform int mode; uniform vec3 color; uniform vec3 rim; uniform vec3 bowl; uniform vec3 line;
+uniform vec3 keyDir; uniform vec3 fillDir; uniform float ambient; uniform float keyStrength; uniform float fillStrength;
+varying vec2 vUv; varying vec3 vN;
+vec3 linear(vec3 c) { return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(0.04045, c)); }
 void main() {
     vec3 n = normalize(vN);
     float l = ambient + keyStrength * max(dot(n, keyDir), 0.0) + fillStrength * max(dot(n, fillDir), 0.0);
-    gl_FragColor = vec4((useMap ? texture2D(map, vUv).rgb : color) * l, 1.0);
+    vec3 base;
+    if (mode == 0) base = texture2D(map, vUv).rgb;
+    else if (mode == 1) base = color;
+    else { vec2 f = texture2D(map, vUv).rg; base = linear(mix(mix(rim, bowl, f.r), line, f.g)); }
+    gl_FragColor = vec4(base * l, 1.0);
     #include <colorspace_fragment>
 }`;
 
@@ -33,26 +52,15 @@ function supported() {
     }
 }
 
-function material(light, map, color) {
-    return new THREE.ShaderMaterial({
-        vertexShader: VERT,
-        fragmentShader: FRAG,
-        uniforms: {
-            map: { value: map || null },
-            useMap: { value: !!map },
-            color: { value: new THREE.Color(color || '#000000') },
-            keyDir: { value: new THREE.Vector3(...light.key) },
-            fillDir: { value: new THREE.Vector3(...light.fill) },
-            ambient: { value: light.ambient },
-            keyStrength: { value: light.key_strength },
-            fillStrength: { value: light.fill_strength },
-        },
-    });
+const srgb = hex => new THREE.Vector3(...[1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255));
+function toward(az, el) {   // a unit vector pointing at a light, from compass azimuth and elevation
+    const a = rad(az), e = rad(el);
+    return new THREE.Vector3(Math.sin(a) * Math.cos(e), Math.cos(a) * Math.cos(e), Math.sin(e));
 }
 
-// One sheet: its top from the mask and vertices, and its cut edge a wall `thick` miles deep.
-function sheet(s, buf, tex, model) {
-    const N = s.n, M = N + 1, side = model.side, thick = model.thick;
+// One sheet: its top from the mask and vertices, and its cut edge a wall whose depth is set by `thick`.
+function sheet(s, buf, model, light) {
+    const N = s.n, M = N + 1, side = model.side;
     const Q = new Uint8Array(buf, 0, N * N);
     const P = new Float32Array(buf, Math.ceil((N * N) / 4) * 4, s.verts * 3);
     const used = new Uint8Array(M * M);
@@ -90,25 +98,40 @@ function sheet(s, buf, tex, model) {
     const top = new THREE.BufferGeometry();
     top.setAttribute('position', new THREE.BufferAttribute(P, 3));
     top.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    top.setAttribute('bottom', new THREE.BufferAttribute(new Float32Array(s.verts), 1));
     top.setIndex(new THREE.BufferAttribute(new Uint32Array(index), 1));
     top.computeVertexNormals();
 
     // Each edge runs with the sheet on its left seen from above, so its wall faces outward.
-    const w = new Float32Array((edges.length / 2) * 18), rim = [];
+    const n = edges.length / 2, w = new Float32Array(n * 18), low = new Float32Array(n * 6), rim = [];
     for (let e = 0; e < edges.length; e += 2) {
         const p0 = edges[e] * 3, p1 = edges[e + 1] * 3, o = (e / 2) * 18;
         const x0 = P[p0], y0 = P[p0 + 1], z0 = P[p0 + 2], x1 = P[p1], y1 = P[p1 + 1], z1 = P[p1 + 2];
-        w.set([x0, y0, z0, x0, y0, z0 - thick, x1, y1, z1 - thick, x0, y0, z0, x1, y1, z1 - thick, x1, y1, z1], o);
+        w.set([x0, y0, z0, x0, y0, z0, x1, y1, z1, x0, y0, z0, x1, y1, z1, x1, y1, z1], o);
+        low.set([0, 1, 1, 0, 1, 0], (e / 2) * 6);
         if (e % 8 === 0) rim.push(new THREE.Vector3(x0, y0, z0));
     }
     const wall = new THREE.BufferGeometry();
     wall.setAttribute('position', new THREE.BufferAttribute(w, 3));
-    wall.computeVertexNormals();
+    wall.setAttribute('bottom', new THREE.BufferAttribute(low, 1));
+    // flat normals, facing out from each edge
+    const nrm = new Float32Array(n * 18);
+    for (let k = 0; k < n; k++) {
+        const o = k * 18, dx = w[o + 6] - w[o], dy = w[o + 7] - w[o + 1], len = Math.hypot(dx, dy) || 1;
+        for (let v = 0; v < 6; v++) nrm.set([dy / len, -dx / len, 0], o + v * 3);
+    }
+    wall.setAttribute('normal', new THREE.BufferAttribute(nrm, 3));
 
+    const uniforms = (extra) => ({
+        map: { value: null }, mode: { value: 1 }, color: { value: new THREE.Color() },
+        rim: { value: new THREE.Vector3() }, bowl: { value: new THREE.Vector3() }, line: { value: new THREE.Vector3() },
+        ...light, ...extra,
+    });
+    const topMat = new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, uniforms: uniforms({}) });
+    const wallMat = new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, uniforms: uniforms({}) });
     const group = new THREE.Group();
-    group.add(new THREE.Mesh(top, material(model.light, tex)));
-    group.add(new THREE.Mesh(wall, material(model.light, null, s.wall)));
-    return { s, group, rim, zmin, zmax: zmax, Q, N };
+    group.add(new THREE.Mesh(top, topMat), new THREE.Mesh(wall, wallMat));
+    return { s, group, rim, zmin, zmax, Q, N, topMat, wallMat };
 }
 
 function el(tag, cls, parent, text) {
@@ -126,16 +149,18 @@ function svg(tag, parent, attrs) {
     return e;
 }
 
-async function turnable(view) {
-    const base = view.dataset.model;
-    const model = await (await fetch(base + 'model.json')).json();
+export async function turnable(view, opts = {}) {
+    const base = opts.base || view.dataset.model;
+    const model = await (await fetch(base + 'model.json', { cache: opts.fields ? 'no-store' : 'default' })).json();
+    const S = { ...model.settings, ...(opts.settings || {}) };   // the workbench passes the settings as saved
     const loader = new THREE.TextureLoader();
+    const fielded = s => opts.fields && s.key !== 'ground';
     const [bufs, texs] = await Promise.all([
-        Promise.all(model.sheets.map(s => fetch(base + s.key + '.bin').then(r => {
+        Promise.all(model.sheets.map(s => fetch(base + s.key + '.bin', { cache: opts.fields ? 'no-store' : 'default' }).then(r => {
             if (!r.ok) throw new Error(s.key + '.bin ' + r.status);
             return r.arrayBuffer();
         }))),
-        Promise.all(model.sheets.map(s => loader.loadAsync(base + s.key + '.jpg'))),
+        Promise.all(model.sheets.map(s => loader.loadAsync(base + s.key + (fielded(s) ? '-field.png' : '.jpg')))),
     ]);
 
     // The page around the canvas
@@ -159,9 +184,11 @@ async function turnable(view) {
     const note = el('p', 'model-note', bar);
     const key = el('ul', 'model-key', null);
     bar.after(key);
+    const swatches = {};
     for (const s of model.sheets) {
         const li = el('li', null, key);
-        el('span', 'swatch', li).style.background = s.wall;
+        swatches[s.key] = el('span', 'swatch', li);
+        swatches[s.key].style.background = s.wall;
         const t = el('div', null, li);
         el('strong', null, t, s.name);
         for (const line of s.lines) el('span', null, t, line);
@@ -172,12 +199,22 @@ async function turnable(view) {
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     const scene = new THREE.Scene();
     const aniso = renderer.capabilities.getMaxAnisotropy();
-    texs.forEach(t => {
-        t.colorSpace = THREE.SRGBColorSpace;
+    // Shared by every sheet's materials, so a change to the shape or the light reaches all of them.
+    const shared = {
+        veScale: { value: 1 }, thick: { value: model.thick },
+        keyDir: { value: new THREE.Vector3() }, fillDir: { value: new THREE.Vector3() },
+        ambient: { value: 0 }, keyStrength: { value: 0 }, fillStrength: { value: 0 },
+    };
+    const sheets = model.sheets.map((s, i) => sheet(s, bufs[i], model, shared));
+    sheets.forEach((x, i) => {
+        const t = texs[i];
+        t.colorSpace = fielded(x.s) ? THREE.NoColorSpace : THREE.SRGBColorSpace;
         t.anisotropy = aniso;
+        x.topMat.uniforms.map.value = t;
+        x.topMat.uniforms.mode.value = fielded(x.s) ? 2 : 0;
+        x.wallMat.uniforms.color.value.setStyle(x.s.wall);
+        scene.add(x.group);
     });
-    const sheets = model.sheets.map((s, i) => sheet(s, bufs[i], texs[i], model));
-    sheets.forEach(x => scene.add(x.group));
 
     // The plumb line under Watford City: a thin rod, ink, light tan where the dark Bakken lies behind it
     const K = 80;
@@ -193,8 +230,6 @@ async function turnable(view) {
 
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 6000);
     camera.up.set(0, 0, 1);
-    const az = rad(model.camera.azimuth), el_ = rad(model.camera.elevation);
-    const dir = new THREE.Vector3(Math.sin(az) * Math.cos(el_), Math.cos(az) * Math.cos(el_), -Math.sin(el_));
     const controls = new OrbitControls(camera, canvas);
     controls.enablePan = false;
     controls.enableDamping = true;
@@ -209,23 +244,61 @@ async function turnable(view) {
     }
 
     let t = 1, ink = new THREE.Color(), dirty = true;
-    const level = s => s.true + (s.exploded - s.true) * t;
+    const shown = { towns: true, plumb: true, labels: true };
+    const ve = () => S.ve / model.ve;   // the geometry is built at model.ve
+    const exploded = x => -model.sheets.indexOf(x.s) * S.gap;
+    const level = x => x.s.true * ve() + (exploded(x) - x.s.true * ve()) * t;
     const tan = new THREE.Color(TAN);
     function colours() {
         ink.setStyle(css('--ink') || '#22282B');
         dirty = true;
     }
     colours();
-    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', colours);
+    const scheme = matchMedia('(prefers-color-scheme: dark)');
+    scheme.addEventListener('change', colours);
 
+    function light() {
+        shared.keyDir.value.copy(toward(S['light.key.azimuth'], S['light.key.elevation']));
+        shared.fillDir.value.copy(toward(S['light.fill.azimuth'], S['light.fill.elevation']));
+        shared.ambient.value = S['light.ambient'];
+        shared.keyStrength.value = S['light.key.strength'];
+        shared.fillStrength.value = S['light.fill.strength'];
+        dirty = true;
+    }
+    // In the workbench, sheets below the ground take their colours from the settings; their walls follow,
+    // a darker mix of rim and bowl, as the build makes them.
+    function paint() {
+        for (const x of sheets) {
+            if (!fielded(x.s)) continue;
+            const c = part => S['color.' + x.s.key + '.' + part];
+            if (!c('rim')) continue;
+            const u = x.topMat.uniforms;
+            u.rim.value.copy(srgb(c('rim')));
+            u.bowl.value.copy(srgb(c('bowl')));
+            u.line.value.copy(srgb(c('contour')));
+            const wall = u.rim.value.clone().add(u.bowl.value).multiplyScalar(0.5 * 0.72);
+            const hex = '#' + wall.toArray().map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join('');
+            x.wallMat.uniforms.color.value.setStyle(hex);
+            swatches[x.s.key].style.background = hex;
+        }
+        dirty = true;
+    }
+
+    const visible = () => sheets.filter(x => x.group.visible);
     function stack() {
-        const top = level(sheets[0].s) + sheets[0].zmax, bottom = level(sheets.at(-1).s) + sheets.at(-1).zmin - model.thick;
+        const v = visible().length ? visible() : sheets;
+        const top = level(v[0]) + v[0].zmax * ve(), bottom = level(v.at(-1)) + v.at(-1).zmin * ve() - S.thick;
         return { top, bottom, mid: (top + bottom) / 2 };
     }
-    const target = new THREE.Vector3(0, 0, stack().mid);
-    camera.position.copy(target).addScaledVector(dir, -3000);
-    controls.target.copy(target);
-    controls.update();
+    function aim(azimuth, elevation) {   // point the camera from a compass azimuth and an angle above the horizon
+        const a = rad(azimuth), e = rad(elevation);
+        const dir = new THREE.Vector3(Math.sin(a) * Math.cos(e), Math.cos(a) * Math.cos(e), -Math.sin(e));
+        controls.target.set(0, 0, stack().mid);
+        camera.position.copy(controls.target).addScaledVector(dir, -3000);
+        camera.lookAt(controls.target);
+        controls.update();
+    }
+    aim(S.camera.azimuth, S.camera.elevation);
 
     // Frame the stack in the canvas, leaving a column on the right for the layer names
     let W = 1, H = 1, column = 0;
@@ -241,8 +314,8 @@ async function turnable(view) {
         up.setFromMatrixColumn(camera.matrixWorld, 1);
         let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
         const r = model.side / 2;
-        for (const x of sheets)
-            for (const z of [level(x.s) + x.zmax, level(x.s) + x.zmin - model.thick])
+        for (const x of visible().length ? visible() : sheets)
+            for (const z of [level(x) + x.zmax * ve(), level(x) + x.zmin * ve() - S.thick])
                 for (let k = 0; k < 64; k++) {
                     const a = (k / 64) * 2 * Math.PI;
                     p.set(r * Math.cos(a), r * Math.sin(a), z).sub(controls.target);
@@ -260,22 +333,28 @@ async function turnable(view) {
         dirty = true;
     }
 
-    function setSpacing(v) {
-        const before = stack().mid;
-        t = v;
-        sheets.forEach(x => (x.group.position.z = level(x.s)));
+    // Lay the sheets out for the slider's position and the shape settings, keeping the stack in frame
+    function layout() {
+        const before = controls.target.z;
+        shared.veScale.value = ve();
+        shared.thick.value = S.thick;
+        sheets.forEach(x => (x.group.position.z = level(x)));
         const dz = stack().mid - before;
         controls.target.z += dz;
         camera.position.z += dz;
-        const top = level(sheets[0].s) + sheets[0].s.watford_z, bottom = level(sheets.at(-1).s) + sheets.at(-1).s.watford_z;
+        const on = visible().length ? visible() : sheets;   // the rod runs from the top shown sheet to the bottom one
+        const top = level(on[0]) + on[0].s.watford_z * ve(), bottom = level(on.at(-1)) + on.at(-1).s.watford_z * ve();
         rod.position.z = bottom;
         rod.scale.z = top - bottom;
-        note.textContent = 'Relief exaggerated ' + model.ve + ' times. ' + (t < 0.002
+        note.textContent = 'Relief exaggerated ' + S.ve + ' times. ' + (t < 0.002
             ? 'Layers at their true depths, exaggerated the same.'
             : 'Layer spacing not to scale.') + ' Depths at Watford City.' + (coarse ? ' Two fingers turn and zoom.' : ' Drag to turn, scroll to zoom.');
         fit();
     }
-    slider.addEventListener('input', () => setSpacing(+slider.value));
+    slider.addEventListener('input', () => {
+        t = +slider.value;
+        layout();
+    });
 
     // Marks drawn over the canvas each frame: town pins, layer names with leaders, the plumb line's rings,
     // a north arrow and a scale bar
@@ -294,11 +373,14 @@ async function turnable(view) {
     nlabel.textContent = 'N';
     const scaleG = svg('g', marks, { class: 'scale' });
     const sbar = svg('path', scaleG, {}), slabel = svg('text', scaleG, {});
+    const hide = (e, off) => (e.style.display = off ? 'none' : '');
 
     function drawMarks() {
         marks.setAttribute('viewBox', `0 0 ${W} ${H}`);
+        const groundOn = sheets[0].group.visible;
         for (const tw of towns) {
-            const [x, y] = screen(tw.xyz[0], tw.xyz[1], tw.xyz[2] + level(sheets[0].s));
+            [tw.halo, tw.line, tw.dot, tw.label].forEach(e => hide(e, !shown.towns || !groundOn));
+            const [x, y] = screen(tw.xyz[0], tw.xyz[1], tw.xyz[2] * ve() + level(sheets[0]));
             const hgt = PINS[tw.n];
             for (const line of [tw.halo, tw.line])
                 Object.entries({ x1: x, y1: y, x2: x, y2: y - hgt }).forEach(([k, val]) => line.setAttribute(k, val));
@@ -307,17 +389,19 @@ async function turnable(view) {
             tw.label.style.transform = `translate(${x}px, ${y - hgt - 2}px) translate(-50%, -100%)`;
         }
         // Each name sits in a column right of the stack, level with its sheet's rightmost visible edge
-        const anchors = names.map(nm => {
+        const on = names.filter(nm => nm.x.group.visible && shown.labels);
+        names.forEach(nm => [nm.leader, nm.label].forEach(e => hide(e, !on.includes(nm))));
+        const anchors = on.map(nm => {
             let best = null;
             for (const r of nm.x.rim) {
-                const s = screen(r.x, r.y, r.z + level(nm.x.s));
+                const s = screen(r.x, r.y, r.z * ve() + level(nm.x));
                 if (!best || s[0] > best[0]) best = s;
             }
             return best;
         });
         const col = Math.min(Math.max(...anchors.map(a => a[0])) + 18, W - column + 8);
         let last = -Infinity;
-        names.forEach((nm, i) => {
+        on.forEach((nm, i) => {
             const [ax, ay] = anchors[i], hgt = nm.label.offsetHeight;
             const ly = Math.max(ay, last + hgt / 2 + 6);
             last = ly + hgt / 2;
@@ -325,7 +409,8 @@ async function turnable(view) {
             nm.label.style.transform = `translate(${col}px, ${ly}px) translate(0, -50%)`;
         });
         for (const rg of rings) {
-            const [x, y] = screen(model.watford[0], model.watford[1], level(rg.x.s) + rg.x.s.watford_z);
+            hide(rg.ring, !shown.plumb || !rg.x.group.visible);
+            const [x, y] = screen(model.watford[0], model.watford[1], level(rg.x) + rg.x.s.watford_z * ve());
             rg.ring.setAttribute('cx', x);
             rg.ring.setAttribute('cy', y);
         }
@@ -353,15 +438,16 @@ async function turnable(view) {
     // The rod's colour: tan where the Bakken sheet is what lies behind it on screen
     const look = new THREE.Vector3();
     function drawRod() {
+        rod.visible = shown.plumb;
         const mpp = (camera.right - camera.left) / camera.zoom / W;
         rod.scale.x = rod.scale.y = 0.65 * mpp;
         camera.getWorldDirection(look);
-        const bz = level(bakken.s) + bakken.s.watford_z, z0 = rod.position.z, h = rod.scale.z;
+        const bz = level(bakken) + bakken.s.watford_z * ve(), z0 = rod.position.z, h = rod.scale.z;
         const pos = rodGeom.attributes.position, col = rodGeom.attributes.color;
         for (let k = 0; k < pos.count; k++) {
             const z = z0 + pos.getZ(k) * h;
             let behind = false;
-            if (z > bz && look.z < 0) {
+            if (bakken.group.visible && z > bz && look.z < 0) {
                 const s = (bz - z) / look.z;
                 const hx = model.watford[0] + look.x * s, hy = model.watford[1] + look.y * s;
                 const i = Math.floor(((hx + model.side / 2) / model.side) * bakken.N), j = Math.floor(((hy + model.side / 2) / model.side) * bakken.N);
@@ -381,9 +467,14 @@ async function turnable(view) {
         fit();
     });
     view.classList.add('ready');   // the stage takes the image's place, so it has a size to fit to
-    new ResizeObserver(fit).observe(stage);
-    setSpacing(1);
+    const resize = new ResizeObserver(fit);
+    resize.observe(stage);
+    light();
+    paint();
+    layout();
+    let running = true;
     (function frame() {
+        if (!running) return;
         requestAnimationFrame(frame);
         controls.update();
         if (!dirty) return;
@@ -392,6 +483,46 @@ async function turnable(view) {
         renderer.render(scene, camera);
         drawMarks();
     })();
+
+    // For the workbench: change a setting, show or hide a part, read the camera angle, stop drawing
+    return {
+        model,
+        set(k, value) {
+            S[k] = value;
+            if (SHAPE.includes(k)) layout();
+            else if (k.startsWith('light.')) light();
+            else if (k.startsWith('color.')) paint();
+            else if (k === 'camera') {
+                aim(value.azimuth, value.elevation);
+                fit();
+            }
+        },
+        show(part, on) {
+            const x = sheets.find(x => x.s.key === part);
+            if (x) {
+                x.group.visible = on;
+                layout();
+            } else shown[part] = on;
+            dirty = true;
+        },
+        view() {
+            const d = new THREE.Vector3().subVectors(controls.target, camera.position).normalize();
+            return { azimuth: +((Math.atan2(d.x, d.y) * 180) / Math.PI + 360).toFixed(1) % 360, elevation: +((Math.asin(-d.z) * 180) / Math.PI).toFixed(1) };
+        },
+        stop() {
+            running = false;
+            resize.disconnect();
+            scheme.removeEventListener('change', colours);
+            controls.dispose();
+            scene.traverse(o => {
+                o.geometry?.dispose();
+                o.material?.uniforms?.map?.value?.dispose();
+                o.material?.dispose();
+            });
+            renderer.dispose();
+        },
+        parts: () => [...sheets.map(x => ({ id: x.s.key, label: x.s.name })), { id: 'towns', label: 'Towns' }, { id: 'plumb', label: 'Plumb Line' }, { id: 'labels', label: 'Layer Names' }],
+    };
 }
 
 if (supported()) {

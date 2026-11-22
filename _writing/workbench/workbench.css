@@ -1,0 +1,127 @@
+/* The workbench: the piece as the site draws it, with a control panel in Solarized beside it. */
+
+body {
+    margin: 0;
+    padding: 0;
+    max-width: none;
+}
+
+.wb-bar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.6rem 1rem;
+    background: #002B36;
+    color: #93A1A1;
+    font: 14px/1.4 -apple-system, system-ui, sans-serif;
+}
+
+.wb-bar select,
+.wb-bar button {
+    font: inherit;
+    color: #EEE8D5;
+    background: #073642;
+    border: 1px solid #586E75;
+    border-radius: 4px;
+    padding: 0.25rem 0.7rem;
+}
+
+.wb-bar button:not(:disabled) {
+    cursor: pointer;
+}
+
+.wb-bar button:disabled {
+    opacity: 0.45;
+}
+
+#save:not(:disabled) {
+    border-color: #6C71C4;
+    color: #FDF6E3;
+    background: #6C71C4;
+}
+
+#status.unsaved {
+    color: #B58900;
+}
+
+#status.error {
+    color: #DC322F;
+}
+
+.wb-main {
+    display: flex;
+    align-items: flex-start;
+}
+
+#stage {
+    flex: 1;
+    min-width: 0;
+    padding: 1.2rem 1.6rem 3rem;
+    max-width: none;
+}
+
+#panel {
+    flex: none;
+    width: 320px;
+    position: sticky;
+    top: 48px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+}
+
+/* lil-gui in Solarized */
+#panel .lil-gui {
+    --width: 320px;
+    --background-color: #002B36;
+    --widget-color: #073642;
+    --hover-color: #0B4452;
+    --focus-color: #0D4F5F;
+    --text-color: #93A1A1;
+    --title-background-color: #073642;
+    --title-text-color: #EEE8D5;
+    --number-color: #2AA198;
+    --string-color: #859900;
+    --font-size: 12px;
+    --input-font-size: 12px;
+    --widget-height: 22px;
+    --name-width: 46%;
+}
+
+/* A terrain map in the 3:2 its views are framed for (1200 x 800 at most); a saved view is corrected for its size */
+.wb-map {
+    position: relative;
+    width: min(1200px, 100%);
+    aspect-ratio: 3 / 2;
+    border: 1px solid var(--hair);
+}
+
+.wb-map .map-label.off {
+    visibility: hidden;
+}
+
+/* On a narrow screen the panel goes below the piece */
+@media (max-width: 900px) {
+    .wb-bar {
+        flex-wrap: wrap;
+    }
+
+    .wb-main {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #stage {
+        padding: 1rem;
+    }
+
+    #panel,
+    #panel .lil-gui {
+        position: static;
+        width: 100%;
+        --width: 100%;
+        max-height: none;
+    }
+}

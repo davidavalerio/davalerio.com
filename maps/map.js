@@ -5,6 +5,7 @@
 // Each element names its map (data-map); the page carries that map's
 // definition as JSON (script#map-def-<name>), built from _writing/maps/<name>.yaml.
 // Without WebGL 2, or if the map fails, the still images already in the page stay.
+// The workbench (_writing/workbench) imports makeMap, show and restyle to tune a map live.
 
 import * as maplibregl from './lib/maplibre-gl.mjs';
 
@@ -43,12 +44,12 @@ function style(name, def, css) {
 
 // Views are framed for a 1200 × 800 map; a smaller map zooms out to keep
 // roughly the same area of ground in view, by at most 0.8 zoom levels.
-function camera(v, el) {
+export function camera(v, el) {
     const fit = el ? Math.log2(Math.sqrt((el.clientWidth * el.clientHeight) / (1200 * 800))) : 0;
     return { center: v.center, zoom: v.zoom + Math.max(-0.8, Math.min(0, fit)), pitch: v.pitch || 0, bearing: v.bearing || 0 };
 }
 
-function makeMap(el, name, opts = {}) {
+export function makeMap(el, name, opts = {}) {
     const def = definition(name);
     const css = getComputedStyle(document.documentElement);
     const canvas = document.createElement('div');
@@ -73,26 +74,41 @@ function makeMap(el, name, opts = {}) {
         div.textContent = l.text;
         labels[id] = new maplibregl.Marker({ element: div }).setLngLat(l.at).addTo(map);
     }
-    const state = { map, def, labels, current: null };
+    const state = { map, def, labels, name, current: null };
     // Restyle when the device switches between light and dark.
-    dark.addEventListener('change', () => {
-        const css = getComputedStyle(document.documentElement);
-        map.setPaintProperty('paper', 'background-color', css.getPropertyValue('--paper').trim());
-        for (const l of def.layers) {
-            for (const [k, v] of Object.entries(l.paint || {})) map.setPaintProperty(l.id, k, resolve(v, css));
-        }
-    });
+    dark.addEventListener('change', () => restyle(state));
     return state;
 }
 
-function show(state, viewName, animate) {
+// Read the palette again and repaint every layer with it.
+export function restyle(state) {
+    const css = getComputedStyle(document.documentElement);
+    state.map.setPaintProperty('paper', 'background-color', css.getPropertyValue('--paper').trim());
+    for (const l of state.def.layers) {
+        for (const [k, v] of Object.entries(l.paint || {})) state.map.setPaintProperty(l.id, k, resolve(v, css));
+    }
+    // With terrain on, MapLibre keeps the old colours draped over it, so the style is loaded again whole,
+    // with the same layers shown and the camera left where it is.
+    if (state.map.getTerrain()) {
+        state.map.setStyle(style(state.name, state.def, css), { diff: false });
+        state.map.once('styledata', () => layers(state, state.def.views[state.current]));
+    }
+}
+
+// The layers, labels and terrain a view shows
+function layers(state, v) {
     const { map, def, labels } = state;
-    const v = def.views[viewName];
-    if (!v) return;
-    state.current = viewName;
     for (const l of def.layers) map.setLayoutProperty(l.id, 'visibility', v.show.includes(l.id) ? 'visible' : 'none');
     for (const [id, m] of Object.entries(labels)) m.getElement().classList.toggle('off', !v.show.includes(id));
     map.setTerrain(v.terrain ? { source: 'terrain', exaggeration: def.exaggeration || 1 } : null);
+}
+
+export function show(state, viewName, animate) {
+    const { map, def } = state;
+    const v = def.views[viewName];
+    if (!v) return;
+    state.current = viewName;
+    layers(state, v);
     const cam = camera(v, map.getContainer());
     if (animate && !reduceMotion.matches) map.flyTo({ ...cam, duration: 2200, essential: false });
     else map.jumpTo(cam);
