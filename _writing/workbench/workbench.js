@@ -176,14 +176,35 @@ async function open(name) {
 }
 
 saveBtn.addEventListener('click', async () => {
-    saveBtn.disabled = true;
+    // Only what this page changed is sent, so a save from another open workbench is not undone
+    const edits = Object.fromEntries(Object.keys(values).filter(k => JSON.stringify(values[k]) !== JSON.stringify(saved[k])).map(k => [k, values[k]]));
+    const controls = gui.controllersRecursive();
+    const lock = on => {
+        controls.forEach(c => c.enable(!on));   // nothing can be edited, or the piece switched, while the save is under way
+        select.disabled = revertBtn.disabled = saveBtn.disabled = on;
+    };
+    lock(true);
     say('Saving…');
-    const res = await fetch('/api/piece/' + current.name, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ values }) });
-    const body = await res.json();
-    if (!res.ok) return say('Not saved: ' + body.error, 'error') || (saveBtn.disabled = false);
+    let res = null, body;
+    try {
+        res = await fetch('/api/piece/' + current.name, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ values: edits }) });
+        body = await res.json();
+    } catch (e) {
+        body = { error: e.message };
+    }
+    lock(false);
+    if (!res?.ok) {
+        changed();
+        return say('Not saved: ' + body.error, 'error');
+    }
     saved = Object.fromEntries(body.piece.settings.map(s => [s.key, s.value]));
-    Object.assign(values, structuredClone(saved));   // in place: the controls stay bound to this object
-    gui.controllersRecursive().forEach(c => c.updateDisplay());
+    // Anything saved elsewhere since this page opened comes into the controls and the preview too
+    for (const [k, v] of Object.entries(saved))
+        if (JSON.stringify(values[k]) !== JSON.stringify(v)) {
+            values[k] = structuredClone(v);
+            adapter.set(k, values[k]);
+        }
+    controls.forEach(c => c.updateDisplay());
     changed();
     say(current.kind === 'model' ? 'Saved. The next rebuild uses these settings.' : 'Saved. The site changes when the map is deployed.');
 });
