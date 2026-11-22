@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Personal calling card for David Valerio, map-led, plus his writing. The homepage opens on a single screen: the calling card (headshot, name, tagline, and links to Maps, Writing, Twitter and email) on a paper panel over a line drawing of the Missouri and the Yellowstone at Williston, seen from above; this is the URL David hands out at presentations and on business cards. Below it, on the same page, are two columns, Maps and Writing. Writing lists every piece — essays, papers, and podcast conversations, everything formerly published as Discern Earth — in one list, newest first. Each piece has its own page at `/writing/<slug>/`; there is no separate Writing index (`/writing/` forwards to the homepage's `#writing` section).
+Personal calling card for David Valerio, map-led, plus his writing. The homepage opens on a single screen: the calling card (headshot, name, tagline, and links to Maps, Writing, Twitter and email) on a paper panel over a line drawing of the Missouri and the Yellowstone at Williston, seen from above; this is the URL David hands out at presentations and on business cards. Below it, on the same page, are three columns: Maps, Writing (essays and papers) and Podcasts (the Discern Earth conversations), each newest first. Each piece has its own page at `/writing/<slug>/`; there is no separate Writing index (`/writing/` forwards to the homepage's `#writing` section).
 
 This is a personal site, not a services site. Don't propose services sections, contact forms, pricing, or training-related copy for it; "update the homepage" means extending the personal page.
 
@@ -14,8 +14,8 @@ Static HTML. Source Serif 4 via Google Fonts. The homepage is hand-made with inl
 
 ## Files
 
-- `index.html` — the first screen and the Maps and Writing columns, all styles inline. The block between the `writing:start` / `writing:end` comments (the Writing column) is rewritten by `_writing/build.py` on every build; never edit it by hand. Everything else in the file, the Maps column included, is hand-edited
-- `home/` — the homepage's images: the drawing behind the card (`hero-light.jpg`, `hero-dark.jpg`, and `hero-phone-*.jpg` for tall screens), stills captured from the Williston Confluence project in Drive (`1-Practice/GIS/Williston Confluence/`), and the Maps column's thumbnails (`map-*.jpg`)
+- `index.html` — the first screen and the Maps, Writing and Podcasts columns, all styles inline. The block between the `writing:start` / `writing:end` comments (the Writing and Podcasts columns) is rewritten by `_writing/build.py` on every build; never edit it by hand. Everything else in the file, the Maps column included, is hand-edited
+- `home/` — the homepage's images: the drawing behind the card (`hero-light.jpg`, `hero-dark.jpg`, and `hero-phone-*.jpg` for tall screens), stills captured from the Williston Confluence project in Drive (`1-Practice/GIS/Williston Confluence/`), and The Basin, Exploded's thumbnail for the Maps column (`map-basin.jpg`; the other maps use their own stills)
 - `content.md` — plain-text copy for the calling card (edit here, then sync to index.html)
 - `headshot.jpg` — professional headshot
 - `favicon.png`, `apple-touch-icon.png` — DV favicon fallbacks
@@ -76,7 +76,7 @@ The writing pages use the same tokens in `writing/style.css`: a 41rem measure an
 
 ## Layout
 
-The first screen (`.card-screen`, `100svh`) is the line drawing as a still image filling the screen, with the card centered on a paper panel (hairline border, square corners) over it: the view is composed so the card sits west of Williston and north of the river, and the drawing fades into the paper on every side. A one-line caption at its foot names the view and its sources. On tall screens (a phone) the whole drawing sits at the top and the card starts below it, whatever the screen's height. Below the first screen, a 76rem grid of two equal columns: Maps (the newest map large, the others in a row of three beneath, each with its date) and Writing (the 14 newest pieces, then the rest behind an All Writing toggle, a plain `<details>` so the page needs no script); the headings carry no counts, and neither column labels its items by kind. The columns stack on phones, Maps first.
+The first screen (`.card-screen`, `100svh`) is the line drawing as a still image filling the screen, with the card centered on a paper panel (hairline border, square corners) over it: the view is composed so the card sits directly below Williston, the drawing reaching equally far east and west of the city with the Yellowstone's confluence to the card's left, and the drawing fades into the paper on every side. A one-line caption at its foot names the view and its sources. On tall screens (a phone) the whole drawing sits at the top and the card starts below it, whatever the screen's height. Below the first screen, a 76rem grid of three equal columns: Maps (three maps, each a row with its snapshot, title and date, the rest behind All Maps), Writing (the seven newest essays and papers, the rest behind All Writing) and Podcasts (the seven newest conversations, listed by the guest's name, the rest behind All Podcasts). The toggles are plain `<details>`, so the page needs no script; the headings carry no counts, and no column labels its items by kind. The columns stack on phones, Maps first. To recapture the drawing behind the card, rebuild the Williston Confluence project in Drive and the map's tiles, then capture the four `home/hero-*.jpg` images from the map at the card's view (desktop 1600 × 1000 at twice the pixel density, north up and flat, centered under Williston; phone 860 × 1864 with the whole drawing at the top), without labels.
 
 ## Contact
 
