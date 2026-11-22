@@ -1,0 +1,385 @@
+# Geologic Map of Western North Dakota. Tiles are built by western-nd-geology.py beside this file,
+# from the Western North Dakota Geology project in Drive. Unit colors and legend wording are the print map's.
+title: Geologic Map of Western North Dakota
+date: '2026-11-17'
+page: true
+note: Surface geology of North Dakota west of 100.5° W, after Lee Clayton's 1:500,000 Geologic Map of North Dakota (1980), over shaded relief.
+  Click a unit for its name; drag to move, scroll to zoom, and right-drag or two-finger drag to tilt and turn.
+start: west
+credits: 'Geology: North Dakota Geological Survey, Surface Geology after Clayton (1980), ND GIS Hub. Elevation: USGS 3D Elevation Program. Boundaries
+  and towns: U.S. Census Bureau TIGER. Unit colors and legend wording condensed from the survey''s descriptions.'
+bounds: [-106.3, 44.6, -99.3, 50.2]
+exaggeration: 2
+sources:
+  vectors: {type: vector, url: vectors.pmtiles}
+  terrain: {type: raster-dem, url: terrain.pmtiles, encoding: terrarium, tileSize: 256, maxzoom: 10}
+  relief: {type: raster-dem, url: terrain.pmtiles, encoding: terrarium, tileSize: 256, maxzoom: 10}
+layers:
+- id: units
+  type: fill
+  source: vectors
+  source-layer: units
+  paint:
+    fill-color:
+    - match
+    - [get, abbr]
+    - Qor
+    - '#FBF1B8'
+    - Qod
+    - '#F3DC74'
+    - Qol
+    - '#EBDFB2'
+    - Qop
+    - '#DBE8E3'
+    - ls
+    - '#D9B79C'
+    - Qccg
+    - '#DBE9C9'
+    - Qccu
+    - '#C2DCAC'
+    - Qccr
+    - '#A4CB8E'
+    - Qcch
+    - '#80B373'
+    - Qcdc
+    - '#D4DEA0'
+    - Qcdg
+    - '#E5E9BF'
+    - Qcdn
+    - '#EEF0D8'
+    - Qcm
+    - '#B3D5C4'
+    - Qct
+    - '#8FB9A5'
+    - Qcer
+    - '#CDE2DC'
+    - Qces
+    - '#DFE8D2'
+    - Qcew
+    - '#C4DCE6'
+    - Qcoh
+    - '#A9C4E0'
+    - Qcof
+    - '#C8D8EE'
+    - Qcoe
+    - '#B6BFE0'
+    - Qcrf
+    - '#F6D48A'
+    - Qcrh
+    - '#E9B466'
+    - QTu
+    - '#EADBC1'
+    - QTou
+    - '#F2E19C'
+    - Tm
+    - '#F6D2B8'
+    - Tw
+    - '#F0B39B'
+    - Tg
+    - '#E3996B'
+    - Ts
+    - '#CBB39D'
+    - Tb
+    - '#F0D79C'
+    - Tp
+    - '#D9A982'
+    - Tc
+    - '#AAB7A4'
+    - Tl
+    - '#C99271'
+    - Kh
+    - '#A3D0B6'
+    - Kf
+    - '#7FBEA6'
+    - Kp
+    - '#93AAA2'
+    - water
+    - '#BCD6E8'
+    - '#EEEEEE'
+    fill-opacity: 0.95
+- id: hillshade
+  type: hillshade
+  source: relief
+  paint: {hillshade-shadow-color: --map-shadow, hillshade-highlight-color: --map-highlight, hillshade-accent-color: --map-shadow, hillshade-exaggeration: 0.4}
+- id: counties
+  type: line
+  source: vectors
+  source-layer: counties
+  paint: {line-color: --map-city-line, line-width: 0.5, line-opacity: 0.55}
+- id: ice-known
+  type: line
+  source: vectors
+  source-layer: glacial
+  filter:
+  - all
+  - - ==
+    - [get, kind]
+    - Ice Margin
+  - - ==
+    - [get, certainty]
+    - Known
+  paint: {line-color: '#9A3324', line-width: 1.2}
+- id: ice-uncertain
+  type: line
+  source: vectors
+  source-layer: glacial
+  filter:
+  - all
+  - - ==
+    - [get, kind]
+    - Ice Margin
+  - - '!='
+    - [get, certainty]
+    - Known
+  paint:
+    line-color: '#9A3324'
+    line-width: 1.2
+    line-dasharray: [3, 2]
+- id: erratics
+  type: line
+  source: vectors
+  source-layer: glacial
+  filter:
+  - ==
+  - [get, kind]
+  - Erratic Margin
+  layout: {line-cap: round}
+  paint:
+    line-color: '#3E4A55'
+    line-width: 1.4
+    line-dasharray: [0.1, 2.2]
+- id: eskers
+  type: line
+  source: vectors
+  source-layer: glacial
+  filter:
+  - ==
+  - [get, kind]
+  - Esker
+  paint: {line-color: '#2F6E8F', line-width: 1.2}
+- id: towns
+  type: circle
+  source: vectors
+  source-layer: towns
+  paint: {circle-radius: 2.6, circle-color: --ink, circle-stroke-color: --paper, circle-stroke-width: 1}
+labels:
+  bismarck:
+    text: Bismarck
+    at: [-100.7701, 46.8146]
+    kind: place
+  minot:
+    text: Minot
+    at: [-101.2776, 48.2361]
+    kind: place
+  williston:
+    text: Williston
+    at: [-103.6381, 48.1806]
+    kind: place
+  dickinson:
+    text: Dickinson
+    at: [-102.7973, 46.8927]
+    kind: place
+  mandan:
+    text: Mandan
+    at: [-100.8871, 46.8295]
+    kind: place
+  watford-city:
+    text: Watford City
+    at: [-103.2648, 47.8027]
+    kind: town
+  beulah:
+    text: Beulah
+    at: [-101.7707, 47.2668]
+    kind: town
+  new-town:
+    text: New Town
+    at: [-102.4883, 47.9891]
+    kind: town
+  stanley:
+    text: Stanley
+    at: [-102.4008, 48.3135]
+    kind: town
+  hazen:
+    text: Hazen
+    at: [-101.6248, 47.2984]
+    kind: town
+  tioga:
+    text: Tioga
+    at: [-102.9435, 48.3946]
+    kind: town
+  bowman:
+    text: Bowman
+    at: [-103.4029, 46.1843]
+    kind: town
+  garrison:
+    text: Garrison
+    at: [-101.4219, 47.6532]
+    kind: town
+  washburn:
+    text: Washburn
+    at: [-101.0278, 47.294]
+    kind: town
+  hettinger:
+    text: Hettinger
+    at: [-102.6346, 46.0035]
+    kind: town
+  crosby:
+    text: Crosby
+    at: [-103.2966, 48.9162]
+    kind: town
+  beach:
+    text: Beach
+    at: [-104.0054, 46.9187]
+    kind: town
+  kenmare:
+    text: Kenmare
+    at: [-102.072, 48.6728]
+    kind: town
+  killdeer:
+    text: Killdeer
+    at: [-102.7462, 47.3688]
+    kind: town
+  glen-ullin:
+    text: Glen Ullin
+    at: [-101.8335, 46.8117]
+    kind: town
+  mohall:
+    text: Mohall
+    at: [-101.517, 48.7661]
+    kind: town
+  mott:
+    text: Mott
+    at: [-102.3189, 46.3744]
+    kind: town
+  center:
+    text: Center
+    at: [-101.2977, 47.1149]
+    kind: town
+  elgin:
+    text: Elgin
+    at: [-101.8474, 46.4015]
+    kind: town
+  stanton:
+    text: Stanton
+    at: [-101.382, 47.3185]
+    kind: town
+  bowbells:
+    text: Bowbells
+    at: [-102.2458, 48.8022]
+    kind: town
+  carson:
+    text: Carson
+    at: [-101.5706, 46.4223]
+    kind: town
+  halliday:
+    text: Halliday
+    at: [-102.3388, 47.352]
+    kind: town
+  fort-yates:
+    text: Fort Yates
+    at: [-100.6301, 46.0866]
+    kind: town
+  medora:
+    text: Medora
+    at: [-103.5265, 46.9113]
+    kind: town
+  amidon:
+    text: Amidon
+    at: [-103.3196, 46.4822]
+    kind: town
+  lake-sakakawea:
+    text: Lake Sakakawea
+    at: [-102.05, 47.62]
+    kind: water
+  missouri-river:
+    text: Missouri River
+    at: [-101.07, 47.12]
+    kind: water
+  little-missouri-river:
+    text: Little Missouri River
+    at: [-103.6, 47.12]
+    kind: water
+  yellowstone-river:
+    text: Yellowstone River
+    at: [-103.92, 47.93]
+    kind: water
+popup:
+  layer: units
+  title: '{label}'
+  lines: ['{abbr}']
+views:
+  west:
+    center: [-102.3, 47.45]
+    zoom: 6.25
+    terrain: true
+    show: [units, hillshade, counties, ice-known, ice-uncertain, erratics, eskers, towns, bismarck, minot, williston, dickinson, lake-sakakawea,
+      missouri-river, little-missouri-river, yellowstone-river]
+    alt: 'Western North Dakota colored by surface geology: greens and blues of glacial sediment north and east of the Missouri River, tans and
+      oranges of Paleocene bedrock in the southwest, with the ice margin and the limit of glacial erratics drawn across the state.'
+    caption: Western North Dakota, west of 100.5° W.
+  missouri:
+    center: [-102.75, 47.75]
+    zoom: 8.1
+    pitch: 50
+    terrain: true
+    show: [units, hillshade, counties, ice-known, ice-uncertain, erratics, eskers, towns, bismarck, minot, williston, dickinson, mandan, watford-city,
+      beulah, new-town, stanley, hazen, tioga, bowman, garrison, washburn, hettinger, crosby, beach, kenmare, killdeer, glen-ullin, mohall, mott,
+      center, elgin, stanton, bowbells, carson, halliday, fort-yates, medora, amidon, lake-sakakawea, missouri-river, little-missouri-river, yellowstone-river]
+    alt: Tilted view of Lake Sakakawea and the badlands along the Little Missouri, the bedrock units in their colors over the relief, exaggerated
+      twice.
+    caption: Lake Sakakawea and the Little Missouri badlands, relief exaggerated twice.
+legend:
+- heading: Oahe Formation · Holocene
+  items:
+  - {code: Qor, color: '#FBF1B8', label: 'River sediment: overbank clay and sand over channel sand'}
+  - {code: Qod, color: '#F3DC74', label: Windblown sand in dunes}
+  - {code: Qol, color: '#EBDFB2', label: Windblown silt}
+  - {code: Qop, color: '#DBE8E3', label: Pond sediment in ephemeral ponds}
+  - {code: ls, color: '#D9B79C', label: Landslide deposits}
+- heading: Coleharbor Group · Pleistocene
+  items:
+  - {code: Qccg, color: '#DBE9C9', label: 'Collapsed glacial sediment, gently undulating'}
+  - {code: Qccu, color: '#C2DCAC', label: 'Collapsed glacial sediment, undulating'}
+  - {code: Qccr, color: '#A4CB8E', label: 'Collapsed glacial sediment, rolling'}
+  - {code: Qcch, color: '#80B373', label: 'Collapsed glacial sediment, hilly'}
+  - {code: Qcdc, color: '#D4DEA0', label: Collapsed sediment draped over older topography}
+  - {code: Qcdg, color: '#E5E9BF', label: Draped over older glacial topography}
+  - {code: Qcdn, color: '#EEF0D8', label: Draped over nonglacial topography}
+  - {code: Qcm, color: '#B3D5C4', label: On subglacially molded ridges and grooves}
+  - {code: Qct, color: '#8FB9A5', label: On glacial thrust masses}
+  - {code: Qcer, color: '#CDE2DC', label: Eroded by meltwater rivers}
+  - {code: Qces, color: '#DFE8D2', label: Eroded by slopewash on valley sides}
+  - {code: Qcew, color: '#C4DCE6', label: Eroded by waves}
+  - {code: Qcoh, color: '#A9C4E0', label: Ice-walled-lake and collapsed lake sediment}
+  - {code: Qcof, color: '#C8D8EE', label: Proglacial-lake sediment}
+  - {code: Qcoe, color: '#B6BFE0', label: Eroded lake sediment on valley sides}
+  - {code: Qcrf, color: '#F6D48A', label: River sediment of outwash plains and terraces}
+  - {code: Qcrh, color: '#E9B466', label: Collapsed river sediment}
+- heading: Pliocene to Holocene
+  items:
+  - {code: QTu, color: '#EADBC1', label: 'Terrace, fan and pediment sediment, undivided'}
+  - {code: QTou, color: '#F2E19C', label: 'Windblown and older sand, undivided'}
+- heading: Tertiary
+  items:
+  - {code: Tm, color: '#F6D2B8', label: 'Sandstone and limestone, Oligocene to Pliocene'}
+  - {code: Tw, color: '#F0B39B', label: 'White River Group, Oligocene'}
+  - {code: Tg, color: '#E3996B', label: 'Golden Valley Formation, Paleocene–Eocene'}
+  - {code: Ts, color: '#CBB39D', label: 'Sentinel Butte Formation, Paleocene'}
+  - {code: Tb, color: '#F0D79C', label: 'Bullion Creek Formation, Paleocene'}
+  - {code: Tp, color: '#D9A982', label: 'Slope Formation, Paleocene'}
+  - {code: Tc, color: '#AAB7A4', label: 'Cannonball Formation, Paleocene, marine'}
+  - {code: Tl, color: '#C99271', label: 'Ludlow Formation, Paleocene'}
+- heading: Cretaceous
+  items:
+  - {code: Kh, color: '#A3D0B6', label: Hell Creek Formation}
+  - {code: Kf, color: '#7FBEA6', label: 'Fox Hills Formation, marine'}
+  - {code: Kp, color: '#93AAA2', label: 'Pierre Formation, marine shale'}
+- heading: Other
+  items:
+  - {color: '#BCD6E8', label: Water}
+- heading: Glacial Features
+  items:
+  - {shape: line, color: '#9A3324', label: 'Ice margin, located'}
+  - {shape: line, dash: dashed, color: '#9A3324', label: 'Ice margin, uncertain'}
+  - {shape: line, dash: dotted, color: '#3E4A55', label: Limit of glacial erratics}
+  - {shape: line, color: '#2F6E8F', label: Esker}

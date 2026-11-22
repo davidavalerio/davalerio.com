@@ -1,0 +1,86 @@
+# Byzantine Catholic Parishes. Tiles are built by byzantine-parishes.py beside this file,
+# from the Byzantine Catholic Parishes project in Drive. Group colors are the print map's.
+title: Byzantine Catholic Parishes
+date: '2026-11-14'
+page: true
+note: The 562 Byzantine Catholic parishes, missions and communities in the United States, colored by church and eparchy. Click a point for the
+  parish, its eparchy and its Sunday liturgy; drag to move and scroll to zoom.
+start: country
+credits: 'Parish records compiled from eparchy directories, GCatholic.org and parish websites, checked 2026-11-14; some locations are approximate.
+  State boundaries: U.S. Census Bureau.'
+bounds: [-179, 12, -50, 73]
+sources:
+  vectors: {type: vector, url: vectors.pmtiles}
+layers:
+- id: states
+  type: line
+  source: vectors
+  source-layer: states
+  paint: {line-color: --map-contour, line-width: 0.7}
+- id: parishes
+  type: circle
+  source: vectors
+  source-layer: parishes
+  paint:
+    circle-color:
+    - match
+    - [get, grp]
+    - 'Ruthenian: Pittsburgh'
+    - '#B27C10'
+    - 'Ruthenian: Passaic'
+    - '#C25E1B'
+    - 'Ruthenian: Parma'
+    - '#B03F27'
+    - 'Ruthenian: Phoenix'
+    - '#8C2C39'
+    - Ukrainian
+    - '#1F6FA8'
+    - Melkite
+    - '#2C8878'
+    - Romanian
+    - '#6A4FA0'
+    - Other
+    - '#56616F'
+    - '#56616F'
+    circle-radius:
+    - interpolate
+    - [linear]
+    - [zoom]
+    - 3
+    - 3
+    - 8
+    - 6.5
+    circle-stroke-color: --paper
+    circle-stroke-width: 0.8
+popup:
+  layer: parishes
+  title: '{name}'
+  lines: ['{city}, {state}', '{eparchy}', '{sunday_liturgy}']
+views:
+  country:
+    center: [-96.5, 38.6]
+    zoom: 3.9
+    show: [states, parishes]
+    alt: Map of the United States with Byzantine Catholic parishes as colored points, thickest from Ohio and Pennsylvania to New York and New
+      Jersey, scattered across Florida, Texas, Arizona and California.
+    caption: The Byzantine Catholic parishes of the United States.
+  northeast:
+    center: [-77.6, 41.2]
+    zoom: 5.7
+    show: [states, parishes]
+    alt: Closer view from Ohio to New England, Ruthenian parishes clustered in western Pennsylvania and Ukrainian parishes along the Pennsylvania
+      anthracite region, New Jersey and New York.
+    caption: From Ohio to New England, where most of the parishes are.
+legend:
+- heading: Ruthenian
+  items:
+  - {shape: dot, color: '#B27C10', label: Pittsburgh}
+  - {shape: dot, color: '#C25E1B', label: Passaic}
+  - {shape: dot, color: '#B03F27', label: Parma}
+  - {shape: dot, color: '#8C2C39', label: Phoenix}
+- heading: Other Churches
+  items:
+  - {shape: dot, color: '#1F6FA8', label: Ukrainian}
+  - {shape: dot, color: '#2C8878', label: Melkite}
+  - {shape: dot, color: '#6A4FA0', label: Romanian}
+  - {shape: dot, color: '#56616F', label: 'Italo-Albanian, Russian, Belarusian'}

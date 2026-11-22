@@ -252,18 +252,42 @@ def map_body(body, map_name, m, slug, strict, page=None):
 
 
 def map_head(map_name, maps):
-    data = json.dumps({k: maps[map_name][k] for k in ("start", "bounds", "exaggeration", "sources", "layers", "labels", "views")
+    data = json.dumps({k: maps[map_name][k] for k in ("start", "bounds", "exaggeration", "sources", "layers", "labels", "views", "popup")
                        if k in maps[map_name]}, separators=(",", ":"))
-    return ('\n    <link rel="stylesheet" href="/maps/lib/maplibre-gl.css">\n    <link rel="stylesheet" href="/maps/map.css">'
+    return ('\n    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">'
+            '\n    <link rel="stylesheet" href="/maps/lib/maplibre-gl.css">\n    <link rel="stylesheet" href="/maps/map.css">'
             '\n    <script src="/maps/lib/pmtiles.js" defer></script>\n    <script type="module" src="/maps/map.js"></script>'
             '\n    <script type="application/json" id="map-def-{}">{}</script>').format(map_name, data.replace("</", "<\\/"))
+
+
+def legend(groups):
+    """The key beneath a map page's map: groups of swatches, each a fill, a dot or a line
+    (`shape`, with `dash` dashed or dotted), coloured with a hex value or a --map token."""
+    out = '        <div class="map-legend">\n'
+    for g in groups:
+        out += '            <div>\n'
+        if g.get("heading"):
+            out += '                <h3>{}</h3>\n'.format(esc(g["heading"]))
+        out += '                <ul>\n'
+        for item in g["items"]:
+            color = item["color"]
+            color = "var({})".format(color) if color.startswith("--") else color
+            shape = item.get("shape", "fill")
+            cls = "swatch" + ("" if shape == "fill" else " " + shape) + (" " + item["dash"] if item.get("dash") else "")
+            style = "border-top-color: {}".format(color) if shape == "line" else "background: {}".format(color)
+            code = '<span class="code">{}</span>'.format(esc(item["code"])) if item.get("code") else ""
+            out += '                    <li><span class="{}" style="{}"></span>{}<span>{}</span></li>\n'.format(
+                cls, style, code, esc(item["label"]))
+        out += '                </ul>\n            </div>\n'
+    return out + '        </div>\n'
 
 
 def map_page(name, m):
     url = "{}/maps/{}/".format(SITE, name)
     interactive = "views" in m
     share = still_url(name, m["start"]) if interactive else "/maps/{}/{}".format(name, m["image"])
-    head = '\n    <link rel="stylesheet" href="/maps/map.css">'
+    head = ('\n    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">'
+            '\n    <link rel="stylesheet" href="/maps/map.css">')
     if m.get("model"):
         head += '\n    <script type="module" src="/maps/model.js"></script>'
     out = HEAD.format(title=esc(m["title"]) + " — David Valerio", og_title=esc(m["title"]),
@@ -285,6 +309,8 @@ def map_page(name, m):
         if m.get("model"):
             figure = '<div class="model-view" data-model="/maps/{}/{}/">{}</div>'.format(name, m["model"], figure)
         out += '        {}\n'.format(figure)
+    if m.get("legend"):
+        out += legend(m["legend"])
     if m.get("credits"):
         out += '        <p class="map-credits">{}</p>\n'.format(esc(m["credits"]))
     if m.get("pdf"):
