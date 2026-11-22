@@ -262,10 +262,12 @@ def map_page(name, m):
     url = "{}/maps/{}/".format(SITE, name)
     interactive = "views" in m
     share = still_url(name, m["start"]) if interactive else "/maps/{}/{}".format(name, m["image"])
+    head = '\n    <link rel="stylesheet" href="/maps/map.css">'
+    if m.get("model"):
+        head += '\n    <script type="module" src="/maps/model.js"></script>'
     out = HEAD.format(title=esc(m["title"]) + " — David Valerio", og_title=esc(m["title"]),
                       description=esc(m.get("note", "")), url=url, og_type="article", og_image=og_image(share),
-                      favicon=FAVICON, extra_head=map_head(name, {name: m}) if interactive else
-                      '\n    <link rel="stylesheet" href="/maps/map.css">', body_class=' class="wide"')
+                      favicon=FAVICON, extra_head=map_head(name, {name: m}) if interactive else head, body_class=' class="wide"')
     out += '    <main>\n        <header class="post">\n'
     out += '            <p class="meta">Map · <time datetime="{0}">{0}</time></p>\n'.format(m["date"].isoformat())
     out += '            <h1>{}</h1>\n'.format(esc(m["title"]))
@@ -276,8 +278,12 @@ def map_page(name, m):
         out += '        <div class="map-full" data-map="{}" data-view="{}">{}</div>\n'.format(
             name, m["start"], still(name, m, m["start"], strict=False).replace(' style="margin: 1.6em 0;"', ""))
     else:
-        out += '        <figure class="showpiece"><a href="{0}"><img src="{0}" alt="{1}"></a></figure>\n'.format(
+        # A model (a turnable stack drawn by maps/model.js) takes the image's place once it draws.
+        figure = '<figure class="showpiece"><a href="{0}"><img src="{0}" alt="{1}"></a></figure>'.format(
             "/maps/{}/{}".format(name, m["image"]), esc(m.get("alt")))
+        if m.get("model"):
+            figure = '<div class="model-view" data-model="/maps/{}/{}/">{}</div>'.format(name, m["model"], figure)
+        out += '        {}\n'.format(figure)
     if m.get("credits"):
         out += '        <p class="map-credits">{}</p>\n'.format(esc(m["credits"]))
     if m.get("pdf"):
