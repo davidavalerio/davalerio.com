@@ -74,24 +74,33 @@
    "watford_z": -11.0596
   }
  ],
- "camera": {
-  "azimuth": 22.5,
-  "elevation": 25.0
- },
- "light": {
-  "key": [
-   -0.85661,
-   0.35482,
-   0.37461
-  ],
-  "fill": [
-   0.35355,
-   -0.61237,
-   0.70711
-  ],
-  "ambient": 0.56,
-  "key_strength": 0.6,
-  "fill_strength": 0.2
+ "settings": {
+  "ve": 20,
+  "gap": 74,
+  "thick": 1.25,
+  "light.key.azimuth": 292.5,
+  "light.key.elevation": 22,
+  "light.key.strength": 0.6,
+  "light.fill.azimuth": 150,
+  "light.fill.elevation": 45,
+  "light.fill.strength": 0.2,
+  "light.ambient": 0.56,
+  "color.pierre.rim": "#A9C28A",
+  "color.pierre.bowl": "#6E9460",
+  "color.pierre.contour": "#4C6943",
+  "color.bakken.rim": "#4A3C34",
+  "color.bakken.bowl": "#2A2523",
+  "color.bakken.contour": "#B59F86",
+  "color.redriver.rim": "#7DB5AA",
+  "color.redriver.bowl": "#2F7A72",
+  "color.redriver.contour": "#1F534E",
+  "color.basement.rim": "#E0A0A0",
+  "color.basement.bowl": "#B05A66",
+  "color.basement.contour": "#7C3F48",
+  "camera": {
+   "azimuth": 22.5,
+   "elevation": 25.0
+  }
  },
  "towns": {
   "Williston": [
