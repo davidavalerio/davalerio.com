@@ -29,7 +29,7 @@ gpkg = os.path.join(SRC, "Williston Confluence.gpkg")
 maptiles.vectors({name: (gpkg, "SELECT * FROM " + name) for name in
                   ("contours", "shoreline", "waterlines", "streams", "streets")},
                  os.path.join(OUT, "vectors.pmtiles"), scratch, minzoom=8, maxzoom=14,
-                 layer_zooms={"contours": (8, 14), "waterlines": (8, 14), "streets": (10, 14)})
+                 layer_zooms={"contours": (8, 14), "waterlines": (8, 14), "streets": (8, 14)})
 
 # 3DEP at 100 m over 160 km around the drawing, so tilted views have land past its edge.
 coarse = os.path.join(scratch, "region-dem-missouri.tif")
