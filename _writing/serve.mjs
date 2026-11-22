@@ -26,9 +26,12 @@ export function serve(port = 8642) {
         }
         const headers = { 'Content-Type': TYPES[extname(file)] || 'application/octet-stream', 'Accept-Ranges': 'bytes' };
         const range = /bytes=(\d*)-(\d*)/.exec(req.headers.range || '');
-        if (range) {
-            const start = range[1] ? +range[1] : stat.size - +range[2];
+        if (range && (range[1] || range[2])) {
+            const start = range[1] ? +range[1] : Math.max(0, stat.size - +range[2]);
             const end = range[1] && range[2] ? Math.min(+range[2], stat.size - 1) : stat.size - 1;
+            if (start > end || start >= stat.size) {
+                return res.writeHead(416, { 'Content-Range': `bytes */${stat.size}` }).end();
+            }
             res.writeHead(206, { ...headers, 'Content-Range': `bytes ${start}-${end}/${stat.size}`, 'Content-Length': end - start + 1 });
             return createReadStream(file, { start, end }).pipe(res);
         }

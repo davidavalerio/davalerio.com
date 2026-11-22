@@ -99,17 +99,18 @@ def load(maps=None, folder=SRC, draft=False):
             date = datetime.date.fromisoformat(str(date)[:10])
         kind = meta.get("kind", "essay")
         assert kind in KIND_LABEL, "{}: unknown kind {}".format(name, kind)
+        text = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", body))).strip()
         map_name = meta.get("map")
         if map_name:
             assert map_name in maps, "{}: no map named {} in _writing/maps/".format(name, map_name)
-            body = map_body(body, map_name, maps[map_name], slug, strict=not draft)
-        text = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", body))).strip()
+            body = map_body(body, map_name, maps[map_name], slug, strict=not draft,
+                            page="/_preview/{}/".format(slug) if draft else None)
         posts.append({
             "slug": slug, "title": meta["title"], "date": date, "kind": kind,
             "subtitle": meta.get("subtitle"), "image": meta.get("image"),
             "image_alt": meta.get("image_alt"), "image_caption": meta.get("image_caption"),
             "map": map_name,
-            "share_image": meta.get("image") or (still_url(map_name, first_view(body)) if map_name else None),
+            "share_image": (still_url(map_name, first_view(body)) if map_name and first_view(body) else None) or meta.get("image"),
             "body": body.strip(),
             "description": meta.get("subtitle") or (text[:157] + "…" if len(text) > 158 else text),
         })
@@ -199,25 +200,29 @@ def still(map_name, m, view, strict, link=None, caption=None):
     return '<figure class="still" style="margin: 1.6em 0;">{}{}</figure>'.format(img, cap)
 
 
-def map_body(body, map_name, m, slug, strict):
+def map_body(body, map_name, m, slug, strict, page=None):
     """Group consecutive map steps around one pinned map, give each change of
-    view a still and an anchor, and turn embeds into maps with stills."""
-    page = "/writing/{}/".format(slug)
-    out, pos, group, last_end = [], 0, [], None
+    view a still and an anchor, and turn embeds into maps with stills. A step
+    holds plain prose: a fenced div or code block inside one would end it early."""
+    page = page or "/writing/{}/".format(slug)
+    out, pos, group, anchors = [], 0, [], {}
+    credits = '<p class="map-credits">{}</p>'.format(esc(m["credits"])) if m.get("credits") else ""
 
     def flush():
         if not group:
             return
-        html_steps, previous, anchors = [], None, set()
+        html_steps, previous = [], None
         for view, inner in group:
-            anchor = "view-" + view
-            ident = ' id="{}"'.format(anchor) if anchor not in anchors else ""
-            anchors.add(anchor)
-            fig = still(map_name, m, view, strict, link=page + "#" + anchor) if view != previous else ""
+            ident, fig = "", ""
+            if view != previous:
+                anchors[view] = anchors.get(view, 0) + 1
+                anchor = "view-" + view + ("-{}".format(anchors[view]) if anchors[view] > 1 else "")
+                ident = ' id="{}"'.format(anchor)
+                fig = still(map_name, m, view, strict, link=page + "#" + anchor)
             html_steps.append('<section class="map-step" data-view="{}"{}>\n{}{}</section>'.format(view, ident, fig, inner))
             previous = view
-        out.append('<div class="scrolly" data-map="{}">\n<div class="map-stage"></div>\n<div class="steps">\n{}\n</div>\n</div>'.format(
-            map_name, "\n".join(html_steps)))
+        out.append('<div class="scrolly" data-map="{}">\n<div class="map-stage"></div>\n<div class="steps">\n{}\n</div>\n</div>\n{}'.format(
+            map_name, "\n".join(html_steps), credits))
         group.clear()
 
     for match in STEP.finditer(body):
@@ -235,7 +240,8 @@ def map_body(body, map_name, m, slug, strict):
         view, caption = e.group(1), e.group(2).strip()
         img = still(map_name, m, view, strict, caption="")
         img = img.replace('<figure class="still" style="margin: 1.6em 0;">', '<div class="still">').replace("</figure>", "</div>")
-        cap = "<figcaption>{}</figcaption>".format(re.sub(r"</?p>", "", caption)) if caption else ""
+        cap = " ".join(x for x in (re.sub(r"</?p>", "", caption), esc(m.get("credits", ""))) if x)
+        cap = "<figcaption>{}</figcaption>".format(cap) if cap else ""
         return '<figure style="margin: 1.6em 0;"><div class="map-embed" data-map="{}" data-view="{}">{}</div>{}</figure>'.format(
             map_name, view, img, cap)
 
@@ -356,8 +362,13 @@ def sitemap(posts, maps):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--drafts", action="store_true", help="also build _writing/drafts/ into _preview/")
+    parser.add_argument("--maps-only", action="store_true", help="build only the map pages (used by stills.mjs)")
     args = parser.parse_args()
     maps = load_maps()
+    if args.maps_only:
+        for name, m in maps.items():
+            write(os.path.join(MAP_OUT, name, "index.html"), map_page(name, m))
+        return
     posts = load(maps)
     for p in posts:
         write(os.path.join(OUT, p["slug"], "index.html"), post_page(p, maps))

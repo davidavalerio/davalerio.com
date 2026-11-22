@@ -136,6 +136,7 @@ function scrolly(el) {
     button.textContent = 'Explore Map';
     stage.append(button);
     let active = steps[0].dataset.view;
+    let ready = false;
     button.addEventListener('click', () => {
         const exploring = el.classList.toggle('exploring');
         button.textContent = exploring ? 'Return to Story' : 'Explore Map';
@@ -147,7 +148,11 @@ function scrolly(el) {
         }
         map.resize();
     });
-    map.once('load', () => show(state, active, false));
+    // Whatever passage is current when the map finishes loading is the one shown.
+    map.once('load', () => {
+        ready = true;
+        show(state, active, false);
+    });
     whenDrawn(state, el);
     // A passage takes over the map as it crosses the middle of the screen, or,
     // on a phone, the middle of the text below the pinned map.
@@ -155,7 +160,7 @@ function scrolly(el) {
         for (const e of entries) {
             if (!e.isIntersecting) continue;
             active = e.target.dataset.view;
-            if (!el.classList.contains('exploring') && map.loaded() && state.current !== active) show(state, active, true);
+            if (ready && !el.classList.contains('exploring') && state.current !== active) show(state, active, true);
         }
     }, { rootMargin: matchMedia('(max-width: 899px)').matches ? '-58% 0px -37% 0px' : '-45% 0px -45% 0px' });
     steps.forEach(s => seen.observe(s));
@@ -183,8 +188,21 @@ function full(el) {
     whenDrawn(state, el);
 }
 
+// A map that cannot start leaves its element as it was built: stills only.
+function start(fn) {
+    return el => {
+        try {
+            fn(el);
+        } catch (e) {
+            console.warn('map:', e.message);
+            el.classList.remove('live', 'ready');
+            el.querySelector('.map-canvas')?.remove();
+        }
+    };
+}
+
 if (supported()) {
-    document.querySelectorAll('.scrolly[data-map]').forEach(scrolly);
-    document.querySelectorAll('.map-embed[data-map]').forEach(embed);
-    document.querySelectorAll('.map-full[data-map]').forEach(full);
+    document.querySelectorAll('.scrolly[data-map]').forEach(start(scrolly));
+    document.querySelectorAll('.map-embed[data-map]').forEach(start(embed));
+    document.querySelectorAll('.map-full[data-map]').forEach(start(full));
 }

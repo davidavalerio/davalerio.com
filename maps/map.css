@@ -57,7 +57,7 @@
 }
 
 .map-label.off {
-    opacity: 0;
+    visibility: hidden;
 }
 
 .maplibregl-ctrl-group {
@@ -249,6 +249,12 @@ body.wide .map-downloads {
 
 .map-full.ready .still {
     display: none;
+}
+
+/* Until the map has drawn, its still shows through. */
+.map-full.live:not(.ready) .map-canvas,
+.map-embed.live:not(.ready) .map-canvas {
+    opacity: 0;
 }
 
 .map-credits,
