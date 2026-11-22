@@ -1,6 +1,6 @@
 # davalerio.com Content
 
-The site is a minimal personal calling card. Edit this file, then have Claude push changes live.
+The homepage is a calling card over a line drawing of the Missouri and the Yellowstone at Williston, with Maps and Writing below. Edit this file, then have Claude push changes live.
 
 ---
 
@@ -21,8 +21,7 @@ The site is a minimal personal calling card. Edit this file, then have Claude pu
 
 **Links:**
 
-- Writing → #writing (the list below the card, generated from `_writing/posts/`)
-- LinkedIn → https://www.linkedin.com/in/davidavalerio/
-- Substack → https://substack.com/@valerio
+- Maps → #maps (the Maps column below the card, hand-made in index.html)
+- Writing → #writing (the Writing column, generated from `_writing/posts/`)
 - Twitter → https://x.com/davidavalerio
 - Email → david@davalerio.com

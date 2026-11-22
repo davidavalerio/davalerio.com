@@ -9,7 +9,8 @@ the slug. Run with no arguments; output lands in ../writing/, ../maps/ and
 markers in ../index.html) is refreshed.
 
 Maps are defined in _writing/maps/<name>.yaml; each gets a page at
-/maps/<name>/, listed on the homepage when its definition says `page: true`.
+/maps/<name>/ when its definition says `page: true`. The homepage's Maps
+column is hand-made in index.html.
 A piece with `map: <name>` in its frontmatter can turn passages into map steps
 (`::: {.map-step view=<view>}`) or set in a map (`::: {.map-embed view=<view>}`).
 
@@ -311,23 +312,18 @@ FORWARD = """<!DOCTYPE html>
 
 
 def homepage_list(posts, maps):
-    listed = sorted(((n, m) for n, m in maps.items() if m.get("page")), key=lambda x: (x[1]["date"], x[0]), reverse=True)
-    groups = [label for _, label in KINDS] + (["Maps"] if listed else [])
-    out = '    <section id="writing">\n        <h2>Writing</h2>\n        <nav class="kinds">'
-    out += " ".join('<a href="#{}">{}</a>'.format(label.lower(), label) for label in groups)
-    out += '</nav>\n'
-    for kind, label in KINDS:
-        out += '        <section id="{}">\n            <h3>{}</h3>\n            <ul>\n'.format(label.lower(), label)
-        for p in (x for x in posts if x["kind"] == kind):
-            out += '                <li><a href="/writing/{}/">{}</a><time datetime="{}">{}</time></li>\n'.format(
-                p["slug"], esc(p["title"]), p["date"].isoformat(), p["date"].isoformat())
-        out += '            </ul>\n        </section>\n'
-    if listed:
-        out += '        <section id="maps">\n            <h3>Maps</h3>\n            <ul>\n'
-        for n, m in listed:
-            out += '                <li><a href="/maps/{}/">{}</a><time datetime="{}">{}</time></li>\n'.format(
-                n, esc(m["title"]), m["date"].isoformat(), m["date"].isoformat())
-        out += '            </ul>\n        </section>\n'
+    """The Writing column: every piece, newest first, the first 14 shown and the rest behind All Writing."""
+    def row(p):
+        return '            <li><a href="/writing/{}/">{}</a><time datetime="{}">{}</time></li>\n'.format(
+            p["slug"], esc(p["title"]), p["date"].isoformat(), p["date"].isoformat())
+    shown = 14
+    out = '    <section id="writing">\n        <h2>Writing</h2>\n        <ul>\n'
+    out += "".join(row(p) for p in posts[:shown])
+    out += '        </ul>\n'
+    if len(posts) > shown:
+        out += '        <details>\n        <summary>All Writing</summary>\n        <ul>\n'
+        out += "".join(row(p) for p in posts[shown:])
+        out += '        </ul>\n        </details>\n'
     return out + '    </section>\n'
 
 
