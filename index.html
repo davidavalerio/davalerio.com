@@ -119,9 +119,10 @@
             min-height: 100vh;
             min-height: 100svh;
             display: grid;
-            place-items: center;
             padding: 2rem 1rem 4rem;
             background: var(--hero) center / cover no-repeat, var(--paper);
+            /* The card sits low on the screen, below the river; the drawing is composed for that. */
+            place-items: end center;
         }
 
         .card {
@@ -165,17 +166,6 @@
             list-style: none;
         }
 
-        .where {
-            position: absolute;
-            left: 1rem;
-            right: 1rem;
-            bottom: 1.1rem;
-            font-size: 0.78rem;
-            letter-spacing: 0.02em;
-            color: var(--stone);
-            text-shadow: 0 0 3px var(--paper), 0 0 6px var(--paper), 0 0 10px var(--paper);
-        }
-
         /* On a phone the whole drawing sits at the top and the card below it */
         @media (max-aspect-ratio: 4/5) {
             .card-screen {
@@ -183,6 +173,8 @@
                 background-size: 100% auto;
                 place-items: start center;
                 padding-top: calc(72vw + 1.5rem);
+                padding-bottom: 1rem;
+                min-height: 0;
             }
         }
 
@@ -315,7 +307,6 @@
                 <li><a href="mailto:david@davalerio.com">Email</a></li>
             </ul>
         </div>
-        <p class="where">The Missouri and the Yellowstone at Williston, from above. Contours every 100 feet. USGS 3DEP and NHD.</p>
     </header>
     <div class="work">
     <section id="maps">

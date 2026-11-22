@@ -42,7 +42,7 @@ if not os.path.exists(coarse):
 fine = os.path.join(scratch, "fine-dem.tif")
 maptiles.feather(os.path.join(SRC, "Elevation 10m.tif"), coarse, fine, trim=5, cells=150)
 n = maptiles.terrain([coarse, fine], os.path.join(OUT, "terrain.pmtiles"), scratch,
-                     region=(-104.65, 47.33, -102.6, 48.78), core=(-104.45, 47.68, -102.9, 48.42),
+                     region=(-104.65, 47.33, -102.6, 48.78), core=(-104.45, 47.58, -102.9, 48.42),
                      region_maxzoom=10, core_maxzoom=12)
 print("terrain tiles:", n)
 for f in ("vectors.pmtiles", "terrain.pmtiles"):
