@@ -23,5 +23,5 @@ The homepage is a calling card over a line drawing of the Missouri and the Yello
 
 - Maps → #maps (the Maps column below the card, hand-made in index.html)
 - Writing → #writing (the Writing column, generated from `_writing/posts/`)
-- Twitter → https://x.com/davidavalerio
+- Podcasts → #podcasts (the Podcasts column)
 - Email → david@davalerio.com
