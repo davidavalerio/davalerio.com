@@ -114,14 +114,15 @@
 
         /* The first screen: the line drawing filling the screen, the letterhead set in its strip of
            paper above it. --px is one pixel of the 1600 x 1000 drawing as the screen shows it, so the
-           letterhead keeps its place over the drawing at any window size. */
+           letterhead keeps its place over the drawing at any window size. It grows no larger than
+           0.894, where the drawing is at the scale of the map's own page (zoom 9.29); on a larger
+           window the drawing stays at that scale, centered in paper, and the first screen ends with it. */
 
         .card-screen {
-            --px: max(100vw / 1600, 100svh / 1000);
+            --px: min(0.894px, max(100vw / 1600, 100svh / 1000));
             position: relative;
-            min-height: 100vh;
-            min-height: 100svh;
-            background: var(--hero) center top / cover no-repeat, var(--paper);
+            min-height: min(100svh, 1000 * var(--px));
+            background: var(--hero) center top / calc(1600 * var(--px)) auto no-repeat, var(--paper);
         }
 
         .letterhead {
