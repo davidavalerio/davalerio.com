@@ -1,6 +1,6 @@
 # davalerio.com Content
 
-The homepage is a calling card over a line drawing of the Missouri and the Yellowstone at Williston, with Maps, Writing and Podcasts below. Edit this file, then have Claude push changes live.
+The homepage is a calling card over a line drawing of the Missouri and the Yellowstone at Williston, with Writing, Maps and Podcasts below. Edit this file, then have Claude push changes live.
 
 ---
 
@@ -21,7 +21,7 @@ The homepage is a calling card over a line drawing of the Missouri and the Yello
 
 **Links:**
 
-- Maps → #maps (the Maps column below the card, hand-made in index.html)
 - Writing → #writing (the Writing column, generated from `_writing/posts/`)
+- Maps → #maps (the Maps column, center, hand-made in index.html)
 - Podcasts → #podcasts (the Podcasts column)
 - Email → david@davalerio.com
