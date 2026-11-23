@@ -38,19 +38,19 @@ GONE_OUT = ("sent", "queued", "scheduled", "canceled")
 STYLES = {
     "p": "margin: 0 0 1.1em;",
     "a": "color: #5E4B8B; text-decoration: none; font-weight: 600;",
-    "h2": "color: #22282B; font-size: 21px; font-weight: 600; line-height: 1.25; margin: 1.8em 0 0.6em;",
-    "h3": "color: #22282B; font-size: 18px; font-weight: 600; line-height: 1.25; margin: 1.6em 0 0.5em;",
-    "h4": "color: #22282B; font-size: 16px; font-weight: 600; line-height: 1.25; margin: 1.4em 0 0.5em;",
+    "h2": "color: #22282B; font-size: 17px; font-weight: 600; letter-spacing: 0.01em; line-height: 1.3; margin: 34px 0 14px;",
+    "h3": "color: #22282B; font-size: 15px; font-weight: 600; line-height: 1.4; margin: 28px 0 10px;",
+    "h4": "color: #22282B; font-size: 15px; font-weight: 600; line-height: 1.4; margin: 24px 0 8px;",
     "blockquote": "margin: 0 0 1.1em; border-left: 2px solid #5E4B8B; padding-left: 1.2em; font-style: italic; color: #3A4145;",
     "ul": "margin: 0 0 1.1em; padding-left: 1.4em;",
     "ol": "margin: 0 0 1.1em; padding-left: 1.4em;",
     "li": "margin: 0 0 0.4em;",
     "hr": "border: 0; border-top: 1px solid #D8D4CC; width: 80px; margin: 2em auto;",
-    "figcaption": "margin: 8px 0 0; color: #6B7075; font-size: 13px; line-height: 1.5; text-align: center;",
+    "figcaption": "margin: 8px 0 0; color: #6B7075; font-size: 12.5px; line-height: 1.5; text-align: center;",
 }
 CLASS_STYLES = {
     "map-note": "margin: 0 0 1.6em; color: #6B7075; font-size: 15px;",
-    "map-credits": "margin: 1.8em 0 0; color: #6B7075; font-size: 13px; line-height: 1.5;",
+    "map-credits": "margin: 1.8em 0 0; color: #6B7075; font-size: 12.5px; line-height: 1.5;",
 }
 
 
@@ -83,11 +83,11 @@ def email_html(title, url, meta, subtitle, body, test):
 <style>@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap');</style>
 </head>
 <body style="margin: 0; background: #ffffff;">
-<div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: {font}; font-size: 16px; line-height: 1.66; color: #22282B;">
+<div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: {font}; font-size: 15px; line-height: 1.66; color: #22282B;">
 <h1 style="color: #22282B; font-size: 26px; font-weight: 600; line-height: 1.15; margin: 0 0 8px;"><a href="{url}" style="color: #22282B; text-decoration: none;">{title}</a></h1>
 {sub}<p style="color: #6B7075; font-size: 12.5px; letter-spacing: 0.05em; margin: 0 0 24px; padding-bottom: 16px; border-bottom: 1px solid #D8D4CC;">{meta}</p>
 {body}
-<p style="margin: 32px 0 0; padding-top: 16px; border-top: 1px solid #E6E3DC; color: #6B7075; font-size: 13px;"><a href="{url}" style="color: #6B7075; text-decoration: none;">Read on davalerio.com</a> · {unsubscribe}<br>{name}</p>
+<p style="margin: 32px 0 0; padding-top: 16px; border-top: 1px solid #E6E3DC; color: #6B7075; font-size: 12.5px;"><a href="{url}" style="color: #6B7075; text-decoration: none;">Read on davalerio.com</a> · {unsubscribe}<br>{name}</p>
 </div>
 </body></html>""".format(font=FONT, url=url, title=esc(title), sub=sub, meta=meta, body=styled(body, url),
                          unsubscribe=unsubscribe, name=esc(SUBSCRIBE_NAME))

@@ -223,11 +223,11 @@ function confirmationEmail(link) {
 <h1 style="color: #22282B; font-size: 26px; font-weight: 600; line-height: 1.15; margin: 0 0 6px;">David Valerio</h1>
 <p style="color: #6B7075; font-size: 12.5px; letter-spacing: 0.05em; margin: 0; padding-bottom: 16px; border-bottom: 1px solid #D8D4CC;">${NAME}</p>
 <div style="background: #F3F1EC; border: 1px solid #E6E3DC; padding: 20px; margin: 20px 0;">
-<p style="margin: 0 0 6px; font-size: 16px; font-weight: 600;">Confirm your subscription</p>
-<p style="margin: 0 0 14px; color: #6B7075;">New writing and maps will arrive by email.</p>
+<p style="margin: 0 0 6px; font-size: 16px; font-weight: 600;">Confirm Your Subscription</p>
+<p style="margin: 0 0 14px;">New writing and maps will arrive by email.</p>
 <p style="margin: 0;"><a href="${link}" style="color: #5E4B8B; text-decoration: none; font-weight: 600;">Confirm Subscription</a></p>
 </div>
-<p style="margin: 0; color: #6B7075; font-size: 13px;">The link works for ${LINK_DAYS} days. If you did not ask for this, ignore this email and nothing will be sent.</p>
+<p style="margin: 0; color: #6B7075; font-size: 12.5px;">The link works for ${LINK_DAYS} days. If you did not ask for this, ignore this email and nothing will be sent.</p>
 </div>
 </body></html>`;
 }
