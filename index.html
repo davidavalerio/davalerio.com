@@ -112,44 +112,38 @@
             outline-offset: 3px;
         }
 
-        /* The first screen: the line drawing filling the screen, the letterhead set in its strip of
-           paper above it. --px is one pixel of the 1600 x 1000 drawing as the screen shows it, so the
-           letterhead keeps its place over the drawing at any window size. It grows no larger than
-           0.894, where the drawing is at the scale of the map's own page (zoom 9.29); on a larger
-           window the drawing stays at that scale, centered in paper, and the first screen ends with it. */
+        /* The first screen: the line drawing filling the screen from its top edge (the image's
+           150-pixel strip of paper sits above the screen), the card set over Williston, which is at
+           (785, 555) in the 1600 x 1000 image. --px is one image pixel as the screen shows it,
+           capped at 0.894, the scale of the map's own page. */
 
         .card-screen {
-            --px: min(0.894px, max(100vw / 1600, 100svh / 1000));
+            --px: min(0.894px, max(100vw / 1600, 100svh / 850));
             position: relative;
-            min-height: min(100svh, 1000 * var(--px));
-            background: var(--hero) center top / calc(1600 * var(--px)) auto no-repeat, var(--paper);
+            min-height: min(100svh, 850 * var(--px));
+            background: var(--hero) center calc(-150 * var(--px)) / calc(1600 * var(--px)) auto no-repeat, var(--paper);
         }
 
-        .letterhead {
+        .card {
             position: absolute;
-            top: calc(51 * var(--px));
-            left: max(1rem, calc(50% - 656 * var(--px)));
-            right: max(1rem, calc(50% - 656 * var(--px)));
-        }
-
-        .letterhead .row {
-            display: flex;
-            align-items: center;
-            gap: calc(22 * var(--px));
+            left: calc(50% - 15 * var(--px));
+            top: calc(405 * var(--px));
+            transform: translate(-50%, -50%);
+            width: calc(520 * var(--px));
+            padding: calc(40 * var(--px)) calc(44 * var(--px)) calc(36 * var(--px));
+            background: var(--paper);
+            border: 1px solid var(--hair);
+            text-align: center;
         }
 
         .headshot {
-            flex: none;
-            width: calc(70 * var(--px));
-            height: calc(70 * var(--px));
+            display: block;
+            width: calc(96 * var(--px));
+            height: calc(96 * var(--px));
             object-fit: cover;
             border: 1px solid var(--hair);
             border-radius: 50%;
-        }
-
-        .who {
-            flex: 1;
-            min-width: 0;
+            margin: 0 auto calc(22 * var(--px));
         }
 
         .name {
@@ -159,77 +153,74 @@
         }
 
         .tagline {
-            margin-top: calc(7 * var(--px));
+            margin-top: calc(10 * var(--px));
             font-size: calc(17.9 * var(--px));
             color: var(--stone);
+            text-wrap: balance;
         }
 
         .links {
             display: flex;
             flex-wrap: wrap;
+            justify-content: center;
             gap: 0.3rem calc(27 * var(--px));
             list-style: none;
+            margin-top: calc(24 * var(--px));
             font-size: calc(17.6 * var(--px));
-        }
-
-        .rule {
-            height: 0;
-            border: 0;
-            border-top: 1px solid var(--accent);
-            margin-top: calc(22 * var(--px));
         }
 
         .drawing {
             display: none;
         }
 
-        /* On a tall or narrow screen the letterhead comes first and the whole drawing sits below it */
+        /* On a tall or narrow screen the whole drawing comes first and the card rises onto its lower edge */
         @media (max-aspect-ratio: 1/1), (max-width: 900px) {
             .card-screen {
                 min-height: 0;
                 background: none;
-                padding: 1.5rem 1rem 0.5rem;
-            }
-
-            .letterhead {
-                position: static;
-            }
-
-            .letterhead .row {
-                flex-wrap: wrap;
-                gap: 0.9rem;
-            }
-
-            .headshot {
-                width: 56px;
-                height: 56px;
-            }
-
-            .name {
-                font-size: 1.7rem;
-            }
-
-            .tagline {
-                margin-top: 0.3rem;
-                font-size: 0.95rem;
-            }
-
-            .links {
-                width: 100%;
-                gap: 0.4rem 1.4rem;
-                font-size: 1rem;
-            }
-
-            .rule {
-                margin-top: 1rem;
+                padding-block: 1rem 0.5rem;
+                padding-left: max(16px, env(safe-area-inset-left, 0px));
+                padding-right: max(16px, env(safe-area-inset-right, 0px));
             }
 
             .drawing {
                 display: block;
                 aspect-ratio: 860 / 600;
                 width: calc(100% + 2rem);
-                margin: 0.75rem -1rem 0;
+                margin: 0 -1rem;
                 background: var(--hero) center / cover no-repeat;
+            }
+
+            .card {
+                position: relative;
+                left: auto;
+                top: auto;
+                transform: none;
+                width: auto;
+                max-width: 30rem;
+                margin: -2.5rem auto 0;
+                padding: 1.75rem 1.25rem 1.5rem;
+            }
+
+            .headshot {
+                width: 72px;
+                height: 72px;
+                margin-bottom: 1rem;
+            }
+
+            .name {
+                font-size: 1.8rem;
+            }
+
+            .tagline {
+                margin-top: 0.4rem;
+                font-size: 1rem;
+            }
+
+            .links {
+                margin-top: 1rem;
+                gap: 0.4rem 1.4rem;
+                font-size: 1rem;
             }
         }
 
@@ -383,23 +374,18 @@
 <body>
     <main>
     <header class="card-screen">
-        <div class="letterhead">
-            <div class="row">
-                <img src="headshot.jpg" alt="David Valerio" class="headshot" width="70" height="70">
-                <div class="who">
-                    <h1 class="name">David Valerio</h1>
-                    <p class="tagline">Catholic writer and cartographer in Williston, ND</p>
-                </div>
-                <ul class="links">
-                    <li><a href="#maps">Maps</a></li>
-                    <li><a href="#writing">Writing</a></li>
-                    <li><a href="#podcasts">Podcasts</a></li>
-                    <li><a href="mailto:david@davalerio.com">Email</a></li>
-                </ul>
-            </div>
-            <hr class="rule">
-        </div>
         <div class="drawing" role="img" aria-label="Line drawing of the Missouri and the Yellowstone at Williston"></div>
+        <div class="card">
+            <img src="headshot.jpg" alt="David Valerio" class="headshot" width="96" height="96">
+            <h1 class="name">David Valerio</h1>
+            <p class="tagline">Catholic writer and cartographer in Williston, ND</p>
+            <ul class="links">
+                <li><a href="#maps">Maps</a></li>
+                <li><a href="#writing">Writing</a></li>
+                <li><a href="#podcasts">Podcasts</a></li>
+                <li><a href="mailto:david@davalerio.com">Email</a></li>
+            </ul>
+        </div>
     </header>
     <div class="work">
     <section id="maps">
