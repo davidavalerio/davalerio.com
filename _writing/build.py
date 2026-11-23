@@ -14,6 +14,9 @@ column is hand-made in index.html.
 A piece with `map: <name>` in its frontmatter can turn passages into map steps
 (`::: {.map-step view=<view>}`) or set in a map (`::: {.map-embed view=<view>}`).
 
+It also writes the two subscription landing pages under ../subscribe/ (Writing and Maps
+by Email; _writing/send.py sends).
+
 `--drafts` also builds the pieces in _writing/drafts/ into ../_preview/<slug>/,
 which is never published, for reading on a local server (_writing/serve.mjs).
 """
@@ -75,6 +78,22 @@ FOOT = """</body>
 </html>
 """
 
+# Writing and Maps by Email: the signup form at the foot of every essay, paper and map page.
+# The homepage carries a hand-made copy below its columns (index.html); keep the two in step,
+# and the name in step with _subscribe/worker.js and send.py.
+SUBSCRIBE_NAME = "Writing and Maps by Email"
+SUBSCRIBE = """<form class="subscribe" action="https://subscribe.davalerio.com/" method="post">
+            <label for="subscribe-email">{}</label>
+            <div class="row"><input id="subscribe-email" type="email" name="email" placeholder="you@example.com" autocomplete="email" required><button type="submit">Subscribe</button></div>
+            <input class="trap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+        </form>""".format(SUBSCRIBE_NAME)
+
+# The pages a subscriber lands on after the signup service (_subscribe/) redirects.
+NOTICES = {
+    "sent": ("Check Your Inbox", "A confirmation link is on its way. Open it and confirm, and new writing and maps will arrive by email."),
+    "confirmed": ("You’re Subscribed", "New writing and maps will arrive by email. Every email carries a link to unsubscribe."),
+}
+
 
 def esc(s):
     return html.escape(s or "", quote=True)
@@ -110,7 +129,7 @@ def load(maps=None, folder=SRC, draft=False):
             "slug": slug, "title": meta["title"], "date": date, "kind": kind,
             "subtitle": meta.get("subtitle"), "image": meta.get("image"),
             "image_alt": meta.get("image_alt"), "image_caption": meta.get("image_caption"),
-            "map": map_name,
+            "map": map_name, "credits": maps[map_name].get("credits") if map_name else None,
             "share_image": (still_url(map_name, first_view(body)) if map_name and first_view(body) else None) or meta.get("image"),
             "body": body.strip(),
             "description": meta.get("subtitle") or (text[:157] + "…" if len(text) > 158 else text),
@@ -151,8 +170,29 @@ def post_page(p, maps):
         out += '</figure>\n'
     out += '            <div class="body">\n{}\n            </div>\n        </article>\n'.format(p["body"])
     back = ("/#podcasts", "Podcasts") if p["kind"] == "conversation" else ("/#writing", "Writing")
-    out += '        <footer class="post"><a href="{}">← {}</a></footer>\n    </main>\n'.format(*back)
+    form = "" if p["kind"] == "conversation" else SUBSCRIBE + "\n        "
+    out += '        <footer class="post">\n        {}<a href="{}">← {}</a>\n        </footer>\n    </main>\n'.format(form, *back)
     return out + FOOT
+
+
+def notice_page(slug, title, text):
+    out = HEAD.format(title=esc(title) + " — David Valerio", og_title=esc(title), description=esc(text),
+                      url="{}/subscribe/{}/".format(SITE, slug), og_type="website", og_image="", favicon=FAVICON,
+                      extra_head='\n    <meta name="robots" content="noindex">', body_class="")
+    out += '    <main>\n        <header class="post">\n            <h1>{}</h1>\n        </header>\n'.format(esc(title))
+    out += '        <div class="body">\n            <p>{}</p>\n        </div>\n'.format(esc(text))
+    out += '        <footer class="post"><a href="/">← Home</a></footer>\n    </main>\n'
+    return out + FOOT
+
+
+def offline(p):
+    """A piece's body as it reads away from the site (the feed and email): no interaction
+    hints (`[...]{.live}` in a caption), and a map's credits once, at the end."""
+    body = re.sub(r'\s*<span class="live">.*?</span>', "", p["body"], flags=re.S)
+    body = re.sub(r'\s*<(p|span) class="map-credits">.*?</\1>', "", body, flags=re.S)
+    if p.get("credits"):
+        body += '\n<p class="map-credits">{}</p>'.format(esc(p["credits"]))
+    return body
 
 
 # Maps
@@ -242,7 +282,8 @@ def map_body(body, map_name, m, slug, strict, page=None):
         view, caption = e.group(1), e.group(2).strip()
         img = still(map_name, m, view, strict, caption="")
         img = img.replace('<figure class="still" style="margin: 1.6em 0;">', '<div class="still">').replace("</figure>", "</div>")
-        cap = " ".join(x for x in (re.sub(r"</?p>", "", caption), esc(m.get("credits", ""))) if x)
+        credit = '<span class="map-credits">{}</span>'.format(esc(m["credits"])) if m.get("credits") else ""
+        cap = " ".join(x for x in (re.sub(r"</?p>", "", caption), credit) if x)
         cap = "<figcaption>{}</figcaption>".format(cap) if cap else ""
         return '<figure style="margin: 1.6em 0;"><div class="map-embed" data-map="{}" data-view="{}">{}</div>{}</figure>'.format(
             map_name, view, img, cap)
@@ -297,8 +338,10 @@ def map_page(name, m):
     out += '    <main>\n        <header class="post">\n'
     out += '            <p class="meta">Map · <time datetime="{0}">{0}</time></p>\n'.format(m["date"].isoformat())
     out += '            <h1>{}</h1>\n'.format(esc(m["title"]))
-    if m.get("note"):
-        out += '            <p class="subtitle">{}</p>\n'.format(esc(m["note"]))
+    # The note describes the map; its hint (how to move it) is for the page alone, not email.
+    subtitle = " ".join(x for x in (m.get("note"), m.get("hint")) if x)
+    if subtitle:
+        out += '            <p class="subtitle">{}</p>\n'.format(esc(subtitle))
     out += '        </header>\n'
     if interactive:
         out += '        <div class="map-full" data-map="{}" data-view="{}">{}</div>\n'.format(
@@ -316,7 +359,7 @@ def map_page(name, m):
         out += '        <p class="map-credits">{}</p>\n'.format(esc(m["credits"]))
     if m.get("pdf"):
         out += '        <p class="map-downloads"><a href="/maps/{}/{}">Download the PDF</a></p>\n'.format(name, m["pdf"])
-    out += '        <footer class="post"><a href="/#maps">← Maps</a></footer>\n    </main>\n'
+    out += '        <footer class="post">\n        {}\n        <a href="/#maps">← Maps</a>\n        </footer>\n    </main>\n'.format(SUBSCRIBE)
     return out + FOOT
 
 
@@ -388,7 +431,7 @@ def feed(posts):
     items = ""
     for p in posts[:20]:
         url = "{}/writing/{}/".format(SITE, p["slug"])
-        body = re.sub(r'(href|src)="/', r'\1="' + SITE + "/", p["body"]).replace("]]>", "]]&gt;")
+        body = re.sub(r'(href|src)="/', r'\1="' + SITE + "/", offline(p)).replace("]]>", "]]&gt;")
         stamp = datetime.datetime.combine(p["date"], datetime.time(12), datetime.timezone.utc)
         items += ("    <item>\n      <title>{}</title>\n      <link>{}</link>\n      <guid>{}</guid>\n"
                   "      <pubDate>{}</pubDate>\n      <description>{}</description>\n"
@@ -427,6 +470,8 @@ def main():
     for name, m in maps.items():
         write(os.path.join(MAP_OUT, name, "index.html"), map_page(name, m))
     write(os.path.join(OUT, "index.html"), FORWARD)
+    for slug, (title, text) in NOTICES.items():
+        write(os.path.join(ROOT, "subscribe", slug, "index.html"), notice_page(slug, title, text))
     update_homepage(posts, maps)
     write(os.path.join(OUT, "feed.xml"), feed(posts))
     write(os.path.join(ROOT, "sitemap.xml"), sitemap(posts, maps))

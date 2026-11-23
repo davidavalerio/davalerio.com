@@ -1,0 +1,24 @@
+# The signup service for Writing and Maps by Email. Deployed by hand from this
+# folder with `npx wrangler deploy`; secrets RESEND_API_KEY, SEGMENT_ID and
+# SIGNING_KEY are set with `wrangler secret put` (see the site's CLAUDE.md).
+name = "davalerio-subscribe"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+workers_dev = false
+routes = [{ pattern = "subscribe.davalerio.com", custom_domain = true }]
+
+# Confirmation mail: at most 5 requests a minute from one address on the
+# internet, and 2 a minute for one email address.
+[[ratelimits]]
+name = "LIMIT_IP"
+namespace_id = "4631"
+  [ratelimits.simple]
+  limit = 5
+  period = 60
+
+[[ratelimits]]
+name = "LIMIT_EMAIL"
+namespace_id = "4632"
+  [ratelimits.simple]
+  limit = 2
+  period = 60

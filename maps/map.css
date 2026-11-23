@@ -233,6 +233,12 @@
     display: none;
 }
 
+/* A caption's interaction hint (`[...]{.live}`) shows only once the map can be moved;
+   the feed and email leave it out (offline() in _writing/build.py). */
+figure:has(.map-embed:not(.ready)) .live {
+    display: none;
+}
+
 /* Map pages */
 
 body.wide header.site,
@@ -521,6 +527,7 @@ html.still-mode .map-full.live {
 }
 
 @media print {
+    .live,
     .map-stage,
     .map-explore,
     .map-full .map-canvas,

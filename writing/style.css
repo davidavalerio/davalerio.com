@@ -285,6 +285,89 @@ footer.post {
     border-top: 1px solid var(--hair);
 }
 
+/* Writing and Maps by Email (form markup in _writing/build.py; the homepage's copy of
+   these styles sits in index.html, kept in step) */
+
+.subscribe {
+    position: relative;
+    max-width: 26rem;
+}
+
+footer.post .subscribe {
+    margin: 0.6rem 0 2.2rem;
+}
+
+.subscribe label {
+    display: block;
+    margin-bottom: 0.55rem;
+    font-size: 0.9rem;
+    color: var(--stone);
+}
+
+.subscribe .row {
+    display: flex;
+}
+
+.subscribe input[type="email"] {
+    flex: 1;
+    min-width: 0;
+    -webkit-appearance: none;
+    appearance: none;
+    font: inherit;
+    font-size: 1rem;
+    line-height: 1.4;
+    color: var(--ink);
+    background: transparent;
+    border: 1px solid var(--hair);
+    border-right: 0;
+    border-radius: 0;
+    padding: 0.55rem 0.75rem;
+}
+
+.subscribe input[type="email"]::placeholder {
+    color: var(--stone);
+    opacity: 1;
+}
+
+.subscribe input[type="email"]:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.subscribe button {
+    -webkit-appearance: none;
+    appearance: none;
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--paper);
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 0;
+    padding: 0.55rem 1.1rem;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.subscribe button:hover {
+    background: var(--ink);
+    border-color: var(--ink);
+}
+
+.subscribe button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+
+.subscribe .trap {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
 @media (max-width: 560px) {
     body {
         padding: 0 1.15rem;

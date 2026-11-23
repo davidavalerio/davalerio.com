@@ -1,0 +1,206 @@
+#!/usr/bin/env python3
+"""Email one essay, paper or map page: first a test to David alone, then, on a
+second explicit run, to the Writing segment in Resend. Nothing sends on publish.
+
+    python3 _writing/send.py <name>                 test to david@davalerio.com
+    python3 _writing/send.py <name> --subscribers   the real send
+    python3 _writing/send.py <name> --preview       print the email's HTML
+
+<name> is a piece's slug (_writing/posts/) or a map page's name (_writing/maps/,
+`page: true`). Run by the newsletter workflow's Run button, or from a session with
+`gh workflow run newsletter.yml -f name=<name> -f to=test|subscribers`.
+
+Resend's broadcast list is the record: a broadcast named `writing:<slug>` or
+`map:<name>` that went out means the piece was sent, and it is never sent again.
+The page and its images must be live before anything is sent. A failed or
+uncertain send stops and says so; nothing is retried.
+Needs RESEND_API_KEY, and SEGMENT_ID for --subscribers.
+"""
+import json
+import os
+import re
+import sys
+import time
+import urllib.error
+import urllib.request
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from build import KIND_LABEL, SITE, SUBSCRIBE_NAME, esc, load, load_maps, offline, still_url  # noqa: E402
+
+FROM = "David Valerio <writing@davalerio.com>"
+REPLY_TO = "david@davalerio.com"
+TEST_TO = "david@davalerio.com"
+FONT = "'Source Serif 4', Georgia, 'Times New Roman', serif"
+GONE_OUT = ("sent", "queued", "scheduled", "canceled")
+
+# Inline styles (email clients drop stylesheets), matching the site's pages in the
+# house email palette. A class style wins over its tag's.
+STYLES = {
+    "p": "margin: 0 0 1.1em;",
+    "a": "color: #5E4B8B; text-decoration: none; font-weight: 600;",
+    "h2": "color: #22282B; font-size: 21px; font-weight: 600; line-height: 1.25; margin: 1.8em 0 0.6em;",
+    "h3": "color: #22282B; font-size: 18px; font-weight: 600; line-height: 1.25; margin: 1.6em 0 0.5em;",
+    "h4": "color: #22282B; font-size: 16px; font-weight: 600; line-height: 1.25; margin: 1.4em 0 0.5em;",
+    "blockquote": "margin: 0 0 1.1em; border-left: 2px solid #5E4B8B; padding-left: 1.2em; font-style: italic; color: #3A4145;",
+    "ul": "margin: 0 0 1.1em; padding-left: 1.4em;",
+    "ol": "margin: 0 0 1.1em; padding-left: 1.4em;",
+    "li": "margin: 0 0 0.4em;",
+    "hr": "border: 0; border-top: 1px solid #D8D4CC; width: 80px; margin: 2em auto;",
+    "figcaption": "margin: 8px 0 0; color: #6B7075; font-size: 13px; line-height: 1.5; text-align: center;",
+}
+CLASS_STYLES = {
+    "map-note": "margin: 0 0 1.6em; color: #6B7075; font-size: 15px;",
+    "map-credits": "margin: 1.8em 0 0; color: #6B7075; font-size: 13px; line-height: 1.5;",
+}
+
+
+def styled(body, page):
+    """Inline styles, and every link and image made absolute against the live page."""
+    body = re.sub(r'(href|src)="/', r'\1="' + SITE + "/", body)
+    body = re.sub(r'href="#', 'href="' + page + "#", body)
+
+    def tag(m):
+        name, attrs = m.group(1).lower(), m.group(2)
+        if "style=" in attrs:
+            return m.group(0)
+        cls = re.search(r'class="([^"]*)"', attrs)
+        style = next((CLASS_STYLES[c] for c in (cls.group(1).split() if cls else []) if c in CLASS_STYLES),
+                     STYLES.get(name))
+        return '<{} style="{}"{}>'.format(m.group(1), style, attrs) if style else m.group(0)
+
+    return re.sub(r"<([a-zA-Z][a-zA-Z0-9]*)((?:\s[^>]*)?)>", tag, body)
+
+
+def email_html(title, url, meta, subtitle, body, test):
+    sub = ""
+    if subtitle:
+        sub = ('<p style="margin: 0 0 10px; color: #6B7075; font-size: 17px; font-style: italic; '
+               'line-height: 1.45;">{}</p>\n').format(esc(subtitle))
+    unsubscribe = ('Test send to you alone' if test else
+                   '<a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color: #6B7075; text-decoration: none;">Unsubscribe</a>')
+    return """<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap');</style>
+</head>
+<body style="margin: 0; background: #ffffff;">
+<div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: {font}; font-size: 16px; line-height: 1.66; color: #22282B;">
+<h1 style="color: #22282B; font-size: 26px; font-weight: 600; line-height: 1.15; margin: 0 0 8px;"><a href="{url}" style="color: #22282B; text-decoration: none;">{title}</a></h1>
+{sub}<p style="color: #6B7075; font-size: 12.5px; letter-spacing: 0.05em; margin: 0 0 24px; padding-bottom: 16px; border-bottom: 1px solid #D8D4CC;">{meta}</p>
+{body}
+<p style="margin: 32px 0 0; padding-top: 16px; border-top: 1px solid #E6E3DC; color: #6B7075; font-size: 13px;"><a href="{url}" style="color: #6B7075; text-decoration: none;">Read on davalerio.com</a> · {unsubscribe}<br>{name}</p>
+</div>
+</body></html>""".format(font=FONT, url=url, title=esc(title), sub=sub, meta=meta, body=styled(body, url),
+                         unsubscribe=unsubscribe, name=esc(SUBSCRIBE_NAME))
+
+
+def piece(name, test):
+    """(broadcast name, subject, email HTML, page URL) for a slug or a map page."""
+    maps = load_maps()
+    posts = {p["slug"]: p for p in load(maps)}
+    pages = {n: m for n, m in maps.items() if m.get("page")}
+    if name in posts and name in pages:
+        sys.exit("{} is both a piece and a map page; rename one".format(name))
+    if name in posts:
+        p = posts[name]
+        if p["kind"] == "conversation":
+            sys.exit("{} is a conversation; only writing and maps are emailed".format(name))
+        url = "{}/writing/{}/".format(SITE, name)
+        meta = "{} · {}".format(KIND_LABEL[p["kind"]], p["date"].isoformat())
+        return ("writing:" + name, p["title"], email_html(p["title"], url, meta, p["subtitle"], offline(p), test), url)
+    if name in pages:
+        m = pages[name]
+        url = "{}/maps/{}/".format(SITE, name)
+        image = still_url(name, m["start"]) if "views" in m else "/maps/{}/{}".format(name, m["image"])
+        alt = m["views"][m["start"]].get("alt") if "views" in m else m.get("alt")
+        body = '<figure style="margin: 0 0 1.4em;"><a href="{}"><img src="{}" alt="{}" style="display: block; width: 100%; max-width: 100%; height: auto;"></a></figure>\n'.format(
+            url, image, esc(alt))
+        if m.get("note"):
+            body += "<p>{}</p>\n".format(esc(m["note"]))
+        body += '<p><a href="{}">Explore the map on davalerio.com</a></p>\n'.format(url)
+        if m.get("credits"):
+            body += '<p class="map-credits">{}</p>\n'.format(esc(m["credits"]))
+        meta = "Map · {}".format(m["date"].isoformat())
+        return ("map:" + name, m["title"], email_html(m["title"], url, meta, None, body, test), url)
+    sys.exit("no piece or map page named " + name)
+
+
+def api(method, path, body=None):
+    req = urllib.request.Request("https://api.resend.com" + path, method=method,
+                                 data=json.dumps(body).encode() if body is not None else None,
+                                 headers={"Authorization": "Bearer " + os.environ["RESEND_API_KEY"],
+                                          "Content-Type": "application/json",
+                                          "User-Agent": "davalerio-newsletter"})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            raw = r.read()
+            return json.loads(raw) if raw else {}
+    except urllib.error.HTTPError as e:
+        sys.exit("Resend refused {} {}: {} {}".format(method, path, e.code, e.read().decode(errors="replace")[:500]))
+
+
+def broadcasts():
+    """Every broadcast in the account, through all pages of the list."""
+    out, after = [], None
+    while True:
+        page = api("GET", "/broadcasts?limit=100" + ("&after=" + after if after else ""))
+        data = page.get("data") or []
+        out += data
+        if not page.get("has_more") or not data:
+            return out
+        after = data[-1]["id"]
+
+
+def check_live(url, email):
+    """The page and every image the email shows must answer before anything is sent."""
+    images = sorted(set(re.findall(r'<img[^>]+src="({}/[^"]+)"'.format(re.escape(SITE)), email)))
+    for u in [url] + images:
+        try:
+            with urllib.request.urlopen(urllib.request.Request(u, method="HEAD"), timeout=30) as r:
+                ok = r.status == 200
+        except (urllib.error.URLError, TimeoutError):
+            ok = False
+        if not ok:
+            sys.exit("{} is not live yet; nothing sent".format(u))
+
+
+def main():
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    if len(args) != 1:
+        sys.exit(__doc__)
+    name, subscribers = args[0], "--subscribers" in sys.argv
+    key, subject, email, url = piece(name, test=not subscribers)
+    if "--preview" in sys.argv:
+        print(email)
+        return
+    check_live(url, email)
+    if not subscribers:
+        sent = api("POST", "/emails", {"from": FROM, "reply_to": REPLY_TO, "to": [TEST_TO],
+                                       "subject": "Test: " + subject, "html": email})
+        print("test of {} sent to {} (email {})".format(name, TEST_TO, sent.get("id")))
+        return
+    mine = [b for b in broadcasts() if b.get("name") == key]
+    done = [b for b in mine if b.get("status") in GONE_OUT]
+    if done:
+        print("{} already went out (broadcast {}, {}); nothing sent".format(name, done[0]["id"], done[0]["status"]))
+        return
+    for b in mine:  # drafts left by a run that stopped before sending
+        api("DELETE", "/broadcasts/" + b["id"])
+    made = api("POST", "/broadcasts", {"segment_id": os.environ["SEGMENT_ID"], "name": key, "from": FROM,
+                                       "reply_to": REPLY_TO, "subject": subject, "html": email})
+    try:
+        api("POST", "/broadcasts/{}/send".format(made["id"]), {})
+    except (urllib.error.URLError, TimeoutError) as e:
+        sys.exit("the send of {} (broadcast {}) did not answer ({}); check it in Resend before running again".format(
+            name, made["id"], e))
+    for _ in range(12):  # Resend may take a few seconds to move the broadcast out of draft
+        status = api("GET", "/broadcasts/" + made["id"]).get("status")
+        if status in GONE_OUT:
+            break
+        time.sleep(5)
+    if status not in GONE_OUT:
+        sys.exit("{} (broadcast {}) is {} after sending; check it in Resend".format(name, made["id"], status))
+    print("{} sent to subscribers as broadcast {} ({})".format(name, made["id"], status))
+
+
+if __name__ == "__main__":
+    main()
