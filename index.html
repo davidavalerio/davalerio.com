@@ -120,7 +120,7 @@
         .card-screen {
             --px: min(0.894px, max(100vw / 1600, 100svh / 850));
             position: relative;
-            min-height: min(100svh, 850 * var(--px));
+            min-height: calc(850 * var(--px));
             background: var(--hero) center calc(-150 * var(--px)) / calc(1600 * var(--px)) auto no-repeat, var(--paper);
         }
 
@@ -178,9 +178,7 @@
             .card-screen {
                 min-height: 0;
                 background: none;
-                padding-block: 1rem 0.5rem;
-                padding-left: max(16px, env(safe-area-inset-left, 0px));
-                padding-right: max(16px, env(safe-area-inset-right, 0px));
+                padding: 1rem 1rem 0.5rem;
             }
 
             .drawing {
