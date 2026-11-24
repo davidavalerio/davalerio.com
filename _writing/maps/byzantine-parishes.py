@@ -10,7 +10,7 @@ Reads the Byzantine Catholic Parishes project in Drive without touching it and
 writes vectors.pmtiles (the parishes with what a reader sees on clicking one,
 and the state boundaries) and terrain.pmtiles (USGS 3DEP elevation for the
 shaded relief beneath them: about 5 km over the whole map, 1.2 km over the
-lower 48) into maps/byzantine-parishes/.
+lower 48, every part tiled to zoom 6 so the relief never drops out) into maps/byzantine-parishes/.
 """
 import os
 import sys
@@ -52,7 +52,9 @@ for name, box, size in pieces:
     raw = os.path.join(scratch, "dem-{}-raw.tif".format(name))
     if not os.path.exists(raw):
         time.sleep(5)
-        urllib.request.urlretrieve(EXPORT.format(*box, *size), raw)
+        urllib.request.urlretrieve(EXPORT.format(*box, *size), raw + ".part")
+        gdal.Open(raw + ".part")  # a cut-off download or an error page fails here, not on the next run
+        os.replace(raw + ".part", raw)
     clean = os.path.join(scratch, "dem-{}.tif".format(name))
     src = gdal.Open(raw)
     a = src.GetRasterBand(1).ReadAsArray()
@@ -64,5 +66,5 @@ for name, box, size in pieces:
     dems.append(clean)
 n = maptiles.terrain(dems, os.path.join(OUT, "terrain.pmtiles"), scratch,
                      region=(-179, 12, -50, 73), core=(-125, 24, -66, 50),
-                     region_maxzoom=6, core_maxzoom=7, minzoom=2)
+                     region_maxzoom=6, core_maxzoom=6, minzoom=2)
 print("terrain tiles:", n, round(os.path.getsize(os.path.join(OUT, "terrain.pmtiles")) / 1e6, 1), "MB")

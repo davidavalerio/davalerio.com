@@ -11,7 +11,7 @@ credits: 'Parish records compiled from eparchy directories, GCatholic.org and pa
 bounds: [-179, 12, -50, 73]
 sources:
   vectors: {type: vector, url: vectors.pmtiles}
-  relief: {type: raster-dem, url: terrain.pmtiles, encoding: terrarium, tileSize: 256, maxzoom: 7}
+  relief: {type: raster-dem, url: terrain.pmtiles, encoding: terrarium, tileSize: 256, maxzoom: 6}
 layers:
 - id: hillshade
   type: hillshade
