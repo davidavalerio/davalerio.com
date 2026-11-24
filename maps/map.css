@@ -8,6 +8,10 @@
     --map-city-line: #6B7075;
     --map-shadow: #4A4F55;
     --map-highlight: #FFFFFF;
+    --map-coal-anthracite: #85827C;
+    --map-coal-bituminous: #BAB7B1;
+    --map-coal-subbituminous: #D6D3CD;
+    --map-coal-lignite: #E7E4DF;
     --map-wide: min(82rem, calc(100vw - 3rem));
 }
 
@@ -19,6 +23,10 @@
         --map-city-line: #9BA0A4;
         --map-shadow: #000000;
         --map-highlight: #3A4045;
+        --map-coal-anthracite: #6B6964;
+        --map-coal-bituminous: #4F4D49;
+        --map-coal-subbituminous: #3A3936;
+        --map-coal-lignite: #2B2C2B;
     }
 }
 
