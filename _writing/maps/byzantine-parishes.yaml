@@ -3,20 +3,31 @@
 title: Byzantine Catholic Parishes
 date: '2026-11-14'
 page: true
-note: The 562 Byzantine Catholic parishes, missions and communities in the United States, colored by church and eparchy, over shaded relief.
+note: The 562 Byzantine Catholic parishes, missions and communities in the United States, colored by church and eparchy, over the coal fields of the lower 48, shaded by rank.
 hint: Click a point for the parish, its eparchy and its Sunday liturgy; drag to move and scroll to zoom.
 start: country
 credits: 'Parish records compiled from eparchy directories, GCatholic.org and parish websites, checked 2026-11-14; some locations are approximate.
-  Elevation: USGS 3D Elevation Program. State boundaries: U.S. Census Bureau.'
+  Coal fields: U.S. Geological Survey, Coal Fields of the Conterminous United States (East, 2013, Open-File Report 2012-1205). State boundaries:
+  U.S. Census Bureau.'
 bounds: [-179, 12, -50, 73]
 sources:
   vectors: {type: vector, url: vectors.pmtiles}
-  relief: {type: raster-dem, url: terrain.pmtiles, encoding: terrarium, tileSize: 256, maxzoom: 6}
 layers:
-- id: hillshade
-  type: hillshade
-  source: relief
-  paint: {hillshade-shadow-color: --map-shadow, hillshade-highlight-color: --map-highlight, hillshade-accent-color: --map-shadow, hillshade-exaggeration: 0.8}
+- id: coal
+  type: fill
+  source: vectors
+  source-layer: coal
+  paint:
+    fill-color:
+    - match
+    - [get, rank]
+    - Anthracite
+    - --map-coal-anthracite
+    - [Low Volatile Bituminous, Medium and High Volatile Bituminous]
+    - --map-coal-bituminous
+    - Subbituminous
+    - --map-coal-subbituminous
+    - --map-coal-lignite
 - id: states
   type: line
   source: vectors
@@ -65,18 +76,24 @@ views:
   country:
     center: [-96.5, 38.6]
     zoom: 3.9
-    show: [hillshade, states, parishes]
-    alt: Shaded-relief map of the United States with Byzantine Catholic parishes as colored points, thickest from Ohio and Pennsylvania to New York and New
-      Jersey, scattered across Florida, Texas, Arizona and California.
+    show: [coal, states, parishes]
+    alt: Map of the United States with Byzantine Catholic parishes as colored points over gray coal fields, the points thickest on and around the Appalachian
+      coal fields from Ohio and Pennsylvania to New York and New Jersey, and scattered across Florida, Texas, Arizona and California.
     caption: The Byzantine Catholic parishes of the United States.
   northeast:
     center: [-77.6, 41.2]
     zoom: 5.7
-    show: [hillshade, states, parishes]
-    alt: Closer shaded-relief view from Ohio to New England, Ruthenian parishes clustered in western Pennsylvania and Ukrainian parishes along the Pennsylvania
-      anthracite region, New Jersey and New York.
+    show: [coal, states, parishes]
+    alt: Closer view from Ohio to New England over the coal fields, Ruthenian parishes clustered on the bituminous field of western Pennsylvania and Ukrainian
+      and Ruthenian parishes on the small dark anthracite fields of eastern Pennsylvania, with more in New Jersey and New York.
     caption: From Ohio to New England, where most of the parishes are.
 legend:
+- heading: Coal Fields
+  items:
+  - {shape: fill, color: --map-coal-anthracite, label: Anthracite}
+  - {shape: fill, color: --map-coal-bituminous, label: Bituminous}
+  - {shape: fill, color: --map-coal-subbituminous, label: Subbituminous}
+  - {shape: fill, color: --map-coal-lignite, label: Lignite}
 - heading: Ruthenian
   items:
   - {shape: dot, color: '#B27C10', label: Pittsburgh}
