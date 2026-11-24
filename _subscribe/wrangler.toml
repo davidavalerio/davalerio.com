@@ -23,8 +23,12 @@ namespace_id = "4632"
   limit = 2
   period = 60
 
-# Fingerprints only (see worker.js): one confirmation per address a day, the
-# day's count, and links already used.
-[[kv_namespaces]]
-binding = "SUBSCRIBE"
-id = "a79747c5edce45eb8371094535612340"
+# The Ledger (see worker.js): one confirmation per address a day, the day's
+# count, and links already used, as fingerprints only.
+[[durable_objects.bindings]]
+name = "LEDGER"
+class_name = "Ledger"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Ledger"]

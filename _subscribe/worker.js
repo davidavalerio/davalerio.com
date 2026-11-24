@@ -12,9 +12,13 @@
 // and it expires after LINK_DAYS and works once. The hidden "website" field is
 // a bot trap. Confirmation mail is capped by LIMIT_IP and LIMIT_EMAIL (per-minute
 // rate-limit bindings in wrangler.toml), by one email per address per day, and
-// by DAILY_CAP emails a day in all. The SUBSCRIBE store holds only HMAC
-// fingerprints (of addresses for a day, of used links until they expire) and a
-// daily count; addresses are never stored or logged by the Worker.
+// by DAILY_CAP emails a day in all. Those caps and the used links are kept in
+// the Ledger, one Durable Object whose calls run one at a time, so each check
+// and its record happen together. It holds only HMAC fingerprints (of addresses
+// for a day, of used links until they expire) and a count per day; addresses
+// are never stored or logged by the Worker.
+
+import { DurableObject } from "cloudflare:workers";
 
 const SITE = "https://davalerio.com";
 const SELF = "https://subscribe.davalerio.com";
@@ -64,10 +68,9 @@ async function subscribe(request, env) {
   // One confirmation per address a day: a repeat lands on the same page as a
   // first request, so the form reveals nothing about who has asked.
   const sentKey = "sent:" + (await mac(`sent|${email}`, env));
-  if (await env.SUBSCRIBE.get(sentKey)) return go("/subscribe/sent/");
-  const dayKey = "day:" + new Date().toISOString().slice(0, 10);
-  const today = Number(await env.SUBSCRIBE.get(dayKey)) || 0;
-  if (today >= DAILY_CAP) {
+  const allowed = await ledger(env).reserve(sentKey, new Date().toISOString().slice(0, 10), DAILY_CAP, DAY);
+  if (allowed === "repeat") return go("/subscribe/sent/");
+  if (allowed === "full") {
     return page("Sign-Ups Paused", "Sign-ups have reached today's limit. Try again tomorrow.", 429);
   }
   const link = `${SELF}/confirm?k=${await seal(email, env)}`;
@@ -79,9 +82,10 @@ async function subscribe(request, env) {
     html: confirmationEmail(link),
     text: `Confirm your subscription to new writing by David Valerio:\n\n${link}\n\nThe link works for ${LINK_DAYS} days. If you did not ask for this, ignore this email and nothing will be sent.`,
   });
-  if (!res.ok) return page("Something Went Wrong", "The confirmation email could not be sent. Try again in a few minutes.", 502);
-  await env.SUBSCRIBE.put(sentKey, "1", { expirationTtl: DAY });
-  await env.SUBSCRIBE.put(dayKey, String(today + 1), { expirationTtl: 2 * DAY });
+  if (!res.ok) {
+    await ledger(env).release(sentKey);
+    return page("Something Went Wrong", "The confirmation email could not be sent. Try again in a few minutes.", 502);
+  }
   return go("/subscribe/sent/");
 }
 
@@ -89,7 +93,7 @@ async function confirmPage(url, env) {
   const k = url.searchParams.get("k") || "";
   const link = await unseal(k, env);
   if (link.status !== "ok") return invalid(link.status);
-  if (await env.SUBSCRIBE.get(await usedKey(k, env))) return go("/subscribe/confirmed/");
+  if (await ledger(env).has(await usedKey(link.bytes, env))) return alreadyUsed();
   return page("Confirm Your Subscription", `New writing will be sent to ${esc(link.email)}.`, 200,
     `<form class="subscribe" method="post" action="/confirm">
                 <input type="hidden" name="k" value="${esc(k)}">
@@ -97,29 +101,83 @@ async function confirmPage(url, env) {
             </form>`);
 }
 
-// A link works once: pressed again, it shows the confirmed page and changes nothing,
-// so an old email cannot undo a later unsubscribe.
+// A link works once: it is claimed in the Ledger before the contact is touched,
+// and pressed again it says so and changes nothing, so an old email cannot undo a
+// later unsubscribe. A claim whose enrollment failed is released for a retry
+// (enrolling again is harmless).
 async function confirm(request, env) {
   const form = await formOf(request);
   if (!form) return NOT_A_FORM();
   const k = String(form.get("k") || "");
   const link = await unseal(k, env);
   if (link.status !== "ok") return invalid(link.status);
-  const used = await usedKey(k, env);
-  if (await env.SUBSCRIBE.get(used)) return go("/subscribe/confirmed/");
+  const used = await usedKey(link.bytes, env);
+  if (!(await ledger(env).claim(used, (LINK_DAYS + 1) * DAY))) return alreadyUsed();
   const result = await enroll(link.email, env);
   if (result === "elsewhere") {
     return page("Not Subscribed", `This address unsubscribed from all mail sent from davalerio.com, so it cannot be subscribed again here. Write to <a href="mailto:${REPLY_TO}">${REPLY_TO}</a> to be added.`, 409);
   }
   if (result !== "ok") {
+    await ledger(env).release(used);
     return page("Something Went Wrong", "The subscription could not be saved. Try the link again in a few minutes.", 502);
   }
-  await env.SUBSCRIBE.put(used, "1", { expirationTtl: (LINK_DAYS + 1) * DAY });
   return go("/subscribe/confirmed/");
 }
 
-async function usedKey(k, env) {
-  return "used:" + (await mac(`used|${k}`, env));
+function alreadyUsed() {
+  return page("Link Already Used", `This confirmation link has already been used. To subscribe again, use the form on the <a href="${SITE}/">homepage</a>.`, 410);
+}
+
+// A used link's fingerprint, taken from its authenticated bytes.
+async function usedKey(bytes, env) {
+  return "used:" + (await mac(`used|${b64url(bytes)}`, env));
+}
+
+// The Ledger
+
+function ledger(env) {
+  return env.LEDGER.get(env.LEDGER.idFromName("ledger"));
+}
+
+// Each method runs alone and synchronously, so a check and its record cannot
+// interleave with another request's.
+export class Ledger extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env);
+    ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS marks (key TEXT PRIMARY KEY, until INTEGER NOT NULL)");
+    ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS days (day TEXT PRIMARY KEY, sent INTEGER NOT NULL)");
+  }
+
+  #sweep() {
+    this.ctx.storage.sql.exec("DELETE FROM marks WHERE until <= ?", Math.floor(Date.now() / 1000));
+  }
+
+  has(key) {
+    this.#sweep();
+    return this.ctx.storage.sql.exec("SELECT 1 FROM marks WHERE key = ?", key).toArray().length > 0;
+  }
+
+  // Records key for `seconds` and returns true, or false if it is already recorded.
+  claim(key, seconds) {
+    if (this.has(key)) return false;
+    this.ctx.storage.sql.exec("INSERT INTO marks (key, until) VALUES (?, ?)", key, Math.floor(Date.now() / 1000) + seconds);
+    return true;
+  }
+
+  release(key) {
+    this.ctx.storage.sql.exec("DELETE FROM marks WHERE key = ?", key);
+  }
+
+  // One confirmation for this address today, within the day's cap: "ok", "repeat" or "full".
+  reserve(key, day, cap, seconds) {
+    if (this.has(key)) return "repeat";
+    this.ctx.storage.sql.exec("DELETE FROM days WHERE day < ?", new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10));
+    const row = this.ctx.storage.sql.exec("SELECT sent FROM days WHERE day = ?", day).toArray()[0];
+    if ((row ? row.sent : 0) >= cap) return "full";
+    this.claim(key, seconds);
+    this.ctx.storage.sql.exec("INSERT INTO days (day, sent) VALUES (?, 1) ON CONFLICT(day) DO UPDATE SET sent = sent + 1", day);
+    return "ok";
+  }
 }
 
 // Adds the address to the Writing segment and makes sure it receives broadcasts:
@@ -144,9 +202,17 @@ async function enrolled(email, env) {
   } else if (found.ok) {
     const contact = await found.json();
     if (contact.unsubscribed) {
+      // The opt-out is cleared only once Writing is shown to be their one segment.
       const segments = await segmentsOf(id, env);
       if (!segments) return null;
       if (segments.some((s) => s !== env.SEGMENT_ID)) return "elsewhere";
+      if (!segments.includes(env.SEGMENT_ID)) {
+        const added = await resend(env, "POST", `/contacts/${id}/segments/${env.SEGMENT_ID}`);
+        if (!added.ok) return null;
+      }
+      const now = await segmentsOf(id, env);
+      if (!now) return null;
+      if (now.length !== 1 || now[0] !== env.SEGMENT_ID) return "elsewhere";
       const updated = await resend(env, "PATCH", `/contacts/${id}`, { unsubscribed: false });
       if (!updated.ok) return null;
     }
@@ -203,12 +269,13 @@ async function seal(email, env) {
   return b64url(out);
 }
 
-// { status: "ok", email } or { status: "expired" | "broken" }
+// { status: "ok", email, bytes } or { status: "expired" | "broken" }. Only the
+// canonical spelling of a token is accepted.
 async function unseal(k, env) {
-  let text;
+  let text, bytes;
   try {
-    const bytes = unb64url(k);
-    if (bytes.length < 29 || bytes.length > 400) return { status: "broken" };
+    bytes = unb64url(k);
+    if (bytes.length < 29 || bytes.length > 400 || b64url(bytes) !== k) return { status: "broken" };
     const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes.slice(0, 12) }, await sealKey(env), bytes.slice(12));
     text = new TextDecoder().decode(plain);
   } catch {
@@ -218,7 +285,7 @@ async function unseal(k, env) {
   const t = text.slice(0, bar), email = text.slice(bar + 1);
   if (bar < 1 || !/^\d{1,12}$/.test(t) || !EMAIL.test(email)) return { status: "broken" };
   const age = Date.now() / 1000 - Number(t);
-  return age >= -300 && age <= LINK_DAYS * DAY ? { status: "ok", email } : { status: "expired" };
+  return age >= -300 && age <= LINK_DAYS * DAY ? { status: "ok", email, bytes } : { status: "expired" };
 }
 
 // Resend

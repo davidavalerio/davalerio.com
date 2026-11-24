@@ -12,8 +12,8 @@ second explicit run, to the Writing segment in Resend. Nothing sends on publish.
 
 The subscriber send runs only in that workflow on main, after a successful test of
 the same piece on the same commit (the workflow checks), and only when the live
-page is byte for byte the page in this checkout, so what is mailed is what is
-published. Resend's broadcast list is the record: a broadcast named
+page is byte for byte the page this checkout's source renders, so what is mailed
+is what is published. Resend's broadcast list is the record: a broadcast named
 `writing:<slug>` or `map:<name>` that went out means the piece was sent, and it is
 never sent again. A failed or uncertain send stops and says so; nothing is
 retried. Needs RESEND_API_KEY, and SEGMENT_ID for --subscribers.
@@ -28,7 +28,7 @@ import urllib.error
 import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from build import KIND_LABEL, SITE, SUBSCRIBE_NAME, esc, load, load_maps, offline, still_url  # noqa: E402
+from build import KIND_LABEL, SITE, SUBSCRIBE_NAME, esc, load, load_maps, map_page, offline, post_page, still_url  # noqa: E402
 
 FROM = "David Valerio <writing@davalerio.com>"
 REPLY_TO = "david@davalerio.com"
@@ -36,6 +36,7 @@ TEST_TO = "david@davalerio.com"
 FONT = "'Source Serif 4', Georgia, 'Times New Roman', serif"
 GONE_OUT = ("sent", "queued", "scheduled", "canceled")  # a broadcast in any of these is never sent again
 DELIVERING = ("sent", "queued")                         # a send that worked
+DRAFT = "draft"                                         # the only status a leftover broadcast is deleted in
 FRESH_DRAFT = datetime.timedelta(minutes=10)           # a draft younger than this may be a send in progress
 
 # Inline styles (email clients drop stylesheets), matching the site's pages in the
@@ -105,7 +106,8 @@ def email_html(title, url, meta, subtitle, body, test):
 
 
 def piece(name, test):
-    """(broadcast name, subject, email HTML, page URL) for a slug or a map page."""
+    """(broadcast name, subject, email HTML, page URL, page HTML) for a slug or a map
+    page, the email and the page both rendered from the same source."""
     maps = load_maps()
     posts = {p["slug"]: p for p in load(maps)}
     pages = {n: m for n, m in maps.items() if m.get("page")}
@@ -117,7 +119,8 @@ def piece(name, test):
             sys.exit("{} is a conversation; only writing and maps are emailed".format(name))
         url = "{}/writing/{}/".format(SITE, name)
         meta = "{} · {}".format(KIND_LABEL[p["kind"]], p["date"].isoformat())
-        return ("writing:" + name, p["title"], email_html(p["title"], url, meta, p["subtitle"], offline(p), test), url)
+        return ("writing:" + name, p["title"], email_html(p["title"], url, meta, p["subtitle"], offline(p), test), url,
+                post_page(p, maps))
     if name in pages:
         m = pages[name]
         url = "{}/maps/{}/".format(SITE, name)
@@ -131,7 +134,8 @@ def piece(name, test):
         if m.get("credits"):
             body += '<p class="map-credits">{}</p>\n'.format(esc(m["credits"]))
         meta = "Map · {}".format(m["date"].isoformat())
-        return ("map:" + name, m["title"], email_html(m["title"], url, meta, None, body, test), url)
+        return ("map:" + name, m["title"], email_html(m["title"], url, meta, None, body, test), url,
+                map_page(name, m))
     sys.exit("no piece or map page named " + name)
 
 
@@ -162,24 +166,18 @@ def broadcasts():
         after = data[-1]["id"]
 
 
-def page_file(url):
-    """The page in this checkout that is published at url."""
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    return os.path.join(root, url[len(SITE) + 1:], "index.html")
-
-
-def check_published(url):
-    """The live page must be this checkout's page, so an unpublished edit is never mailed."""
+def check_published(url, page):
+    """The live page must be the page the email's source renders, so an unpublished
+    edit, or a source edit whose page was never rebuilt, is never mailed."""
     try:
         with urllib.request.urlopen(urllib.request.Request(url, headers={"Cache-Control": "no-cache"}),
                                     timeout=30) as r:
             live = r.read()
     except (urllib.error.URLError, TimeoutError) as e:
         sys.exit("{} did not answer ({}); nothing sent".format(url, e))
-    with open(page_file(url), "rb") as f:
-        if f.read() != live:
-            sys.exit("the live page at {} is not this commit's page; wait for the site to deploy, "
-                     "then test and send again. Nothing sent".format(url))
+    if page.encode("utf-8") != live:
+        sys.exit("the live page at {} is not the page this commit's source renders; rebuild and deploy, "
+                 "then test and send again. Nothing sent".format(url))
 
 
 def check_live(url, email):
@@ -200,7 +198,7 @@ def main():
     if len(args) != 1:
         sys.exit(__doc__)
     name, subscribers = args[0], "--subscribers" in sys.argv
-    key, subject, email, url = piece(name, test=not subscribers)
+    key, subject, email, url, page = piece(name, test=not subscribers)
     if "--preview" in sys.argv:
         print(email)
         return
@@ -209,7 +207,7 @@ def main():
         sys.exit("the subscriber send runs only in the newsletter workflow on main; nothing sent")
     check_live(url, email)
     if subscribers:
-        check_published(url)
+        check_published(url, page)
     if not subscribers:
         sent = api("POST", "/emails", {"from": FROM, "reply_to": REPLY_TO, "to": [TEST_TO],
                                        "subject": "Test: " + subject, "html": email})
@@ -226,6 +224,9 @@ def main():
         return
     now = datetime.datetime.now(datetime.timezone.utc)
     for b in mine:  # drafts left by a run that stopped before sending
+        if b.get("status") != DRAFT:
+            sys.exit("{} has broadcast {} in status {}; check it in Resend. Nothing sent".format(
+                name, b["id"], b.get("status")))
         made_at = datetime.datetime.fromisoformat(b["created_at"].replace(" ", "T").replace("Z", "+00:00"))
         if made_at.tzinfo is None:
             made_at = made_at.replace(tzinfo=datetime.timezone.utc)

@@ -188,7 +188,7 @@ def notice_page(slug, title, text):
 def offline(p):
     """A piece's body as it reads away from the site (the feed and email): no interaction
     hints (`[...]{.live}` in a caption), and a map's credits once, at the end."""
-    body = re.sub(r'\s*<span class="live">.*?</span>', "", p["body"], flags=re.S)
+    body = re.sub(r'\s*<span\s+class="live">.*?</span>', "", p["body"], flags=re.S)
     body = re.sub(r'\s*<(p|span) class="map-credits">.*?</\1>', "", body, flags=re.S)
     if p.get("credits"):
         body += '\n<p class="map-credits">{}</p>'.format(esc(p["credits"]))
