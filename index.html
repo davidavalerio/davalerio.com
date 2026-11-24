@@ -215,10 +215,20 @@
                 font-size: 1rem;
             }
 
+            /* Inline and balanced, so a narrow card breaks the links into even lines
+               rather than leaving one alone on the second. */
             .links {
+                display: block;
                 margin-top: 1rem;
-                gap: 0.4rem 1.4rem;
                 font-size: 1rem;
+                line-height: 1.9;
+                text-align: center;
+                text-wrap: balance;
+            }
+
+            .links li {
+                display: inline;
+                margin: 0 0.6rem;
             }
         }
 
@@ -487,6 +497,7 @@
                 <li><a href="#writing">Writing</a></li>
                 <li><a href="#maps">Maps</a></li>
                 <li><a href="#podcasts">Podcasts</a></li>
+                <li><a href="#subscribe">Subscribe</a></li>
                 <li><a href="mailto:david@davalerio.com">Email</a></li>
             </ul>
         </div>
@@ -609,7 +620,7 @@
     </section>
     <!-- podcasts:end -->
     </div>
-    <section class="subscribe-band" aria-label="Writing by Email">
+    <section class="subscribe-band" id="subscribe" aria-label="Writing by Email">
         <div>
         <form class="subscribe" action="https://subscribe.davalerio.com/" method="post">
             <label for="subscribe-email">Writing by Email</label>
