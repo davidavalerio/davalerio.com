@@ -254,12 +254,6 @@ body.wide main {
     max-width: 82rem;
 }
 
-body.wide header.post > *,
-body.wide .map-credits,
-body.wide .map-downloads {
-    max-width: var(--measure);
-}
-
 .map-full {
     position: relative;
 }

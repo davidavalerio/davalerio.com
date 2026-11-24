@@ -1,11 +1,12 @@
-// The workbench page: pick a piece, tune it live from the settings it declares, save or revert.
+// The workbench page: pick a map, tune it live from the settings it declares, save or revert.
 // Each kind of piece has an adapter that draws it and applies a setting to it; the panel is built
-// from the declarations alone (number, color, view), so a new kind needs only its adapter.
+// from the declarations alone (number, color, view), so a new kind needs only its adapter. The page's
+// text (type text) is not in the panel: it is shown around the piece as on the site and edited in place.
 import GUI from './lib/lil-gui.esm.min.js';
 
 const $ = id => document.getElementById(id);
 const stage = $('stage'), panel = $('panel'), status = $('status'), saveBtn = $('save'), revertBtn = $('revert'), select = $('piece');
-let gui = null, current = null, saved = null, values = null, adapter = null, generation = 0;
+let gui = null, current = null, saved = null, values = null, adapter = null, generation = 0, host = stage;
 
 const say = (text, cls = '') => {
     status.textContent = text;
@@ -24,7 +25,7 @@ async function modelAdapter(piece) {
     const { turnable } = await import('/maps/model.js');
     const view = document.createElement('div');
     view.className = 'model-view';
-    stage.append(view);
+    host.append(view);
     // drawn from the build's web copy, with the settings as saved, which may be newer than that build
     const api = await turnable(view, { base: '/build/' + piece.name + '/', fields: true, settings: Object.fromEntries(piece.settings.map(s => [s.key, s.value])) });
     return {
@@ -48,7 +49,7 @@ async function terrainAdapter(piece) {
     const maplibre = await import('/maps/lib/maplibre-gl.mjs');
     const el = document.createElement('div');
     el.className = 'wb-map';
-    stage.append(el);
+    host.append(el);
     const state = makeMap(el, piece.name, { view: piece.def.start });
     const def = state.def;   // the copy the live map reads, so edits reach show() and restyle()
     state.map.addControl(new maplibre.NavigationControl({ visualizePitch: true }), 'top-right');
@@ -104,7 +105,55 @@ async function terrainAdapter(piece) {
     };
 }
 
-const ADAPTERS = { model: modelAdapter, terrain: terrainAdapter };
+// A print page: its image, with nothing to tune
+async function pageAdapter(piece) {
+    if (piece.image) {
+        const img = document.createElement('img');
+        img.className = 'wb-image';
+        img.src = '/maps/' + piece.name + '/' + piece.image;
+        host.append(img);
+    }
+    return { set() {}, view() {}, goto() {}, parts: [] };
+}
+
+const ADAPTERS = { model: modelAdapter, terrain: terrainAdapter, page: pageAdapter };
+
+// --- The page's text, edited in place
+
+const textEls = {};
+function textBox(tag, key, cls, placeholder) {
+    const el = document.createElement(tag);
+    if (cls) el.className = cls;
+    el.contentEditable = 'false';   // editable once the piece has loaded and its text is in
+    el.spellcheck = true;
+    el.dataset.key = key;
+    el.dataset.placeholder = placeholder;
+    el.addEventListener('keydown', e => e.key === 'Enter' && (e.preventDefault(), el.blur()));
+    el.addEventListener('input', () => {
+        values[key] = el.textContent.replace(/\s+/g, ' ').trim();
+        changed();
+    });
+    textEls[key] = el;
+    return el;
+}
+
+// The title, the note and hint above the piece and the credits below it, laid out as the map's page has them
+function pageText(piece) {
+    const header = document.createElement('header');
+    header.className = 'post wb-text';
+    const h1 = document.createElement('h1');
+    h1.textContent = piece.title;
+    const sub = document.createElement('p');
+    sub.className = 'subtitle';
+    sub.append(textBox('span', 'text.note', 'wb-edit', 'Description'), ' ', textBox('span', 'text.hint', 'wb-edit', 'How to Move It'));
+    header.append(h1, sub);
+    return { header, credits: textBox('p', 'text.credits', 'map-credits wb-edit', 'Credits') };
+}
+
+function apply(k, v) {
+    if (textEls[k]) textEls[k].textContent = v;
+    else adapter.set(k, v);
+}
 
 // --- The panel
 
@@ -114,6 +163,7 @@ function build(piece) {
     const folders = {};
     const folder = name => (folders[name] ||= gui.addFolder(name));
     for (const s of piece.settings) {
+        if (s.type === 'text') continue;
         const f = folder(s.group || 'Settings');
         if (s.type === 'number') {
             f.add(values, s.key, s.min, s.max, s.step).name(s.label).onChange(v => {
@@ -153,16 +203,29 @@ async function open(name) {
     gui?.destroy();
     gui = null;
     stage.replaceChildren();
+    for (const k in textEls) delete textEls[k];
     try {
         const res = await fetch('/api/piece/' + name);
-        if (!res.ok) throw new Error('could not read it');
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'could not read it');
         const piece = await res.json();
+        if (mine !== generation) return;
+        const page = document.createElement('div');
+        page.className = 'wb-page';
+        stage.append(page);
+        const text = pageText(piece);
+        page.append(text.header);
+        host = page;
         const drawn = await ADAPTERS[piece.kind](piece);
         if (mine !== generation) return drawn.cleanup?.();
+        page.append(text.credits);
         current = piece;
         adapter = drawn;
         saved = Object.fromEntries(current.settings.map(s => [s.key, s.value]));
         values = structuredClone(saved);
+        for (const k in textEls) {
+            textEls[k].textContent = values[k] ?? '';
+            textEls[k].contentEditable = 'plaintext-only';
+        }
     } catch (e) {
         console.error(e);
         if (mine === generation) say('Could not open ' + name + ': ' + e.message, 'error');
@@ -181,6 +244,7 @@ saveBtn.addEventListener('click', async () => {
     const controls = gui.controllersRecursive();
     const lock = on => {
         controls.forEach(c => c.enable(!on));   // nothing can be edited, or the piece switched, while the save is under way
+        Object.values(textEls).forEach(el => (el.contentEditable = on ? 'false' : 'plaintext-only'));
         select.disabled = revertBtn.disabled = saveBtn.disabled = on;
     };
     lock(true);
@@ -202,7 +266,7 @@ saveBtn.addEventListener('click', async () => {
     for (const [k, v] of Object.entries(saved))
         if (JSON.stringify(values[k]) !== JSON.stringify(v)) {
             values[k] = structuredClone(v);
-            adapter.set(k, values[k]);
+            apply(k, values[k]);
         }
     controls.forEach(c => c.updateDisplay());
     changed();

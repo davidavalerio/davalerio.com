@@ -90,10 +90,45 @@ body {
     --name-width: 46%;
 }
 
+/* The map's page as the site lays it out, 1200px across at most */
+.wb-page {
+    width: min(1200px, 100%);
+}
+
+.wb-text {
+    padding: 0 0 1.6rem;
+}
+
+/* Text edited in place: a faint outline shows what can be clicked into, and an empty box shows its name */
+.wb-edit {
+    border-radius: 2px;
+    outline: 1px dashed transparent;
+    outline-offset: 3px;
+}
+
+.wb-edit:hover {
+    outline-color: var(--hair);
+}
+
+.wb-edit:focus {
+    outline: 1px solid #6C71C4;
+}
+
+.wb-edit:empty::before {
+    content: attr(data-placeholder);
+    opacity: 0.45;
+}
+
+.wb-image {
+    display: block;
+    max-width: 100%;
+    border: 1px solid var(--hair);
+}
+
 /* A terrain map in the 3:2 its views are framed for (1200 x 800 at most); a saved view is corrected for its size */
 .wb-map {
     position: relative;
-    width: min(1200px, 100%);
+    width: 100%;
     aspect-ratio: 3 / 2;
     border: 1px solid var(--hair);
 }
