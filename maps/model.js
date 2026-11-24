@@ -348,7 +348,7 @@ export async function turnable(view, opts = {}) {
         rod.scale.z = top - bottom;
         note.textContent = 'Relief exaggerated ' + S.ve + ' times. ' + (t < 0.002
             ? 'Layers at their true depths, exaggerated the same.'
-            : 'Layer spacing not to scale.') + ' Depths at Watford City.' + (coarse ? ' Two fingers turn and zoom.' : ' Drag to turn, scroll to zoom.');
+            : 'Layer spacing not to scale.') + ' Depths at Watford City.';
         fit();
     }
     slider.addEventListener('input', () => {

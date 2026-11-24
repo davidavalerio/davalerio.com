@@ -4,7 +4,7 @@
 // It listens on 127.0.0.1:8795 and, for as long as it runs, Tailscale publishes it to David's own
 // devices at https://<the mini's tailnet name>:8796/ (the tailnet's rules keep shared users to port 443).
 //
-// Every map definition in _writing/maps/ is a piece. Each has its page's text (the note, the hint and the
+// Every map definition in _writing/maps/ is a piece. Each has its page's text (the note and the
 // credits), edited in place on the page as the workbench shows it and saved into the definition, after which
 // the map pages are rebuilt. Beyond the text:
 //   interactive maps (a definition with views): exaggeration when it has terrain, the palette colours its
@@ -44,10 +44,10 @@ function pieces() {
 }
 
 // The page's text, read with PyYAML as build.py reads it
-const TEXT = [['note', 'Description'], ['hint', 'How to Move It'], ['credits', 'Credits']];
+const TEXT = [['note', 'Description'], ['credits', 'Credits']];
 function textSettings(name) {
     const r = spawnSync('uv', ['run', '-q', '--no-project', '--with', 'pyyaml', 'python3', '-c',
-        'import sys, json, yaml; d = yaml.safe_load(open(sys.argv[1])); print(json.dumps({k: d.get(k) or "" for k in ("title", "note", "hint", "credits")}))',
+        'import sys, json, yaml; d = yaml.safe_load(open(sys.argv[1])); print(json.dumps({k: d.get(k) or "" for k in ("title", "note", "credits")}))',
         join(MAPS, name + '.yaml')], { encoding: 'utf8' });
     if (r.status !== 0) throw new Error('could not read the definition: ' + (r.stderr || '').trim().split('\n').pop());
     const d = JSON.parse(r.stdout);
@@ -130,7 +130,7 @@ function setViewYaml(text, view, cam) {
 
 // A text setting replaces its key's whole value (continuation lines included) as one single-quoted line,
 // goes in after the keys that come before it when the definition lacks it, and is dropped when emptied
-const ORDER = ['title', 'date', 'page', 'note', 'hint', 'start', 'credits'];
+const ORDER = ['title', 'date', 'page', 'note', 'start', 'credits'];
 function setTextYaml(text, key, value) {
     const lines = text.split('\n');
     value = value.replace(/\s+/g, ' ').trim();
