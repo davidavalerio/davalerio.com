@@ -327,23 +327,24 @@
             margin-top: 0;
         }
 
-        /* The All toggle on the left, Back to Top on the right of the line below each list */
+        /* The All toggle on the left, Back to Top on the right of the same line; set over the
+           toggle's line so an opened list keeps the column's full width */
         .more {
-            display: flex;
-            align-items: baseline;
-            gap: 1.5rem;
-        }
-
-        .more details {
-            flex: 1 1 auto;
-            min-width: 0;
+            position: relative;
         }
 
         .top {
-            flex: none;
-            margin-left: auto;
+            position: absolute;
+            top: 0;
+            right: 0;
             font-size: 0.95rem;
             padding-top: 0.7rem;
+        }
+
+        .more:not(:has(details)) .top {
+            position: static;
+            display: block;
+            text-align: right;
         }
 
         .work summary {
@@ -361,6 +362,13 @@
 
         .work summary:hover {
             color: var(--ink);
+        }
+
+        /* With the phone layout's drawing, the lists take the screen's width */
+        @media (max-aspect-ratio: 1/1), (max-width: 900px) {
+            .work {
+                max-width: none;
+            }
         }
 
         @media (max-width: 1080px) {
