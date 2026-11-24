@@ -241,6 +241,12 @@
     display: none;
 }
 
+/* Cooperative gestures keep a one-finger swipe or plain scroll moving the page past a map, without
+   MapLibre's overlay telling readers how to move it: no map carries instructions for using it. */
+.maplibregl-cooperative-gesture-screen {
+    display: none !important;
+}
+
 /* Map pages */
 
 body.wide header.site,
