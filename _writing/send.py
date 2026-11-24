@@ -37,7 +37,12 @@ FONT = "'Source Serif 4', Georgia, 'Times New Roman', serif"
 GONE_OUT = ("sent", "queued", "scheduled", "canceled")  # a broadcast in any of these is never sent again
 DELIVERING = ("sent", "queued")                         # a send that worked
 DRAFT = "draft"                                         # the only status a leftover broadcast is deleted in
-FRESH_DRAFT = datetime.timedelta(minutes=10)           # a draft younger than this may be a send in progress
+FRESH_DRAFT = datetime.timedelta(minutes=10)
+# Carried by every email until the first broadcast has gone out, so the readers
+# brought over from Discern Earth's newsletter learn of the move in the first issue.
+MOVE_NOTE = ("Discern Earth's newsletter is now Writing by Email, from davalerio.com. You subscribed to "
+             "Discern Earth, so new writing will come to you here; the link at the foot of this email "
+             "unsubscribes you.")           # a draft younger than this may be a send in progress
 
 # Inline styles (email clients drop stylesheets), matching the site's pages in the
 # house email palette. A class style wins over its tag's.
@@ -83,7 +88,7 @@ def styled(body, page):
     return re.sub(r"<([a-zA-Z][a-zA-Z0-9]*)((?:\s[^>]*)?)>", tag, body)
 
 
-def email_html(title, url, meta, subtitle, body, test):
+def email_html(title, url, meta, subtitle, body, test, note=None):
     sub = ""
     if subtitle:
         sub = ('<p style="margin: 0 0 10px; color: #6B7075; font-size: 17px; font-style: italic; '
@@ -98,14 +103,16 @@ def email_html(title, url, meta, subtitle, body, test):
 <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: {font}; font-size: 15px; line-height: 1.66; color: #22282B;">
 <h1 style="color: #22282B; font-size: 26px; font-weight: 600; line-height: 1.15; margin: 0 0 8px;"><a href="{url}" style="color: #22282B; text-decoration: none;">{title}</a></h1>
 {sub}<p style="color: #6B7075; font-size: 12.5px; letter-spacing: 0.05em; margin: 0 0 24px; padding-bottom: 16px; border-bottom: 1px solid #D8D4CC;">{meta}</p>
-{body}
+{note}{body}
 <p style="margin: 32px 0 0; padding-top: 16px; border-top: 1px solid #E6E3DC; color: #6B7075; font-size: 12.5px;"><a href="{url}" style="color: #6B7075; text-decoration: none;">Read on davalerio.com</a> · {unsubscribe}<br>You receive this because you subscribed to {name} at davalerio.com.</p>
 </div>
 </body></html>""".format(font=FONT, url=url, title=esc(title), sub=sub, meta=meta, body=styled(body, url),
-                         unsubscribe=unsubscribe, name=esc(SUBSCRIBE_NAME))
+                         unsubscribe=unsubscribe, name=esc(SUBSCRIBE_NAME),
+                         note=('<p style="margin: 0 0 24px; padding: 12px 16px; background: #F3F1EC; color: #3A4145; '
+                               'font-size: 14px;">{}</p>\n'.format(esc(note)) if note else ""))
 
 
-def piece(name, test):
+def piece(name, test, note=None):
     """(broadcast name, subject, email HTML, page URL, page HTML) for a slug or a map
     page, the email and the page both rendered from the same source."""
     maps = load_maps()
@@ -119,7 +126,7 @@ def piece(name, test):
             sys.exit("{} is a conversation; only writing and maps are emailed".format(name))
         url = "{}/writing/{}/".format(SITE, name)
         meta = "{} · {}".format(KIND_LABEL[p["kind"]], p["date"].isoformat())
-        return ("writing:" + name, p["title"], email_html(p["title"], url, meta, p["subtitle"], offline(p), test), url,
+        return ("writing:" + name, p["title"], email_html(p["title"], url, meta, p["subtitle"], offline(p), test, note), url,
                 post_page(p, maps))
     if name in pages:
         m = pages[name]
@@ -134,7 +141,7 @@ def piece(name, test):
         if m.get("credits"):
             body += '<p class="map-credits">{}</p>\n'.format(esc(m["credits"]))
         meta = "Map · {}".format(m["date"].isoformat())
-        return ("map:" + name, m["title"], email_html(m["title"], url, meta, None, body, test), url,
+        return ("map:" + name, m["title"], email_html(m["title"], url, meta, None, body, test, note), url,
                 map_page(name, m))
     sys.exit("no piece or map page named " + name)
 
@@ -198,7 +205,8 @@ def main():
     if len(args) != 1:
         sys.exit(__doc__)
     name, subscribers = args[0], "--subscribers" in sys.argv
-    key, subject, email, url, page = piece(name, test=not subscribers)
+    first = "--preview" not in sys.argv and not any(b.get("status") in DELIVERING for b in broadcasts())
+    key, subject, email, url, page = piece(name, test=not subscribers, note=MOVE_NOTE if first else None)
     if "--preview" in sys.argv:
         print(email)
         return
