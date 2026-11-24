@@ -232,44 +232,19 @@
             }
         }
 
-        /* Writing, maps and podcasts, side by side */
+        /* Writing, maps and podcasts, one beneath the other, at the writing pages' measure */
 
         .work {
-            max-width: 76rem;
+            max-width: calc(41rem + 3rem);
             margin: 0 auto;
             padding: 4rem 1.5rem 3rem;
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            grid-template-rows: auto 1fr auto;
-            gap: 0 3rem;
+            gap: 3.5rem;
         }
 
         .work > * {
             min-width: 0;
             scroll-margin-top: 1.5rem;
-        }
-
-        /* The three columns share their rows (heading, entries, toggle), so their entries
-           begin and end at the same depth: each list spreads its rows over the shared height. */
-        .work > section {
-            display: grid;
-            grid-row: span 3;
-            grid-template-rows: subgrid;
-        }
-
-        .work > section > ul {
-            display: grid;
-            grid-auto-rows: 1fr;
-        }
-
-        .work > section > details {
-            align-self: start;
-        }
-
-        .list li {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
         }
 
         .work h2 {
@@ -283,7 +258,7 @@
 
         .maplist li {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(0, min(10.5rem, 42%));
+            grid-template-columns: minmax(0, 1fr) minmax(0, min(15rem, 45%));
             gap: 0.9rem;
             align-items: center;
             padding: 0.75rem 0;
@@ -359,26 +334,16 @@
 
         @media (max-width: 1080px) {
             .work {
-                grid-template-columns: 1fr;
-                grid-template-rows: none;
                 gap: 3rem;
                 padding: 3rem 1rem 3rem;
             }
-
-            .work > section {
-                display: block;
-            }
-
-            .work > section > ul {
-                display: block;
-            }
         }
 
-        /* Writing by Email, a band below the columns. The form is a hand-made copy of
+        /* Writing by Email, a band below the lists. The form is a hand-made copy of
            SUBSCRIBE in _writing/build.py, and these styles a copy of writing/style.css's; keep all in step. */
 
         .subscribe-band {
-            max-width: 76rem;
+            max-width: calc(41rem + 3rem);
             margin: 0 auto;
             padding: 0 1.5rem 5rem;
         }
