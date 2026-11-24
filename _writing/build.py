@@ -23,6 +23,7 @@ which is never published, for reading on a local server (_writing/serve.mjs).
 import argparse
 import datetime
 import email.utils
+import hashlib
 import html
 import json
 import os
@@ -45,6 +46,14 @@ KIND_LABEL = {"essay": "Essay", "paper": "Paper", "conversation": "Conversation"
 
 FAVICON = open(os.path.join(HERE, "favicon.txt")).read().strip()
 
+
+def asset(path):
+    """A link to one of the site's own stylesheets or scripts, marked with a hash of its contents,
+    so a browser fetches it again when it changes instead of keeping its copy for GitHub Pages' 10 minutes."""
+    with open(os.path.join(ROOT, path.lstrip("/")), "rb") as f:
+        return "{}?v={}".format(path, hashlib.sha256(f.read()).hexdigest()[:10])
+
+
 HEAD = """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -65,7 +74,7 @@ HEAD = """<!DOCTYPE html>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400;1,8..60,600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/writing/style.css">{extra_head}
+    <link rel="stylesheet" href="{style}">{extra_head}
 </head>
 <body{body_class}>
     <header class="site">
@@ -73,6 +82,7 @@ HEAD = """<!DOCTYPE html>
         <a href="/#writing">Writing</a>
     </header>
 """
+HEAD = HEAD.replace("{style}", asset("/writing/style.css"))
 
 FOOT = """</body>
 </html>
@@ -296,9 +306,10 @@ def map_head(map_name, maps):
     data = json.dumps({k: maps[map_name][k] for k in ("start", "bounds", "exaggeration", "sources", "layers", "labels", "views", "popup")
                        if k in maps[map_name]}, separators=(",", ":"))
     return ('\n    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">'
-            '\n    <link rel="stylesheet" href="/maps/lib/maplibre-gl.css">\n    <link rel="stylesheet" href="/maps/map.css">'
-            '\n    <script src="/maps/lib/pmtiles.js" defer></script>\n    <script type="module" src="/maps/map.js"></script>'
-            '\n    <script type="application/json" id="map-def-{}">{}</script>').format(map_name, data.replace("</", "<\\/"))
+            '\n    <link rel="stylesheet" href="/maps/lib/maplibre-gl.css">\n    <link rel="stylesheet" href="{}">'
+            '\n    <script src="/maps/lib/pmtiles.js" defer></script>\n    <script type="module" src="{}"></script>'
+            '\n    <script type="application/json" id="map-def-{}">{}</script>').format(
+                asset("/maps/map.css"), asset("/maps/map.js"), map_name, data.replace("</", "<\\/"))
 
 
 def legend(groups):
@@ -328,9 +339,9 @@ def map_page(name, m):
     interactive = "views" in m
     share = still_url(name, m["start"]) if interactive else "/maps/{}/{}".format(name, m["image"])
     head = ('\n    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">'
-            '\n    <link rel="stylesheet" href="/maps/map.css">')
+            '\n    <link rel="stylesheet" href="{}">'.format(asset("/maps/map.css")))
     if m.get("model"):
-        head += '\n    <script type="module" src="/maps/model.js"></script>'
+        head += '\n    <script type="module" src="{}"></script>'.format(asset("/maps/model.js"))
     out = HEAD.format(title=esc(m["title"]) + " — David Valerio", og_title=esc(m["title"]),
                       description=esc(m.get("note", "")), url=url, og_type="article", og_image=og_image(share),
                       favicon=FAVICON, extra_head=map_head(name, {name: m}) if interactive else head, body_class=' class="wide"')
