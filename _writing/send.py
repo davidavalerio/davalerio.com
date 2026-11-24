@@ -91,7 +91,7 @@ def styled(body, page):
 def email_html(title, url, meta, subtitle, body, test, note=None):
     sub = ""
     if subtitle:
-        sub = ('<p style="margin: 0 0 10px; color: #6B7075; font-size: 17px; font-style: italic; '
+        sub = ('<p style="margin: 0 0 10px; color: #6B7075; font-size: 17px; '
                'line-height: 1.45;">{}</p>\n').format(esc(subtitle))
     unsubscribe = ('Test send to you alone' if test else
                    '<a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color: #6B7075; text-decoration: none;">Unsubscribe</a>')
