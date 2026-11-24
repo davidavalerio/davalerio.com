@@ -40,7 +40,7 @@ DRAFT = "draft"                                         # the only status a left
 FRESH_DRAFT = datetime.timedelta(minutes=10)
 # Carried by every email until the first broadcast has gone out, so the readers
 # brought over from Discern Earth's newsletter learn of the move in the first issue.
-MOVE_NOTE = ("Discern Earth’s newsletter is now Writing by Email, from davalerio.com. If you subscribed to "
+MOVE_NOTE = ("The Discern Earth newsletter is now Writing by Email, from davalerio.com. If you subscribed to "
              "Discern Earth, new writing will come to you here; the link at the foot of this email "
              "unsubscribes you.")           # a draft younger than this may be a send in progress
 
