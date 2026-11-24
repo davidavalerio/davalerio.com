@@ -137,7 +137,7 @@ function textBox(tag, key, cls, placeholder) {
     return el;
 }
 
-// The title, the note and hint above the piece and the credits below it, laid out as the map's page has them
+// The title and the note above the piece and the credits below it, laid out as the map's page has them
 function pageText(piece) {
     const header = document.createElement('header');
     header.className = 'post wb-text';
@@ -145,7 +145,7 @@ function pageText(piece) {
     h1.textContent = piece.title;
     const sub = document.createElement('p');
     sub.className = 'subtitle';
-    sub.append(textBox('span', 'text.note', 'wb-edit', 'Description'), ' ', textBox('span', 'text.hint', 'wb-edit', 'How to Move It'));
+    sub.append(textBox('span', 'text.note', 'wb-edit', 'Description'));
     header.append(h1, sub);
     return { header, credits: textBox('p', 'text.credits', 'map-credits wb-edit', 'Credits') };
 }

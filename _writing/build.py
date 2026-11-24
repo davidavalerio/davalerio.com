@@ -186,10 +186,9 @@ def notice_page(slug, title, text):
 
 
 def offline(p):
-    """A piece's body as it reads away from the site (the feed and email): no interaction
-    hints (`[...]{.live}` in a caption), and a map's credits once, at the end."""
-    body = re.sub(r'\s*<span\s+class="live">.*?</span>', "", p["body"], flags=re.S)
-    body = re.sub(r'\s*<(p|span) class="map-credits">.*?</\1>', "", body, flags=re.S)
+    """A piece's body as it reads away from the site (the feed and email), with a map's
+    credits once, at the end."""
+    body = re.sub(r'\s*<(p|span) class="map-credits">.*?</\1>', "", p["body"], flags=re.S)
     if p.get("credits"):
         body += '\n<p class="map-credits">{}</p>'.format(esc(p["credits"]))
     return body
@@ -338,10 +337,8 @@ def map_page(name, m):
     out += '    <main>\n        <header class="post">\n'
     out += '            <p class="meta">Map · <time datetime="{0}">{0}</time></p>\n'.format(m["date"].isoformat())
     out += '            <h1>{}</h1>\n'.format(esc(m["title"]))
-    # The note describes the map; its hint (how to move it) is for the page alone, not email.
-    subtitle = " ".join(x for x in (m.get("note"), m.get("hint")) if x)
-    if subtitle:
-        out += '            <p class="subtitle">{}</p>\n'.format(esc(subtitle))
+    if m.get("note"):
+        out += '            <p class="subtitle">{}</p>\n'.format(esc(m["note"]))
     out += '        </header>\n'
     if interactive:
         out += '        <div class="map-full" data-map="{}" data-view="{}">{}</div>\n'.format(
