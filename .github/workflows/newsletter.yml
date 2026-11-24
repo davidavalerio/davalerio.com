@@ -1,8 +1,8 @@
-# Writing and Maps by Email: sends one piece or map page when run by hand
+# Writing by Email: sends one piece or map page when run by hand
 # (_writing/send.py). Nothing runs on publish. Run it from the Actions tab's
 # Run button, or `gh workflow run newsletter.yml -f name=<name> -f to=test`;
 # a test goes to David alone, and only `to=subscribers` mails the list.
-name: Writing and Maps by Email
+name: Writing by Email
 
 on:
   workflow_dispatch:

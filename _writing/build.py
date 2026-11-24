@@ -14,8 +14,8 @@ column is hand-made in index.html.
 A piece with `map: <name>` in its frontmatter can turn passages into map steps
 (`::: {.map-step view=<view>}`) or set in a map (`::: {.map-embed view=<view>}`).
 
-It also writes the two subscription landing pages under ../subscribe/ (Writing and Maps
-by Email; _writing/send.py sends).
+It also writes the two subscription landing pages under ../subscribe/ (Writing by Email;
+_writing/send.py sends).
 
 `--drafts` also builds the pieces in _writing/drafts/ into ../_preview/<slug>/,
 which is never published, for reading on a local server (_writing/serve.mjs).
@@ -78,10 +78,10 @@ FOOT = """</body>
 </html>
 """
 
-# Writing and Maps by Email: the signup form at the foot of every essay, paper and map page.
+# Writing by Email: the signup form at the foot of every essay, paper and map page.
 # The homepage carries a hand-made copy below its columns (index.html); keep the two in step,
 # and the name in step with _subscribe/worker.js and send.py.
-SUBSCRIBE_NAME = "Writing and Maps by Email"
+SUBSCRIBE_NAME = "Writing by Email"
 SUBSCRIBE = """<form class="subscribe" action="https://subscribe.davalerio.com/" method="post">
             <label for="subscribe-email">{}</label>
             <div class="row"><input id="subscribe-email" type="email" name="email" placeholder="you@example.com" autocomplete="email" required><button type="submit">Subscribe</button></div>
@@ -90,8 +90,8 @@ SUBSCRIBE = """<form class="subscribe" action="https://subscribe.davalerio.com/"
 
 # The pages a subscriber lands on after the signup service (_subscribe/) redirects.
 NOTICES = {
-    "sent": ("Check Your Inbox", "A confirmation link is on its way. Open it and confirm, and new writing and maps will arrive by email."),
-    "confirmed": ("You’re Subscribed", "New writing and maps will arrive by email. Every email carries a link to unsubscribe."),
+    "sent": ("Check Your Inbox", "A confirmation link is on its way. Open it and confirm, and new writing will arrive by email."),
+    "confirmed": ("You’re Subscribed", "New writing will arrive by email. Every email carries a link to unsubscribe."),
 }
 
 

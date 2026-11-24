@@ -1,4 +1,4 @@
-// Signup service for Writing and Maps by Email on davalerio.com.
+// Signup service for Writing by Email on davalerio.com.
 //
 //   POST /          the site's form: emails a signed confirmation link,
 //                   then sends the reader to /subscribe/sent/ on the site
@@ -15,7 +15,7 @@
 
 const SITE = "https://davalerio.com";
 const SELF = "https://subscribe.davalerio.com";
-const NAME = "Writing and Maps by Email";
+const NAME = "Writing by Email";
 const FROM = "David Valerio <writing@davalerio.com>";
 const REPLY_TO = "david@davalerio.com";
 const LINK_DAYS = 7;
@@ -52,7 +52,7 @@ async function subscribe(request, env) {
     to: [email],
     subject: "Confirm Your Subscription",
     html: confirmationEmail(link),
-    text: `Confirm your subscription to new writing and maps by David Valerio:\n\n${link}\n\nThe link works for ${LINK_DAYS} days. If you did not ask for this, ignore this email and nothing will be sent.`,
+    text: `Confirm your subscription to new writing by David Valerio:\n\n${link}\n\nThe link works for ${LINK_DAYS} days. If you did not ask for this, ignore this email and nothing will be sent.`,
   });
   if (!res.ok) return page("Something Went Wrong", "The confirmation email could not be sent. Try again in a few minutes.", 502);
   return go("/subscribe/sent/");
@@ -64,7 +64,7 @@ async function confirmPage(url, env) {
   const s = url.searchParams.get("s") || "";
   const check = await valid(email, t, s, env);
   if (check !== "ok") return invalid(check);
-  return page("Confirm Your Subscription", `New writing and maps will be sent to ${esc(email)}.`, 200,
+  return page("Confirm Your Subscription", `New writing will be sent to ${esc(email)}.`, 200,
     `<form class="subscribe" method="post" action="/confirm">
                 <input type="hidden" name="e" value="${esc(email)}">
                 <input type="hidden" name="t" value="${esc(t)}">
@@ -224,7 +224,7 @@ function confirmationEmail(link) {
 <p style="color: #6B7075; font-size: 12.5px; letter-spacing: 0.05em; margin: 0; padding-bottom: 16px; border-bottom: 1px solid #D8D4CC;">${NAME}</p>
 <div style="background: #F3F1EC; border: 1px solid #E6E3DC; padding: 20px; margin: 20px 0;">
 <p style="margin: 0 0 6px; font-size: 16px; font-weight: 600;">Confirm Your Subscription</p>
-<p style="margin: 0 0 14px;">New writing and maps will arrive by email.</p>
+<p style="margin: 0 0 14px;">New writing will arrive by email.</p>
 <p style="margin: 0;"><a href="${link}" style="color: #5E4B8B; text-decoration: none; font-weight: 600;">Confirm Subscription</a></p>
 </div>
 <p style="margin: 0; color: #6B7075; font-size: 12.5px;">The link works for ${LINK_DAYS} days. If you did not ask for this, ignore this email and nothing will be sent.</p>
