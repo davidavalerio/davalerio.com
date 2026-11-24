@@ -22,3 +22,9 @@ namespace_id = "4632"
   [ratelimits.simple]
   limit = 2
   period = 60
+
+# Fingerprints only (see worker.js): one confirmation per address a day, the
+# day's count, and links already used.
+[[kv_namespaces]]
+binding = "SUBSCRIBE"
+id = "a79747c5edce45eb8371094535612340"

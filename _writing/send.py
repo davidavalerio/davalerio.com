@@ -10,12 +10,15 @@ second explicit run, to the Writing segment in Resend. Nothing sends on publish.
 `page: true`). Run by the newsletter workflow's Run button, or from a session with
 `gh workflow run newsletter.yml -f name=<name> -f to=test|subscribers`.
 
-Resend's broadcast list is the record: a broadcast named `writing:<slug>` or
-`map:<name>` that went out means the piece was sent, and it is never sent again.
-The page and its images must be live before anything is sent. A failed or
-uncertain send stops and says so; nothing is retried.
-Needs RESEND_API_KEY, and SEGMENT_ID for --subscribers.
+The subscriber send runs only in that workflow on main, after a successful test of
+the same piece on the same commit (the workflow checks), and only when the live
+page is byte for byte the page in this checkout, so what is mailed is what is
+published. Resend's broadcast list is the record: a broadcast named
+`writing:<slug>` or `map:<name>` that went out means the piece was sent, and it is
+never sent again. A failed or uncertain send stops and says so; nothing is
+retried. Needs RESEND_API_KEY, and SEGMENT_ID for --subscribers.
 """
+import datetime
 import json
 import os
 import re
@@ -31,7 +34,9 @@ FROM = "David Valerio <writing@davalerio.com>"
 REPLY_TO = "david@davalerio.com"
 TEST_TO = "david@davalerio.com"
 FONT = "'Source Serif 4', Georgia, 'Times New Roman', serif"
-GONE_OUT = ("sent", "queued", "scheduled", "canceled")
+GONE_OUT = ("sent", "queued", "scheduled", "canceled")  # a broadcast in any of these is never sent again
+DELIVERING = ("sent", "queued")                         # a send that worked
+FRESH_DRAFT = datetime.timedelta(minutes=10)           # a draft younger than this may be a send in progress
 
 # Inline styles (email clients drop stylesheets), matching the site's pages in the
 # house email palette. A class style wins over its tag's.
@@ -55,7 +60,13 @@ CLASS_STYLES = {
 
 
 def styled(body, page):
-    """Inline styles, and every link and image made absolute against the live page."""
+    """Inline styles, and every link and image made absolute against the live page.
+    A Ghost download card (two old papers) becomes a plain link, and any inline
+    SVG or style block is dropped, since mail clients show them as stray text."""
+    body = re.sub(r'<div class="kg-card kg-file-card"><a class="kg-file-card-container" href="([^"]+)".*?'
+                  r'kg-file-card-filesize">([^<]*)</div>.*?</a></div>',
+                  r'<p><a href="\1">Download the PDF (\2)</a></p>', body, flags=re.S)
+    body = re.sub(r"<(svg|style)\b.*?</\1>", "", body, flags=re.S | re.I)
     body = re.sub(r'(href|src)="/', r'\1="' + SITE + "/", body)
     body = re.sub(r'href="#', 'href="' + page + "#", body)
 
@@ -87,7 +98,7 @@ def email_html(title, url, meta, subtitle, body, test):
 <h1 style="color: #22282B; font-size: 26px; font-weight: 600; line-height: 1.15; margin: 0 0 8px;"><a href="{url}" style="color: #22282B; text-decoration: none;">{title}</a></h1>
 {sub}<p style="color: #6B7075; font-size: 12.5px; letter-spacing: 0.05em; margin: 0 0 24px; padding-bottom: 16px; border-bottom: 1px solid #D8D4CC;">{meta}</p>
 {body}
-<p style="margin: 32px 0 0; padding-top: 16px; border-top: 1px solid #E6E3DC; color: #6B7075; font-size: 12.5px;"><a href="{url}" style="color: #6B7075; text-decoration: none;">Read on davalerio.com</a> · {unsubscribe}<br>{name}</p>
+<p style="margin: 32px 0 0; padding-top: 16px; border-top: 1px solid #E6E3DC; color: #6B7075; font-size: 12.5px;"><a href="{url}" style="color: #6B7075; text-decoration: none;">Read on davalerio.com</a> · {unsubscribe}<br>You receive this because you subscribed to {name} at davalerio.com.</p>
 </div>
 </body></html>""".format(font=FONT, url=url, title=esc(title), sub=sub, meta=meta, body=styled(body, url),
                          unsubscribe=unsubscribe, name=esc(SUBSCRIBE_NAME))
@@ -124,7 +135,8 @@ def piece(name, test):
     sys.exit("no piece or map page named " + name)
 
 
-def api(method, path, body=None):
+def api(method, path, body=None, after=""):
+    """One Resend call; a refusal stops the run, with `after` added to the message."""
     req = urllib.request.Request("https://api.resend.com" + path, method=method,
                                  data=json.dumps(body).encode() if body is not None else None,
                                  headers={"Authorization": "Bearer " + os.environ["RESEND_API_KEY"],
@@ -135,7 +147,7 @@ def api(method, path, body=None):
             raw = r.read()
             return json.loads(raw) if raw else {}
     except urllib.error.HTTPError as e:
-        sys.exit("Resend refused {} {}: {} {}".format(method, path, e.code, e.read().decode(errors="replace")[:500]))
+        sys.exit("Resend refused {} {}: {} {}{}".format(method, path, e.code, e.read().decode(errors="replace")[:500], after))
 
 
 def broadcasts():
@@ -148,6 +160,26 @@ def broadcasts():
         if not page.get("has_more") or not data:
             return out
         after = data[-1]["id"]
+
+
+def page_file(url):
+    """The page in this checkout that is published at url."""
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(root, url[len(SITE) + 1:], "index.html")
+
+
+def check_published(url):
+    """The live page must be this checkout's page, so an unpublished edit is never mailed."""
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers={"Cache-Control": "no-cache"}),
+                                    timeout=30) as r:
+            live = r.read()
+    except (urllib.error.URLError, TimeoutError) as e:
+        sys.exit("{} did not answer ({}); nothing sent".format(url, e))
+    with open(page_file(url), "rb") as f:
+        if f.read() != live:
+            sys.exit("the live page at {} is not this commit's page; wait for the site to deploy, "
+                     "then test and send again. Nothing sent".format(url))
 
 
 def check_live(url, email):
@@ -172,7 +204,12 @@ def main():
     if "--preview" in sys.argv:
         print(email)
         return
+    if subscribers and not (os.environ.get("GITHUB_ACTIONS") == "true"
+                            and os.environ.get("GITHUB_REF") == "refs/heads/main"):
+        sys.exit("the subscriber send runs only in the newsletter workflow on main; nothing sent")
     check_live(url, email)
+    if subscribers:
+        check_published(url)
     if not subscribers:
         sent = api("POST", "/emails", {"from": FROM, "reply_to": REPLY_TO, "to": [TEST_TO],
                                        "subject": "Test: " + subject, "html": email})
@@ -181,25 +218,38 @@ def main():
     mine = [b for b in broadcasts() if b.get("name") == key]
     done = [b for b in mine if b.get("status") in GONE_OUT]
     if done:
-        print("{} already went out (broadcast {}, {}); nothing sent".format(name, done[0]["id"], done[0]["status"]))
+        b = done[0]
+        if b["status"] == "canceled":
+            sys.exit("{} (broadcast {}) was stopped partway, so some readers may have it; check it in Resend. "
+                     "Nothing sent".format(name, b["id"]))
+        print("{} already went out (broadcast {}, {}); nothing sent".format(name, b["id"], b["status"]))
         return
+    now = datetime.datetime.now(datetime.timezone.utc)
     for b in mine:  # drafts left by a run that stopped before sending
+        made_at = datetime.datetime.fromisoformat(b["created_at"].replace(" ", "T").replace("Z", "+00:00"))
+        if made_at.tzinfo is None:
+            made_at = made_at.replace(tzinfo=datetime.timezone.utc)
+        if now - made_at < FRESH_DRAFT:
+            sys.exit("{} has a draft broadcast {} from the last few minutes that may still be sending; "
+                     "check it in Resend. Nothing sent".format(name, b["id"]))
         api("DELETE", "/broadcasts/" + b["id"])
     made = api("POST", "/broadcasts", {"segment_id": os.environ["SEGMENT_ID"], "name": key, "from": FROM,
                                        "reply_to": REPLY_TO, "subject": subject, "html": email})
+    check = "; check broadcast {} in Resend before running again".format(made["id"])
     try:
-        api("POST", "/broadcasts/{}/send".format(made["id"]), {})
+        api("POST", "/broadcasts/{}/send".format(made["id"]), {}, after=check)
     except (urllib.error.URLError, TimeoutError) as e:
         sys.exit("the send of {} (broadcast {}) did not answer ({}); check it in Resend before running again".format(
             name, made["id"], e))
     for _ in range(12):  # Resend may take a few seconds to move the broadcast out of draft
-        status = api("GET", "/broadcasts/" + made["id"]).get("status")
+        status = api("GET", "/broadcasts/" + made["id"], after=check).get("status")
         if status in GONE_OUT:
             break
         time.sleep(5)
-    if status not in GONE_OUT:
+    if status not in DELIVERING:
         sys.exit("{} (broadcast {}) is {} after sending; check it in Resend".format(name, made["id"], status))
-    print("{} sent to subscribers as broadcast {} ({})".format(name, made["id"], status))
+    print("{} {} as broadcast {}".format(name, "sent to subscribers" if status == "sent"
+                                         else "accepted by Resend, which is delivering it to subscribers", made["id"]))
 
 
 if __name__ == "__main__":

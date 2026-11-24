@@ -1,8 +1,11 @@
 # Writing by Email: sends one piece or map page when run by hand
 # (_writing/send.py). Nothing runs on publish. Run it from the Actions tab's
 # Run button, or `gh workflow run newsletter.yml -f name=<name> -f to=test`;
-# a test goes to David alone, and only `to=subscribers` mails the list.
+# a test goes to David alone, and only `to=subscribers` mails the list: from
+# main only, and only after a successful test of the same piece on the same
+# commit.
 name: Writing by Email
+run-name: ${{ inputs.to }} ${{ inputs.name }}
 
 on:
   workflow_dispatch:
@@ -20,12 +23,37 @@ concurrency:
   group: newsletter
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   send:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get install -y pandoc && pip install pyyaml
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: pandoc/actions/setup@v1
+        with:
+          version: "3.14"
+      - run: pip install pyyaml
+      - if: inputs.to == 'subscribers'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NAME: ${{ inputs.name }}
+        run: |
+          if [ "$GITHUB_REF" != refs/heads/main ]; then
+            echo "The subscriber send runs only from main; nothing sent." >&2
+            exit 1
+          fi
+          tested=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow newsletter.yml --commit "$GITHUB_SHA" \
+            --status success --limit 100 --json displayTitle --jq "[.[] | select(.displayTitle == \"test $NAME\")] | length")
+          if [ "$tested" = 0 ]; then
+            echo "No successful test of $NAME on this commit; run to=test first. Nothing sent." >&2
+            exit 1
+          fi
       - env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           SEGMENT_ID: ${{ secrets.SEGMENT_ID }}

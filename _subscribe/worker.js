@@ -7,11 +7,14 @@
 //   POST /confirm   adds the address to the Writing segment in Resend,
 //                   then sends the reader to /subscribe/confirmed/
 //
-// Nothing is stored before confirmation: the link carries the address, the
-// time it was issued and an HMAC of both under SIGNING_KEY, and it expires
-// after LINK_DAYS. The hidden "website" field is a bot trap, and LIMIT_IP and
-// LIMIT_EMAIL (rate-limit bindings in wrangler.toml) cap confirmation mail.
-// Addresses are never logged.
+// The link carries the address and the time it was issued, encrypted under a
+// key derived from SIGNING_KEY (AES-GCM, so it can be neither read nor forged),
+// and it expires after LINK_DAYS and works once. The hidden "website" field is
+// a bot trap. Confirmation mail is capped by LIMIT_IP and LIMIT_EMAIL (per-minute
+// rate-limit bindings in wrangler.toml), by one email per address per day, and
+// by DAILY_CAP emails a day in all. The SUBSCRIBE store holds only HMAC
+// fingerprints (of addresses for a day, of used links until they expire) and a
+// daily count; addresses are never stored or logged by the Worker.
 
 const SITE = "https://davalerio.com";
 const SELF = "https://subscribe.davalerio.com";
@@ -19,6 +22,8 @@ const NAME = "Writing by Email";
 const FROM = "David Valerio <writing@davalerio.com>";
 const REPLY_TO = "david@davalerio.com";
 const LINK_DAYS = 7;
+const DAILY_CAP = 50;
+const DAY = 86400;
 const EMAIL = /^[^\s@<>"]{1,64}@[^\s@<>"]+\.[^\s@<>"]{2,}$/;
 
 export default {
@@ -31,8 +36,20 @@ export default {
   },
 };
 
+// The posted form, or null when the request carries no form a browser would send.
+async function formOf(request) {
+  try {
+    return await request.formData();
+  } catch {
+    return null;
+  }
+}
+
+const NOT_A_FORM = () => page("Request Not Valid", "That request did not come from the sign-up form.", 400);
+
 async function subscribe(request, env) {
-  const form = await request.formData();
+  const form = await formOf(request);
+  if (!form) return NOT_A_FORM();
   const email = String(form.get("email") || "").trim().toLowerCase();
   if (form.get("website")) return go("/subscribe/sent/");
   if (email.length > 254 || !EMAIL.test(email)) {
@@ -44,8 +61,16 @@ async function subscribe(request, env) {
   if (!byIp.success || !byEmail.success) {
     return page("Too Many Requests", "Too many confirmation emails have been asked for just now. Try again in a few minutes.", 429);
   }
-  const t = String(Math.floor(Date.now() / 1000));
-  const link = `${SELF}/confirm?e=${encodeURIComponent(email)}&t=${t}&s=${await sign(email, t, env)}`;
+  // One confirmation per address a day: a repeat lands on the same page as a
+  // first request, so the form reveals nothing about who has asked.
+  const sentKey = "sent:" + (await mac(`sent|${email}`, env));
+  if (await env.SUBSCRIBE.get(sentKey)) return go("/subscribe/sent/");
+  const dayKey = "day:" + new Date().toISOString().slice(0, 10);
+  const today = Number(await env.SUBSCRIBE.get(dayKey)) || 0;
+  if (today >= DAILY_CAP) {
+    return page("Sign-Ups Paused", "Sign-ups have reached today's limit. Try again tomorrow.", 429);
+  }
+  const link = `${SELF}/confirm?k=${await seal(email, env)}`;
   const res = await resend(env, "POST", "/emails", {
     from: FROM,
     reply_to: REPLY_TO,
@@ -55,91 +80,145 @@ async function subscribe(request, env) {
     text: `Confirm your subscription to new writing by David Valerio:\n\n${link}\n\nThe link works for ${LINK_DAYS} days. If you did not ask for this, ignore this email and nothing will be sent.`,
   });
   if (!res.ok) return page("Something Went Wrong", "The confirmation email could not be sent. Try again in a few minutes.", 502);
+  await env.SUBSCRIBE.put(sentKey, "1", { expirationTtl: DAY });
+  await env.SUBSCRIBE.put(dayKey, String(today + 1), { expirationTtl: 2 * DAY });
   return go("/subscribe/sent/");
 }
 
 async function confirmPage(url, env) {
-  const email = url.searchParams.get("e") || "";
-  const t = url.searchParams.get("t") || "";
-  const s = url.searchParams.get("s") || "";
-  const check = await valid(email, t, s, env);
-  if (check !== "ok") return invalid(check);
-  return page("Confirm Your Subscription", `New writing will be sent to ${esc(email)}.`, 200,
+  const k = url.searchParams.get("k") || "";
+  const link = await unseal(k, env);
+  if (link.status !== "ok") return invalid(link.status);
+  if (await env.SUBSCRIBE.get(await usedKey(k, env))) return go("/subscribe/confirmed/");
+  return page("Confirm Your Subscription", `New writing will be sent to ${esc(link.email)}.`, 200,
     `<form class="subscribe" method="post" action="/confirm">
-                <input type="hidden" name="e" value="${esc(email)}">
-                <input type="hidden" name="t" value="${esc(t)}">
-                <input type="hidden" name="s" value="${esc(s)}">
+                <input type="hidden" name="k" value="${esc(k)}">
                 <button type="submit">Confirm Subscription</button>
             </form>`);
 }
 
+// A link works once: pressed again, it shows the confirmed page and changes nothing,
+// so an old email cannot undo a later unsubscribe.
 async function confirm(request, env) {
-  const form = await request.formData();
-  const email = String(form.get("e") || "");
-  const check = await valid(email, String(form.get("t") || ""), String(form.get("s") || ""), env);
-  if (check !== "ok") return invalid(check);
-  if (!(await enroll(email, env))) {
+  const form = await formOf(request);
+  if (!form) return NOT_A_FORM();
+  const k = String(form.get("k") || "");
+  const link = await unseal(k, env);
+  if (link.status !== "ok") return invalid(link.status);
+  const used = await usedKey(k, env);
+  if (await env.SUBSCRIBE.get(used)) return go("/subscribe/confirmed/");
+  const result = await enroll(link.email, env);
+  if (result === "elsewhere") {
+    return page("Not Subscribed", `This address unsubscribed from all mail sent from davalerio.com, so it cannot be subscribed again here. Write to <a href="mailto:${REPLY_TO}">${REPLY_TO}</a> to be added.`, 409);
+  }
+  if (result !== "ok") {
     return page("Something Went Wrong", "The subscription could not be saved. Try the link again in a few minutes.", 502);
   }
+  await env.SUBSCRIBE.put(used, "1", { expirationTtl: (LINK_DAYS + 1) * DAY });
   return go("/subscribe/confirmed/");
 }
 
-// Adds the address to the Writing segment and makes sure it receives broadcasts.
-// The confirm click is the reader's own explicit request, so a contact who once
-// unsubscribed is subscribed again only here. Success is reported only once
-// Resend shows the contact subscribed and in the segment.
+async function usedKey(k, env) {
+  return "used:" + (await mac(`used|${k}`, env));
+}
+
+// Adds the address to the Writing segment and makes sure it receives broadcasts:
+// "ok", "fail", or "elsewhere". Resend's unsubscribe covers every segment in the
+// account, so a contact who unsubscribed is subscribed again here (the confirm
+// click being their own fresh request) only when Writing is the only segment
+// they belong to; one in any other segment keeps the opt-out ("elsewhere").
+// Success is reported only once Resend shows the contact subscribed and in the
+// segment.
 async function enroll(email, env) {
+  return (await enrolled(email, env)) ?? "fail";
+}
+
+async function enrolled(email, env) {
   const id = encodeURIComponent(email);
   const found = await resend(env, "GET", `/contacts/${id}`);
   if (found.status === 404) {
     const created = await resend(env, "POST", "/contacts", {
       email, unsubscribed: false, segments: [{ id: env.SEGMENT_ID }],
     });
-    if (!created.ok) return false;
+    if (!created.ok) return null;
   } else if (found.ok) {
     const contact = await found.json();
     if (contact.unsubscribed) {
+      const segments = await segmentsOf(id, env);
+      if (!segments) return null;
+      if (segments.some((s) => s !== env.SEGMENT_ID)) return "elsewhere";
       const updated = await resend(env, "PATCH", `/contacts/${id}`, { unsubscribed: false });
-      if (!updated.ok) return false;
+      if (!updated.ok) return null;
     }
     if (!(await inSegment(id, env))) {
       const added = await resend(env, "POST", `/contacts/${id}/segments/${env.SEGMENT_ID}`);
-      if (!added.ok) return false;
+      if (!added.ok) return null;
     }
   } else {
-    return false;
+    return null;
   }
   const after = await resend(env, "GET", `/contacts/${id}`);
-  if (!after.ok || (await after.json()).unsubscribed) return false;
-  return inSegment(id, env);
+  if (!after.ok || (await after.json()).unsubscribed) return null;
+  return (await inSegment(id, env)) ? "ok" : null;
+}
+
+// The ids of the segments a contact belongs to, or null if Resend did not answer.
+async function segmentsOf(id, env) {
+  const res = await resend(env, "GET", `/contacts/${id}/segments?limit=100`);
+  if (!res.ok) return null;
+  const { data } = await res.json();
+  return (data || []).map((s) => s.id);
 }
 
 async function inSegment(id, env) {
-  const res = await resend(env, "GET", `/contacts/${id}/segments?limit=100`);
-  if (!res.ok) return false;
-  const { data } = await res.json();
-  return (data || []).some((s) => s.id === env.SEGMENT_ID);
+  return ((await segmentsOf(id, env)) || []).includes(env.SEGMENT_ID);
 }
 
-// Signing
+// Links and fingerprints
 
-async function sign(email, t, env) {
-  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(env.SIGNING_KEY),
+const enc = new TextEncoder();
+const b64url = (bytes) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const unb64url = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+
+// HMAC-SHA-256 of text under SIGNING_KEY: the store's fingerprint of an address or link.
+async function mac(text, env) {
+  const key = await crypto.subtle.importKey("raw", enc.encode(env.SIGNING_KEY),
     { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${email}|${t}`));
-  return btoa(String.fromCharCode(...new Uint8Array(mac))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return b64url(new Uint8Array(await crypto.subtle.sign("HMAC", key, enc.encode(text))));
 }
 
-// "ok", "expired" or "broken"
-async function valid(email, t, s, env) {
-  if (!email || !s || !/^\d{1,12}$/.test(t) || !EMAIL.test(email)) return "broken";
-  const expected = await sign(email, t, env);
-  if (expected.length !== s.length) return "broken";
-  let diff = 0;
-  for (let i = 0; i < s.length; i++) diff |= expected.charCodeAt(i) ^ s.charCodeAt(i);
-  if (diff !== 0) return "broken";
+async function sealKey(env) {
+  const raw = await crypto.subtle.digest("SHA-256", enc.encode(`link|${env.SIGNING_KEY}`));
+  return crypto.subtle.importKey("raw", raw, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+}
+
+// The link's token: the address and the time, encrypted and authenticated.
+async function seal(email, env) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const body = enc.encode(`${Math.floor(Date.now() / 1000)}|${email}`);
+  const sealed = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await sealKey(env), body));
+  const out = new Uint8Array(iv.length + sealed.length);
+  out.set(iv);
+  out.set(sealed, iv.length);
+  return b64url(out);
+}
+
+// { status: "ok", email } or { status: "expired" | "broken" }
+async function unseal(k, env) {
+  let text;
+  try {
+    const bytes = unb64url(k);
+    if (bytes.length < 29 || bytes.length > 400) return { status: "broken" };
+    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes.slice(0, 12) }, await sealKey(env), bytes.slice(12));
+    text = new TextDecoder().decode(plain);
+  } catch {
+    return { status: "broken" };
+  }
+  const bar = text.indexOf("|");
+  const t = text.slice(0, bar), email = text.slice(bar + 1);
+  if (bar < 1 || !/^\d{1,12}$/.test(t) || !EMAIL.test(email)) return { status: "broken" };
   const age = Date.now() / 1000 - Number(t);
-  return age >= -300 && age <= LINK_DAYS * 86400 ? "ok" : "expired";
+  return age >= -300 && age <= LINK_DAYS * DAY ? { status: "ok", email } : { status: "expired" };
 }
 
 // Resend
