@@ -103,7 +103,6 @@ header.post h1 {
 header.post .subtitle {
     margin-top: 1rem;
     font-size: 1.25rem;
-    font-style: italic;
     line-height: 1.45;
     color: var(--stone);
     text-wrap: pretty;
