@@ -66,34 +66,42 @@ async function subscribe(request, env) {
     return page("Too Many Requests", "Too many confirmation emails have been asked for just now. Try again in a few minutes.", 429);
   }
   // One confirmation per address a day: a repeat lands on the same page as a
-  // first request, so the form reveals nothing about who has asked.
+  // first request, so the form reveals nothing about who has asked. A send whose
+  // outcome is unknown stays pending, and a later request retries the identical
+  // email under the same idempotency key, so Resend delivers it at most once.
   const sentKey = "sent:" + (await mac(`sent|${email}`, env));
-  const allowed = await ledger(env).reserve(sentKey, new Date().toISOString().slice(0, 10), DAILY_CAP, DAY);
-  if (allowed === "repeat") return go("/subscribe/sent/");
-  if (allowed === "full") {
+  const held = await ledger(env).reserve(sentKey, new Date().toISOString().slice(0, 10), DAILY_CAP, DAY);
+  if (held.status === "sent") return go("/subscribe/sent/");
+  if (held.status === "full") {
     return page("Sign-Ups Paused", "Sign-ups have reached today's limit. Try again tomorrow.", 429);
   }
-  const link = `${SELF}/confirm?k=${await seal(email, env)}`;
-  const res = await resend(env, "POST", "/emails", {
-    from: FROM,
-    reply_to: REPLY_TO,
-    to: [email],
-    subject: "Confirm Your Subscription",
-    html: confirmationEmail(link),
-    text: `Confirm your subscription to new writing by David Valerio:\n\n${link}\n\nThe link works for ${LINK_DAYS} days. If you did not ask for this, ignore this email and nothing will be sent.`,
-  });
-  if (!res.ok) {
-    await ledger(env).release(sentKey);
-    return page("Something Went Wrong", "The confirmation email could not be sent. Try again in a few minutes.", 502);
+  const link = `${SELF}/confirm?k=${await seal(email, held.t, env)}`;
+  let res = null;
+  try {
+    res = await resend(env, "POST", "/emails", {
+      from: FROM,
+      reply_to: REPLY_TO,
+      to: [email],
+      subject: "Confirm Your Subscription",
+      html: confirmationEmail(link),
+      text: `Confirm your subscription to new writing by David Valerio:\n\n${link}\n\nThe link works for ${LINK_DAYS} days. If you did not ask for this, ignore this email and nothing will be sent.`,
+    }, { "Idempotency-Key": sentKey });
+  } catch {
+    res = null;
   }
-  return go("/subscribe/sent/");
+  if (res && res.ok) {
+    await ledger(env).mark(sentKey, "sent");
+    return go("/subscribe/sent/");
+  }
+  if (res && res.status < 500 && res.status !== 429) await ledger(env).release(sentKey);
+  return page("Something Went Wrong", "The confirmation email could not be sent. Try again in a few minutes.", 502);
 }
 
 async function confirmPage(url, env) {
   const k = url.searchParams.get("k") || "";
   const link = await unseal(k, env);
   if (link.status !== "ok") return invalid(link.status);
-  if (await ledger(env).has(await usedKey(link.bytes, env))) return alreadyUsed();
+  if ((await ledger(env).state(await usedKey(link.bytes, env))) === "done") return alreadyUsed();
   return page("Confirm Your Subscription", `New writing will be sent to ${esc(link.email)}.`, 200,
     `<form class="subscribe" method="post" action="/confirm">
                 <input type="hidden" name="k" value="${esc(k)}">
@@ -103,8 +111,10 @@ async function confirmPage(url, env) {
 
 // A link works once: it is claimed in the Ledger before the contact is touched,
 // and pressed again it says so and changes nothing, so an old email cannot undo a
-// later unsubscribe. A claim whose enrollment failed is released for a retry
-// (enrolling again is harmless).
+// later unsubscribe. A claim is released only when enrollment failed before
+// changing anything. When Resend may have taken a change but did not confirm it,
+// the claim stays pending, and pressing the link again only checks the contact,
+// never changes it.
 async function confirm(request, env) {
   const form = await formOf(request);
   if (!form) return NOT_A_FORM();
@@ -112,16 +122,47 @@ async function confirm(request, env) {
   const link = await unseal(k, env);
   if (link.status !== "ok") return invalid(link.status);
   const used = await usedKey(link.bytes, env);
-  if (!(await ledger(env).claim(used, (LINK_DAYS + 1) * DAY))) return alreadyUsed();
+  const claim = await ledger(env).claim(used, (LINK_DAYS + 1) * DAY);
+  if (claim === "done") return alreadyUsed();
+  if (claim === "pending") {
+    const seen = await subscribed(link.email, env);
+    if (seen === "yes") {
+      await ledger(env).mark(used, "done");
+      return go("/subscribe/confirmed/");
+    }
+    return UNSURE();
+  }
   const result = await enroll(link.email, env);
+  if (result === "ok" || result === "elsewhere") await ledger(env).mark(used, "done");
+  if (result === "ok") return go("/subscribe/confirmed/");
   if (result === "elsewhere") {
     return page("Not Subscribed", `This address unsubscribed from all mail sent from davalerio.com, so it cannot be subscribed again here. Write to <a href="mailto:${REPLY_TO}">${REPLY_TO}</a> to be added.`, 409);
   }
-  if (result !== "ok") {
+  if (result === "untouched") {
     await ledger(env).release(used);
     return page("Something Went Wrong", "The subscription could not be saved. Try the link again in a few minutes.", 502);
   }
-  return go("/subscribe/confirmed/");
+  return UNSURE();
+}
+
+// Shown while a claimed link's outcome is open, including to a second press that
+// overlaps the first.
+const UNSURE = () => page("Not Yet Confirmed", `This subscription is not confirmed yet. Press the link again in a few minutes; if it still shows this, subscribe again from the <a href="${SITE}/">homepage</a>.`, 409);
+
+// "yes", "no" or "unknown": whether the address is subscribed and in Writing, read only.
+async function subscribed(email, env) {
+  try {
+    const id = encodeURIComponent(email);
+    const found = await resend(env, "GET", `/contacts/${id}`);
+    if (found.status === 404) return "no";
+    if (!found.ok) return "unknown";
+    if ((await found.json()).unsubscribed) return "no";
+    const segments = await segmentsOf(id, env);
+    if (!segments) return "unknown";
+    return segments.includes(env.SEGMENT_ID) ? "yes" : "no";
+  } catch {
+    return "unknown";
+  }
 }
 
 function alreadyUsed() {
@@ -140,62 +181,95 @@ function ledger(env) {
 }
 
 // Each method runs alone and synchronously, so a check and its record cannot
-// interleave with another request's.
+// interleave with another request's. A hold is a fingerprint with an expiry, a
+// state ("pending", then "sent" for a confirmation email or "done" for a link)
+// and, for a confirmation email, the time its link was issued.
 export class Ledger extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
-    ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS marks (key TEXT PRIMARY KEY, until INTEGER NOT NULL)");
+    ctx.storage.sql.exec("DROP TABLE IF EXISTS marks");
+    ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS holds (key TEXT PRIMARY KEY, until INTEGER NOT NULL, state TEXT NOT NULL, t INTEGER NOT NULL)");
     ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS days (day TEXT PRIMARY KEY, sent INTEGER NOT NULL)");
   }
 
-  #sweep() {
-    this.ctx.storage.sql.exec("DELETE FROM marks WHERE until <= ?", Math.floor(Date.now() / 1000));
+  #now() {
+    return Math.floor(Date.now() / 1000);
   }
 
-  has(key) {
-    this.#sweep();
-    return this.ctx.storage.sql.exec("SELECT 1 FROM marks WHERE key = ?", key).toArray().length > 0;
+  #get(key) {
+    this.ctx.storage.sql.exec("DELETE FROM holds WHERE until <= ?", this.#now());
+    return this.ctx.storage.sql.exec("SELECT state, t FROM holds WHERE key = ?", key).toArray()[0] || null;
   }
 
-  // Records key for `seconds` and returns true, or false if it is already recorded.
+  #put(key, seconds) {
+    const now = this.#now();
+    this.ctx.storage.sql.exec("INSERT INTO holds (key, until, state, t) VALUES (?, ?, 'pending', ?)", key, now + seconds, now);
+    return now;
+  }
+
+  state(key) {
+    const hold = this.#get(key);
+    return hold ? hold.state : null;
+  }
+
+  // A link: "new" when this call claims it (now pending), or its existing state.
   claim(key, seconds) {
-    if (this.has(key)) return false;
-    this.ctx.storage.sql.exec("INSERT INTO marks (key, until) VALUES (?, ?)", key, Math.floor(Date.now() / 1000) + seconds);
-    return true;
+    const hold = this.#get(key);
+    if (hold) return hold.state;
+    this.#put(key, seconds);
+    return "new";
+  }
+
+  mark(key, state) {
+    this.ctx.storage.sql.exec("UPDATE holds SET state = ? WHERE key = ?", state, key);
   }
 
   release(key) {
-    this.ctx.storage.sql.exec("DELETE FROM marks WHERE key = ?", key);
+    this.ctx.storage.sql.exec("DELETE FROM holds WHERE key = ?", key);
   }
 
-  // One confirmation for this address today, within the day's cap: "ok", "repeat" or "full".
+  // A confirmation email for this address today, within the day's cap:
+  // { status: "new" | "pending" | "sent" | "full", t }, t being the link's issue time.
   reserve(key, day, cap, seconds) {
-    if (this.has(key)) return "repeat";
+    const hold = this.#get(key);
+    if (hold) return { status: hold.state, t: hold.t };
     this.ctx.storage.sql.exec("DELETE FROM days WHERE day < ?", new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10));
     const row = this.ctx.storage.sql.exec("SELECT sent FROM days WHERE day = ?", day).toArray()[0];
-    if ((row ? row.sent : 0) >= cap) return "full";
-    this.claim(key, seconds);
+    if ((row ? row.sent : 0) >= cap) return { status: "full" };
+    const t = this.#put(key, seconds);
     this.ctx.storage.sql.exec("INSERT INTO days (day, sent) VALUES (?, 1) ON CONFLICT(day) DO UPDATE SET sent = sent + 1", day);
-    return "ok";
+    return { status: "new", t };
   }
 }
 
 // Adds the address to the Writing segment and makes sure it receives broadcasts:
-// "ok", "fail", or "elsewhere". Resend's unsubscribe covers every segment in the
-// account, so a contact who unsubscribed is subscribed again here (the confirm
-// click being their own fresh request) only when Writing is the only segment
-// they belong to; one in any other segment keeps the opt-out ("elsewhere").
-// Success is reported only once Resend shows the contact subscribed and in the
-// segment.
+// "ok", "elsewhere", "untouched" (failed before changing anything) or "unsure"
+// (failed after a change may have been made). Resend's unsubscribe covers every
+// segment in the account, so a contact who unsubscribed is subscribed again here
+// (the confirm click being their own fresh request) only when Writing is the only
+// segment they belong to; one in any other segment keeps the opt-out
+// ("elsewhere"). Success is reported only once Resend shows the contact
+// subscribed and in the segment.
 async function enroll(email, env) {
-  return (await enrolled(email, env)) ?? "fail";
+  const act = { changed: false };
+  const change = (method, path, body) => {
+    act.changed = true;
+    return resend(env, method, path, body);
+  };
+  let result;
+  try {
+    result = await enrolled(email, env, change);
+  } catch {
+    result = null;
+  }
+  return result ?? (act.changed ? "unsure" : "untouched");
 }
 
-async function enrolled(email, env) {
+async function enrolled(email, env, change) {
   const id = encodeURIComponent(email);
   const found = await resend(env, "GET", `/contacts/${id}`);
   if (found.status === 404) {
-    const created = await resend(env, "POST", "/contacts", {
+    const created = await change("POST", "/contacts", {
       email, unsubscribed: false, segments: [{ id: env.SEGMENT_ID }],
     });
     if (!created.ok) return null;
@@ -207,17 +281,17 @@ async function enrolled(email, env) {
       if (!segments) return null;
       if (segments.some((s) => s !== env.SEGMENT_ID)) return "elsewhere";
       if (!segments.includes(env.SEGMENT_ID)) {
-        const added = await resend(env, "POST", `/contacts/${id}/segments/${env.SEGMENT_ID}`);
+        const added = await change("POST", `/contacts/${id}/segments/${env.SEGMENT_ID}`);
         if (!added.ok) return null;
       }
       const now = await segmentsOf(id, env);
       if (!now) return null;
       if (now.length !== 1 || now[0] !== env.SEGMENT_ID) return "elsewhere";
-      const updated = await resend(env, "PATCH", `/contacts/${id}`, { unsubscribed: false });
+      const updated = await change("PATCH", `/contacts/${id}`, { unsubscribed: false });
       if (!updated.ok) return null;
     }
     if (!(await inSegment(id, env))) {
-      const added = await resend(env, "POST", `/contacts/${id}/segments/${env.SEGMENT_ID}`);
+      const added = await change("POST", `/contacts/${id}/segments/${env.SEGMENT_ID}`);
       if (!added.ok) return null;
     }
   } else {
@@ -258,10 +332,13 @@ async function sealKey(env) {
   return crypto.subtle.importKey("raw", raw, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
 }
 
-// The link's token: the address and the time, encrypted and authenticated.
-async function seal(email, env) {
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const body = enc.encode(`${Math.floor(Date.now() / 1000)}|${email}`);
+// The link's token: the address and its issue time t, encrypted and
+// authenticated. The nonce is derived from both, so the same address and time
+// always give the same link (a retried email is identical) and a nonce is never
+// reused for different contents.
+async function seal(email, t, env) {
+  const iv = unb64url(await mac(`iv|${t}|${email}`, env)).slice(0, 12);
+  const body = enc.encode(`${t}|${email}`);
   const sealed = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await sealKey(env), body));
   const out = new Uint8Array(iv.length + sealed.length);
   out.set(iv);
@@ -290,13 +367,14 @@ async function unseal(k, env) {
 
 // Resend
 
-function resend(env, method, path, body) {
+function resend(env, method, path, body, extra = {}) {
   return fetch("https://api.resend.com" + path, {
     method,
     headers: {
       Authorization: `Bearer ${env.RESEND_API_KEY}`,
       "Content-Type": "application/json",
       "User-Agent": "davalerio-subscribe",
+      ...extra,
     },
     body: body ? JSON.stringify(body) : undefined,
   });
