@@ -71,6 +71,8 @@ async function subscribe(request, env) {
   // email under the same idempotency key, so Resend delivers it at most once.
   const sentKey = "sent:" + (await mac(`sent|${email}`, env));
   const held = await ledger(env).reserve(sentKey, new Date().toISOString().slice(0, 10), DAILY_CAP, DAY);
+  // held.t is the reservation's own time, so its idempotency key is unique to it
+  // and shared only by its retries.
   if (held.status === "sent") return go("/subscribe/sent/");
   if (held.status === "full") {
     return page("Sign-Ups Paused", "Sign-ups have reached today's limit. Try again tomorrow.", 429);
@@ -85,7 +87,7 @@ async function subscribe(request, env) {
       subject: "Confirm Your Subscription",
       html: confirmationEmail(link),
       text: `Confirm your subscription to new writing by David Valerio:\n\n${link}\n\nThe link works for ${LINK_DAYS} days. If you did not ask for this, ignore this email and nothing will be sent.`,
-    }, { "Idempotency-Key": sentKey });
+    }, { "Idempotency-Key": `${sentKey}:${held.t}` });
   } catch {
     res = null;
   }
@@ -93,7 +95,11 @@ async function subscribe(request, env) {
     await ledger(env).mark(sentKey, "sent");
     return go("/subscribe/sent/");
   }
-  if (res && res.status < 500 && res.status !== 429) await ledger(env).release(sentKey);
+  // 409: an overlapping request is already sending this same email.
+  if (res && res.status === 409) return go("/subscribe/sent/");
+  // A definite refusal frees the reservation; a thrown request, a 5xx, a 429, or a
+  // 409 (Resend still working on the same key) leaves it pending for a retry.
+  if (res && res.status < 500 && res.status !== 429 && res.status !== 409) await ledger(env).release(sentKey, held.owner);
   return page("Something Went Wrong", "The confirmation email could not be sent. Try again in a few minutes.", 502);
 }
 
@@ -112,7 +118,8 @@ async function confirmPage(url, env) {
 // A link works once: it is claimed in the Ledger before the contact is touched,
 // and pressed again it says so and changes nothing, so an old email cannot undo a
 // later unsubscribe. A claim is released only when enrollment failed before
-// changing anything. When Resend may have taken a change but did not confirm it,
+// changing anything, and only by the request that made it while it is still
+// pending, so it never clears a link another request has marked done. When Resend may have taken a change but did not confirm it,
 // the claim stays pending, and pressing the link again only checks the contact,
 // never changes it.
 async function confirm(request, env) {
@@ -123,8 +130,8 @@ async function confirm(request, env) {
   if (link.status !== "ok") return invalid(link.status);
   const used = await usedKey(link.bytes, env);
   const claim = await ledger(env).claim(used, (LINK_DAYS + 1) * DAY);
-  if (claim === "done") return alreadyUsed();
-  if (claim === "pending") {
+  if (claim.state === "done") return alreadyUsed();
+  if (claim.state === "pending") {
     const seen = await subscribed(link.email, env);
     if (seen === "yes") {
       await ledger(env).mark(used, "done");
@@ -139,7 +146,7 @@ async function confirm(request, env) {
     return page("Not Subscribed", `This address unsubscribed from all mail sent from davalerio.com, so it cannot be subscribed again here. Write to <a href="mailto:${REPLY_TO}">${REPLY_TO}</a> to be added.`, 409);
   }
   if (result === "untouched") {
-    await ledger(env).release(used);
+    await ledger(env).release(used, claim.owner);
     return page("Something Went Wrong", "The subscription could not be saved. Try the link again in a few minutes.", 502);
   }
   return UNSURE();
@@ -182,29 +189,42 @@ function ledger(env) {
 
 // Each method runs alone and synchronously, so a check and its record cannot
 // interleave with another request's. A hold is a fingerprint with an expiry, a
-// state ("pending", then "sent" for a confirmation email or "done" for a link)
-// and, for a confirmation email, the time its link was issued.
+// state ("pending", then "sent" for a confirmation email or "done" for a link),
+// the request that made it (owner), and for a confirmation email the time its
+// link was issued (t) and the last day it was counted against the daily cap.
 export class Ledger extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
     ctx.storage.sql.exec("DROP TABLE IF EXISTS marks");
-    ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS holds (key TEXT PRIMARY KEY, until INTEGER NOT NULL, state TEXT NOT NULL, t INTEGER NOT NULL)");
+    ctx.storage.sql.exec("DROP TABLE IF EXISTS holds");
+    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS hold (key TEXT PRIMARY KEY, until INTEGER NOT NULL,
+      state TEXT NOT NULL, owner TEXT NOT NULL, t INTEGER NOT NULL, day TEXT NOT NULL)`);
     ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS days (day TEXT PRIMARY KEY, sent INTEGER NOT NULL)");
   }
 
-  #now() {
-    return Math.floor(Date.now() / 1000);
+  #sql(query, ...args) {
+    return this.ctx.storage.sql.exec(query, ...args);
   }
 
   #get(key) {
-    this.ctx.storage.sql.exec("DELETE FROM holds WHERE until <= ?", this.#now());
-    return this.ctx.storage.sql.exec("SELECT state, t FROM holds WHERE key = ?", key).toArray()[0] || null;
+    this.#sql("DELETE FROM hold WHERE until <= ?", Math.floor(Date.now() / 1000));
+    return this.#sql("SELECT state, owner, t, day FROM hold WHERE key = ?", key).toArray()[0] || null;
   }
 
-  #put(key, seconds) {
-    const now = this.#now();
-    this.ctx.storage.sql.exec("INSERT INTO holds (key, until, state, t) VALUES (?, ?, 'pending', ?)", key, now + seconds, now);
-    return now;
+  #put(key, seconds, day = "") {
+    const t = Math.floor(Date.now() / 1000), owner = crypto.randomUUID();
+    this.#sql("INSERT INTO hold (key, until, state, owner, t, day) VALUES (?, ?, 'pending', ?, ?, ?)",
+      key, t + seconds, owner, t, day);
+    return { t, owner };
+  }
+
+  // Counts one confirmation email against day's cap: false if the day is full.
+  #count(day, cap) {
+    this.#sql("DELETE FROM days WHERE day < ?", new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10));
+    const row = this.#sql("SELECT sent FROM days WHERE day = ?", day).toArray()[0];
+    if ((row ? row.sent : 0) >= cap) return false;
+    this.#sql("INSERT INTO days (day, sent) VALUES (?, 1) ON CONFLICT(day) DO UPDATE SET sent = sent + 1", day);
+    return true;
   }
 
   state(key) {
@@ -212,39 +232,46 @@ export class Ledger extends DurableObject {
     return hold ? hold.state : null;
   }
 
-  // A link: "new" when this call claims it (now pending), or its existing state.
+  // A link: { state: "new", owner } when this call claims it (now pending), or
+  // { state } as it already stands.
   claim(key, seconds) {
     const hold = this.#get(key);
-    if (hold) return hold.state;
-    this.#put(key, seconds);
-    return "new";
+    if (hold) return { state: hold.state };
+    return { state: "new", owner: this.#put(key, seconds).owner };
   }
 
   mark(key, state) {
-    this.ctx.storage.sql.exec("UPDATE holds SET state = ? WHERE key = ?", state, key);
+    this.#sql("UPDATE hold SET state = ? WHERE key = ?", state, key);
   }
 
-  release(key) {
-    this.ctx.storage.sql.exec("DELETE FROM holds WHERE key = ?", key);
+  // Frees a hold only for the request that made it, and only while it is pending.
+  release(key, owner) {
+    this.#sql("DELETE FROM hold WHERE key = ? AND owner = ? AND state = 'pending'", key, owner || "");
   }
 
   // A confirmation email for this address today, within the day's cap:
-  // { status: "new" | "pending" | "sent" | "full", t }, t being the link's issue time.
+  // { status: "new" | "pending" | "sent" | "full", t, owner }. A pending email
+  // retried on a later day is counted against that day's cap too, once.
   reserve(key, day, cap, seconds) {
     const hold = this.#get(key);
-    if (hold) return { status: hold.state, t: hold.t };
-    this.ctx.storage.sql.exec("DELETE FROM days WHERE day < ?", new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10));
-    const row = this.ctx.storage.sql.exec("SELECT sent FROM days WHERE day = ?", day).toArray()[0];
-    if ((row ? row.sent : 0) >= cap) return { status: "full" };
-    const t = this.#put(key, seconds);
-    this.ctx.storage.sql.exec("INSERT INTO days (day, sent) VALUES (?, 1) ON CONFLICT(day) DO UPDATE SET sent = sent + 1", day);
-    return { status: "new", t };
+    if (hold) {
+      if (hold.state === "pending" && hold.day !== day) {
+        if (!this.#count(day, cap)) return { status: "full" };
+        this.#sql("UPDATE hold SET day = ? WHERE key = ?", day, key);
+      }
+      return { status: hold.state, t: hold.t, owner: hold.owner };
+    }
+    if (!this.#count(day, cap)) return { status: "full" };
+    const made = this.#put(key, seconds, day);
+    return { status: "new", t: made.t, owner: made.owner };
   }
 }
 
 // Adds the address to the Writing segment and makes sure it receives broadcasts:
 // "ok", "elsewhere", "untouched" (failed before changing anything) or "unsure"
-// (failed after a change may have been made). Resend's unsubscribe covers every
+// (failed after a change may have been made). A write Resend refused with a 4xx,
+// rate limits included, did not happen; one that succeeded, threw, or got a 5xx
+// may have. Resend's unsubscribe covers every
 // segment in the account, so a contact who unsubscribed is subscribed again here
 // (the confirm click being their own fresh request) only when Writing is the only
 // segment they belong to; one in any other segment keeps the opt-out
@@ -252,9 +279,16 @@ export class Ledger extends DurableObject {
 // subscribed and in the segment.
 async function enroll(email, env) {
   const act = { changed: false };
-  const change = (method, path, body) => {
-    act.changed = true;
-    return resend(env, method, path, body);
+  const change = async (method, path, body) => {
+    let res;
+    try {
+      res = await resend(env, method, path, body);
+    } catch (e) {
+      act.changed = true;
+      throw e;
+    }
+    if (res.ok || res.status >= 500) act.changed = true;
+    return res;
   };
   let result;
   try {
