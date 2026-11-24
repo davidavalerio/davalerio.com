@@ -7,8 +7,8 @@ compatibility_date = "2026-11-01"
 workers_dev = false
 routes = [{ pattern = "subscribe.davalerio.com", custom_domain = true }]
 
-# Confirmation mail: at most 5 requests a minute from one address on the
-# internet, and 2 a minute for one email address.
+# At most 5 posts a minute from one address on the internet, to the form and
+# to the confirm button alike.
 [[ratelimits]]
 name = "LIMIT_IP"
 namespace_id = "4631"
@@ -16,19 +16,17 @@ namespace_id = "4631"
   limit = 5
   period = 60
 
-[[ratelimits]]
-name = "LIMIT_EMAIL"
-namespace_id = "4632"
-  [ratelimits.simple]
-  limit = 2
-  period = 60
-
-# The Ledger (see worker.js): one confirmation per address a day, the day's
-# count, and links already used, as fingerprints only.
+# Caps (see worker.js): one confirmation email per address a day and the
+# day's count, as fingerprints only.
 [[durable_objects.bindings]]
-name = "LEDGER"
-class_name = "Ledger"
+name = "CAPS"
+class_name = "Caps"
 
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Ledger"]
+
+[[migrations]]
+tag = "v2"
+deleted_classes = ["Ledger"]
+new_sqlite_classes = ["Caps"]
