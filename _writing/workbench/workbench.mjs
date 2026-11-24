@@ -32,7 +32,7 @@ const config = JSON.parse(readFileSync(join(homedir(), '.local/share/workbench/c
 
 function yamlScalar(text, key) {
     const m = new RegExp('^' + key + ':\\s*(.+)$', 'm').exec(text);
-    return m ? m[1].trim() : null;
+    return m ? m[1].trim().replace(/^(['"])(.*)\1$/, '$2') : null;
 }
 
 function pieces() {

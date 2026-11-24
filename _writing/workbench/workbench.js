@@ -124,7 +124,7 @@ const textEls = {};
 function textBox(tag, key, cls, placeholder) {
     const el = document.createElement(tag);
     if (cls) el.className = cls;
-    el.contentEditable = 'plaintext-only';
+    el.contentEditable = 'false';   // editable once the piece has loaded and its text is in
     el.spellcheck = true;
     el.dataset.key = key;
     el.dataset.placeholder = placeholder;
@@ -222,7 +222,10 @@ async function open(name) {
         adapter = drawn;
         saved = Object.fromEntries(current.settings.map(s => [s.key, s.value]));
         values = structuredClone(saved);
-        for (const k in textEls) textEls[k].textContent = values[k] ?? '';
+        for (const k in textEls) {
+            textEls[k].textContent = values[k] ?? '';
+            textEls[k].contentEditable = 'plaintext-only';
+        }
     } catch (e) {
         console.error(e);
         if (mine === generation) say('Could not open ' + name + ': ' + e.message, 'error');
