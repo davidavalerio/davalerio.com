@@ -413,7 +413,7 @@ def homepage_list(posts, maps):
         if len(items) > shown:
             out += '        <details>\n        <summary>All {}</summary>\n        <ul class="list">\n'.format(title)
             out += "".join(row(p) for p in items[shown:]) + '        </ul>\n        </details>\n'
-        return out + '        <a class="top" href="#top">Back to Top</a>\n        </div>\n    </section>\n'
+        return out + '        <a class="top" href="#home">Back to Top</a>\n        </div>\n    </section>\n'
 
     return {"writing": column("writing", "Writing", [p for p in posts if p["kind"] != "conversation"]),
             "podcasts": column("podcasts", "Podcasts", sorted([p for p in posts if p["kind"] == "conversation"] + appearances(),
