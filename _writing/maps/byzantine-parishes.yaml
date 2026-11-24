@@ -3,8 +3,8 @@
 title: Byzantine Catholic Parishes
 date: '2026-11-14'
 page: true
-note: The 562 Byzantine Catholic parishes, missions and communities in the United States, colored by church and eparchy. Click a point for the
-  parish, its eparchy and its Sunday liturgy; drag to move and scroll to zoom.
+note: The 562 Byzantine Catholic parishes, missions and communities in the United States, colored by church and eparchy.
+hint: Click a point for the parish, its eparchy and its Sunday liturgy; drag to move and scroll to zoom.
 start: country
 credits: 'Parish records compiled from eparchy directories, GCatholic.org and parish websites, checked 2026-11-14; some locations are approximate.
   State boundaries: U.S. Census Bureau.'

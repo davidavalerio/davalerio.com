@@ -43,7 +43,14 @@
 <!--kg-card-end: html-->
             </div>
         </article>
-        <footer class="post"><a href="/#writing">← Writing</a></footer>
+        <footer class="post">
+        <form class="subscribe" action="https://subscribe.davalerio.com/" method="post">
+            <label for="subscribe-email">Writing by Email</label>
+            <div class="row"><input id="subscribe-email" type="email" name="email" placeholder="you@example.com" autocomplete="email" required><button type="submit">Subscribe</button></div>
+            <input class="trap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+        </form>
+        <a href="/#writing">← Writing</a>
+        </footer>
     </main>
 </body>
 </html>

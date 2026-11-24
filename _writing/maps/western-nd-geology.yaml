@@ -4,7 +4,7 @@ title: Geologic Map of Western North Dakota
 date: '2026-11-17'
 page: true
 note: Surface geology of North Dakota west of 100.5° W, after Lee Clayton's 1:500,000 Geologic Map of North Dakota (1980), over shaded relief.
-  Click a unit for its name; drag to move, scroll to zoom, and right-drag or two-finger drag to tilt and turn.
+hint: Click a unit for its name; drag to move, scroll to zoom, and right-drag or two-finger drag to tilt and turn.
 start: west
 credits: 'Geology: North Dakota Geological Survey, Surface Geology after Clayton (1980), ND GIS Hub. Elevation: USGS 3D Elevation Program. Boundaries
   and towns: U.S. Census Bureau TIGER. Unit colors and legend wording condensed from the survey''s descriptions.'

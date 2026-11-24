@@ -22,5 +22,5 @@ map: williston-missouri
 [Closing.]
 
 ::: {.map-embed view=relief}
-The valley in relief. Drag to move, and right-drag or two-finger drag to tilt and turn.
+The valley in relief. [Drag to move, and right-drag or two-finger drag to tilt and turn.]{.live}
 :::
