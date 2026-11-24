@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light dark">
     <title>Byzantine Catholic Parishes — David Valerio</title>
-    <meta name="description" content="The 562 Byzantine Catholic parishes, missions and communities in the United States, colored by church and eparchy.">
+    <meta name="description" content="The 562 Byzantine Catholic parishes, missions and communities in the United States, colored by church and eparchy, over shaded relief.">
     <link rel="canonical" href="https://davalerio.com/maps/byzantine-parishes/">
     <meta property="og:type" content="article">
     <meta property="og:title" content="Byzantine Catholic Parishes">
-    <meta property="og:description" content="The 562 Byzantine Catholic parishes, missions and communities in the United States, colored by church and eparchy.">
+    <meta property="og:description" content="The 562 Byzantine Catholic parishes, missions and communities in the United States, colored by church and eparchy, over shaded relief.">
     <meta property="og:url" content="https://davalerio.com/maps/byzantine-parishes/">
     <meta property="og:image" content="https://davalerio.com/maps/byzantine-parishes/stills/country.jpg">
     <meta name="twitter:card" content="summary_large_image">
@@ -26,7 +26,7 @@
     <link rel="stylesheet" href="/maps/map.css">
     <script src="/maps/lib/pmtiles.js" defer></script>
     <script type="module" src="/maps/map.js"></script>
-    <script type="application/json" id="map-def-byzantine-parishes">{"start":"country","bounds":[-179,12,-50,73],"sources":{"vectors":{"type":"vector","url":"vectors.pmtiles"}},"layers":[{"id":"states","type":"line","source":"vectors","source-layer":"states","paint":{"line-color":"--map-contour","line-width":0.7}},{"id":"parishes","type":"circle","source":"vectors","source-layer":"parishes","paint":{"circle-color":["match",["get","grp"],"Ruthenian: Pittsburgh","#B27C10","Ruthenian: Passaic","#C25E1B","Ruthenian: Parma","#B03F27","Ruthenian: Phoenix","#8C2C39","Ukrainian","#1F6FA8","Melkite","#2C8878","Romanian","#6A4FA0","Other","#56616F","#56616F"],"circle-radius":["interpolate",["linear"],["zoom"],3,3,8,6.5],"circle-stroke-color":"--paper","circle-stroke-width":0.8}}],"views":{"country":{"center":[-96.5,38.6],"zoom":3.9,"show":["states","parishes"],"alt":"Map of the United States with Byzantine Catholic parishes as colored points, thickest from Ohio and Pennsylvania to New York and New Jersey, scattered across Florida, Texas, Arizona and California.","caption":"The Byzantine Catholic parishes of the United States."},"northeast":{"center":[-77.6,41.2],"zoom":5.7,"show":["states","parishes"],"alt":"Closer view from Ohio to New England, Ruthenian parishes clustered in western Pennsylvania and Ukrainian parishes along the Pennsylvania anthracite region, New Jersey and New York.","caption":"From Ohio to New England, where most of the parishes are."}},"popup":{"layer":"parishes","title":"{name}","lines":["{city}, {state}","{eparchy}","{sunday_liturgy}"]}}</script>
+    <script type="application/json" id="map-def-byzantine-parishes">{"start":"country","bounds":[-179,12,-50,73],"sources":{"vectors":{"type":"vector","url":"vectors.pmtiles"},"relief":{"type":"raster-dem","url":"terrain.pmtiles","encoding":"terrarium","tileSize":256,"maxzoom":6}},"layers":[{"id":"hillshade","type":"hillshade","source":"relief","paint":{"hillshade-shadow-color":"--map-shadow","hillshade-highlight-color":"--map-highlight","hillshade-accent-color":"--map-shadow","hillshade-exaggeration":0.8}},{"id":"states","type":"line","source":"vectors","source-layer":"states","paint":{"line-color":"--map-contour","line-width":0.7}},{"id":"parishes","type":"circle","source":"vectors","source-layer":"parishes","paint":{"circle-color":["match",["get","grp"],"Ruthenian: Pittsburgh","#B27C10","Ruthenian: Passaic","#C25E1B","Ruthenian: Parma","#B03F27","Ruthenian: Phoenix","#8C2C39","Ukrainian","#1F6FA8","Melkite","#2C8878","Romanian","#6A4FA0","Other","#56616F","#56616F"],"circle-radius":["interpolate",["linear"],["zoom"],3,3,8,6.5],"circle-stroke-color":"--paper","circle-stroke-width":0.8}}],"views":{"country":{"center":[-96.5,38.6],"zoom":3.9,"show":["hillshade","states","parishes"],"alt":"Shaded-relief map of the United States with Byzantine Catholic parishes as colored points, thickest from Ohio and Pennsylvania to New York and New Jersey, scattered across Florida, Texas, Arizona and California.","caption":"The Byzantine Catholic parishes of the United States."},"northeast":{"center":[-77.6,41.2],"zoom":5.7,"show":["hillshade","states","parishes"],"alt":"Closer shaded-relief view from Ohio to New England, Ruthenian parishes clustered in western Pennsylvania and Ukrainian parishes along the Pennsylvania anthracite region, New Jersey and New York.","caption":"From Ohio to New England, where most of the parishes are."}},"popup":{"layer":"parishes","title":"{name}","lines":["{city}, {state}","{eparchy}","{sunday_liturgy}"]}}</script>
 </head>
 <body class="wide">
     <header class="site">
@@ -37,9 +37,9 @@
         <header class="post">
             <p class="meta">Map · <time datetime="2026-11-14">2026-11-14</time></p>
             <h1>Byzantine Catholic Parishes</h1>
-            <p class="subtitle">The 562 Byzantine Catholic parishes, missions and communities in the United States, colored by church and eparchy. Click a point for the parish, its eparchy and its Sunday liturgy; drag to move and scroll to zoom.</p>
+            <p class="subtitle">The 562 Byzantine Catholic parishes, missions and communities in the United States, colored by church and eparchy, over shaded relief. Click a point for the parish, its eparchy and its Sunday liturgy; drag to move and scroll to zoom.</p>
         </header>
-        <div class="map-full" data-map="byzantine-parishes" data-view="country"><figure class="still"><img src="/maps/byzantine-parishes/stills/country.jpg" alt="Map of the United States with Byzantine Catholic parishes as colored points, thickest from Ohio and Pennsylvania to New York and New Jersey, scattered across Florida, Texas, Arizona and California." width="1200" height="800" style="display: block; width: 100%; max-width: 100%; height: auto;"><figcaption>The Byzantine Catholic parishes of the United States.</figcaption></figure></div>
+        <div class="map-full" data-map="byzantine-parishes" data-view="country"><figure class="still"><img src="/maps/byzantine-parishes/stills/country.jpg" alt="Shaded-relief map of the United States with Byzantine Catholic parishes as colored points, thickest from Ohio and Pennsylvania to New York and New Jersey, scattered across Florida, Texas, Arizona and California." width="1200" height="800" style="display: block; width: 100%; max-width: 100%; height: auto;"><figcaption>The Byzantine Catholic parishes of the United States.</figcaption></figure></div>
         <div class="map-legend">
             <div>
                 <h3>Ruthenian</h3>
@@ -60,7 +60,7 @@
                 </ul>
             </div>
         </div>
-        <p class="map-credits">Parish records compiled from eparchy directories, GCatholic.org and parish websites, checked 2026-11-14; some locations are approximate. State boundaries: U.S. Census Bureau.</p>
+        <p class="map-credits">Parish records compiled from eparchy directories, GCatholic.org and parish websites, checked 2026-11-14; some locations are approximate. Elevation: USGS 3D Elevation Program. State boundaries: U.S. Census Bureau.</p>
         <footer class="post">
         <form class="subscribe" action="https://subscribe.davalerio.com/" method="post">
             <label for="subscribe-email">Writing by Email</label>

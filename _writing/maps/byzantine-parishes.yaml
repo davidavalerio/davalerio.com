@@ -3,15 +3,20 @@
 title: Byzantine Catholic Parishes
 date: '2026-11-14'
 page: true
-note: The 562 Byzantine Catholic parishes, missions and communities in the United States, colored by church and eparchy.
+note: The 562 Byzantine Catholic parishes, missions and communities in the United States, colored by church and eparchy, over shaded relief.
 hint: Click a point for the parish, its eparchy and its Sunday liturgy; drag to move and scroll to zoom.
 start: country
 credits: 'Parish records compiled from eparchy directories, GCatholic.org and parish websites, checked 2026-11-14; some locations are approximate.
-  State boundaries: U.S. Census Bureau.'
+  Elevation: USGS 3D Elevation Program. State boundaries: U.S. Census Bureau.'
 bounds: [-179, 12, -50, 73]
 sources:
   vectors: {type: vector, url: vectors.pmtiles}
+  relief: {type: raster-dem, url: terrain.pmtiles, encoding: terrarium, tileSize: 256, maxzoom: 6}
 layers:
+- id: hillshade
+  type: hillshade
+  source: relief
+  paint: {hillshade-shadow-color: --map-shadow, hillshade-highlight-color: --map-highlight, hillshade-accent-color: --map-shadow, hillshade-exaggeration: 0.8}
 - id: states
   type: line
   source: vectors
@@ -60,15 +65,15 @@ views:
   country:
     center: [-96.5, 38.6]
     zoom: 3.9
-    show: [states, parishes]
-    alt: Map of the United States with Byzantine Catholic parishes as colored points, thickest from Ohio and Pennsylvania to New York and New
+    show: [hillshade, states, parishes]
+    alt: Shaded-relief map of the United States with Byzantine Catholic parishes as colored points, thickest from Ohio and Pennsylvania to New York and New
       Jersey, scattered across Florida, Texas, Arizona and California.
     caption: The Byzantine Catholic parishes of the United States.
   northeast:
     center: [-77.6, 41.2]
     zoom: 5.7
-    show: [states, parishes]
-    alt: Closer view from Ohio to New England, Ruthenian parishes clustered in western Pennsylvania and Ukrainian parishes along the Pennsylvania
+    show: [hillshade, states, parishes]
+    alt: Closer shaded-relief view from Ohio to New England, Ruthenian parishes clustered in western Pennsylvania and Ukrainian parishes along the Pennsylvania
       anthracite region, New Jersey and New York.
     caption: From Ohio to New England, where most of the parishes are.
 legend:
