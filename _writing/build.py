@@ -408,10 +408,12 @@ def homepage_list(posts, maps):
     def column(ident, title, items, shown=7):
         out = '    <section id="{}">\n        <h2>{}</h2>\n        <ul class="list">\n'.format(ident, title)
         out += "".join(row(p) for p in items[:shown]) + '        </ul>\n'
+        # The toggle and the Back to Top link share the line below the list.
+        out += '        <div class="more">\n'
         if len(items) > shown:
             out += '        <details>\n        <summary>All {}</summary>\n        <ul class="list">\n'.format(title)
             out += "".join(row(p) for p in items[shown:]) + '        </ul>\n        </details>\n'
-        return out + '    </section>\n'
+        return out + '        <a class="top" href="#top">Back to Top</a>\n        </div>\n    </section>\n'
 
     return {"writing": column("writing", "Writing", [p for p in posts if p["kind"] != "conversation"]),
             "podcasts": column("podcasts", "Podcasts", sorted([p for p in posts if p["kind"] == "conversation"] + appearances(),
