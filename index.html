@@ -232,12 +232,12 @@
             }
         }
 
-        /* Writing, maps and podcasts, one beneath the other, as wide as the drawing above them:
-           its ink spans image pixels 145 to 1455 of 1600, measured in the first screen's --px. */
+        /* Writing, maps and podcasts, one beneath the other, centered under the drawing and scaled
+           with it: 930 of its 1600 image pixels, measured in the first screen's --px. */
 
         .work {
             --px: min(0.894px, max(100vw / 1600, 100svh / 850));
-            max-width: calc(1310 * var(--px) + 3rem);
+            max-width: calc(930 * var(--px) + 3rem);
             margin: 0 auto;
             padding: 4rem 1.5rem 3rem;
             display: grid;
