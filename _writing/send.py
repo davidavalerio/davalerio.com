@@ -40,8 +40,8 @@ DRAFT = "draft"                                         # the only status a left
 FRESH_DRAFT = datetime.timedelta(minutes=10)
 # Carried by every email until the first broadcast has gone out, so the readers
 # brought over from Discern Earth's newsletter learn of the move in the first issue.
-MOVE_NOTE = ("Discern Earth’s newsletter is now Writing by Email, from davalerio.com. You subscribed to "
-             "Discern Earth, so new writing will come to you here; the link at the foot of this email "
+MOVE_NOTE = ("Discern Earth’s newsletter is now Writing by Email, from davalerio.com. If you subscribed to "
+             "Discern Earth, new writing will come to you here; the link at the foot of this email "
              "unsubscribes you.")           # a draft younger than this may be a send in progress
 
 # Inline styles (email clients drop stylesheets), matching the site's pages in the
@@ -205,7 +205,8 @@ def main():
     if len(args) != 1:
         sys.exit(__doc__)
     name, subscribers = args[0], "--subscribers" in sys.argv
-    first = "--preview" not in sys.argv and not any(b.get("status") in DELIVERING for b in broadcasts())
+    first = "--preview" not in sys.argv and not any(b.get("status") in DELIVERING and b.get("name", "").startswith(("writing:", "map:"))
+                                                     for b in broadcasts())
     key, subject, email, url, page = piece(name, test=not subscribers, note=MOVE_NOTE if first else None)
     if "--preview" in sys.argv:
         print(email)
