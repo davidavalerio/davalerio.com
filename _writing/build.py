@@ -72,9 +72,8 @@ HEAD = """<!DOCTYPE html>
     <link rel="icon" type="image/svg+xml" href="{favicon}">
     <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400;1,8..60,600&display=swap" rel="stylesheet">
+    <link rel="preload" href="/fonts/source-serif-4-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="__FONTS__">
     <link rel="stylesheet" href="{style}">{extra_head}
 </head>
 <body{body_class}>
@@ -82,7 +81,11 @@ HEAD = """<!DOCTYPE html>
         <a href="/" class="home">David Valerio</a>
         <a href="/#writing">Writing</a>
     </header>
-"""
+""".replace("__FONTS__", asset("/fonts/fonts.css"))
+
+# A map's own face, preloaded where the map's text uses it
+SANS = '\n    <link rel="preload" href="/fonts/source-sans-3-normal-latin.woff2" as="font" type="font/woff2" crossorigin>'
+
 HEAD = HEAD.replace("{style}", asset("/writing/style.css"))
 
 FOOT = """</body>
@@ -332,7 +335,7 @@ def map_body(body, map_name, m, slug, strict, page=None):
 def map_head(map_name, maps):
     data = json.dumps({k: maps[map_name][k] for k in ("start", "bounds", "exaggeration", "sources", "layers", "labels", "views", "popup")
                        if k in maps[map_name]}, separators=(",", ":"))
-    return ('\n    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">'
+    return (SANS +
             '\n    <link rel="stylesheet" href="/maps/lib/maplibre-gl.css">\n    <link rel="stylesheet" href="{}">'
             '\n    <script src="/maps/lib/pmtiles.js" defer></script>\n    <script type="module" src="{}"></script>'
             '\n    <script type="application/json" id="map-def-{}">{}</script>').format(
@@ -365,7 +368,7 @@ def map_page(name, m):
     url = "{}/maps/{}/".format(SITE, name)
     interactive = "views" in m
     share = still_url(name, m["start"]) if interactive else "/maps/{}/{}".format(name, m["image"])
-    head = ('\n    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">'
+    head = (SANS +
             '\n    <link rel="stylesheet" href="{}">'.format(asset("/maps/map.css")))
     if m.get("model"):
         head += '\n    <script type="module" src="{}"></script>'.format(asset("/maps/model.js"))

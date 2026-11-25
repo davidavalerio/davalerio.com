@@ -340,7 +340,12 @@ const server = createServer((req, res) => {
             return p ? sendFile(req, res, join(config.gis, p.build, 'Web', m[2])) : res.writeHead(404).end();
         }
         if (path === '/' || path.startsWith('/workbench/')) return sendFile(req, res, join(HERE, path === '/' ? 'index.html' : path.slice('/workbench/'.length)));
-        if (path.startsWith('/maps/') || path.startsWith('/writing/')) return sendFile(req, res, join(ROOT, path));
+        if (path.startsWith('/maps/') || path.startsWith('/writing/') || path.startsWith('/fonts/') || path === '/favicon.png') return sendFile(req, res, join(ROOT, path));
+        // the site's own tab icon, the DV mark that follows light and dark, from the build's copy of it
+        if (path === '/favicon.svg') {
+            const uri = readFileSync(join(ROOT, '_writing', 'favicon.txt'), 'utf8').trim();
+            return res.writeHead(200, { 'Content-Type': 'image/svg+xml' }).end(decodeURIComponent(uri.slice(uri.indexOf(',') + 1)));
+        }
         res.writeHead(404).end('Not found');
     } catch (e) {
         json(res, 500, { error: e.message });
