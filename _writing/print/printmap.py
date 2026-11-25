@@ -62,6 +62,111 @@ def labels(key='labels'):
     return _setting('labels', key, 'Label Positions', 'Labels', [], 'structure')
 
 
+# ---------------------------------------------------------------- the web map a print map follows
+#
+# A print map names the interactive map it is the print form of (`WEB = '<name>'` in its map.py, the name of a
+# definition in _writing/maps/). That map is its source of truth: a setting declared with a value from `web` below
+# takes the web map's value as its default and follows it, and settings.json holds such a setting only when print
+# changes it. Every layer of the web map is drawn in print, each with a switch of its own (`layer.<id>`, declared
+# here, not in map.py), and map.py says how each is drawn by asking `m.layer('<id>')`; a web layer it never asks
+# about stops the build.
+
+REPO = Path(__file__).resolve().parents[2]
+
+
+class From:
+    """A value the web map gives: resolved when the map is read."""
+    def __init__(self, kind, *args):
+        self.kind, self.args = kind, args
+
+
+class _Web:
+    title = From('title')
+    legend = From('legend')
+
+    @staticmethod
+    def credits(tail=''):
+        """The web map's credits as plain text (links as their words, each paragraph a credit), then `tail` on a line of its own."""
+        return From('credits', tail)
+
+    @staticmethod
+    def paint(layer, key=None, prop=None):
+        """A colour from a web layer's paint: its fill, line or circle colour (or `prop`), and in a colour chosen
+        by a feature's value (a `match`), the one for `key`, or the one for every other value when `key` is None."""
+        return From('paint', layer, key, prop)
+
+    @staticmethod
+    def token(name):
+        """A colour of the site's map palette (maps/map.css, light), such as --map-water."""
+        return From('token', name)
+
+
+web = _Web()
+
+
+def load_web(name):
+    import yaml
+    f = REPO / '_writing' / 'maps' / f'{name}.yaml'
+    if not f.exists():
+        raise BuildError(f'map.py follows the web map {name!r}, but _writing/maps/{name}.yaml is not there')
+    d = yaml.safe_load(f.read_text()) or {}
+    palette = {}
+    for css in (REPO / 'writing' / 'style.css', REPO / 'maps' / 'map.css'):
+        text = css.read_text()
+        cut = text.find('prefers-color-scheme: dark')
+        text = text[:cut] if cut >= 0 else text          # the light colours
+        palette.update({k: v.upper() for k, v in re.findall(r'(--[\w-]+):\s*(#[0-9A-Fa-f]{6})\s*;', text)})
+    palette['--paper'] = '#FFFFFF'          # the page is white paper, whatever the site's ground
+    return {'name': name, 'def': d, 'palette': palette, 'layers': d.get('layers') or []}
+
+
+def _plain(md):
+    """Markdown credits as plain text: links as their words, emphasis dropped, each paragraph a credit."""
+    md = re.sub(r'\[([^\]]*)\]\([^)]*\)', r'\1', str(md or ''))
+    md = re.sub(r'[*_`]', '', md)
+    return '  ·  '.join(' '.join(p.split()) for p in re.split(r'\n\s*\n', md) if p.strip())
+
+
+def _paint_ref(w, layer, key, prop):
+    """The colour a web layer's paint gives, as written there: a hex colour or a palette token."""
+    L = next((l for l in w['layers'] if l.get('id') == layer), None)
+    if L is None:
+        raise BuildError(f'the web map {w["name"]!r} has no layer {layer!r}')
+    paint = L.get('paint') or {}
+    prop = prop or next((p for p in ('fill-color', 'line-color', 'circle-color', 'hillshade-shadow-color') if p in paint), None)
+    v = paint.get(prop)
+    if isinstance(v, list) and v and v[0] == 'match':
+        pairs, v = v[2:-1], v[-1]
+        if key is not None:
+            for label, out in zip(pairs[::2], pairs[1::2]):
+                if key == label or (isinstance(label, list) and key in label):
+                    v = out
+                    break
+            else:
+                raise BuildError(f'the web layer {layer!r} gives no colour for {key!r}')
+    if not isinstance(v, str):
+        raise BuildError(f'the web layer {layer!r} has no single colour in {prop}')
+    return v
+
+
+def _hex(w, ref):
+    if ref.startswith('--'):
+        if ref not in w['palette']:
+            raise BuildError(f'the map palette has no colour {ref}')
+        return w['palette'][ref]
+    return ref.upper()
+
+
+def _mentions(value, ref):
+    if isinstance(value, str):
+        return value.upper() == ref.upper()
+    if isinstance(value, list):
+        return any(_mentions(v, ref) for v in value)
+    if isinstance(value, dict):
+        return any(_mentions(v, ref) for v in value.values())
+    return False
+
+
 PAGES = {'Letter Landscape': (11, 8.5), 'Letter Portrait': (8.5, 11), 'Tabloid Landscape': (17, 11),
          'Tabloid Portrait': (11, 17), 'Display 36 × 24': (36, 24), 'Display 24 × 36': (24, 36)}
 INK, STONE, PLUM = '#22282B', '#6B7075', '#5E4B8B'
@@ -164,9 +269,14 @@ class Map:
     """`preview` builds the page for the workbench: label guides and the labels left off are included (hidden),
     labels carry what dragging needs, and a layer switched off by a paint toggle stays in the page, unseen."""
     def __init__(self, project, declared, saved=None, today=None, dpi=350, margin=0.0, fonts=None, labels=True,
-                 preview=False, raster_base=''):
+                 preview=False, raster_base='', web=None):
         self.project = Path(project)
         self.settings = [dict(s) for s in declared]
+        self.web, self.refs, self.asked = (load_web(web) if web else None), {}, set()
+        if self.web:
+            self._from_web()
+        elif any(isinstance(s['value'], From) for s in self.settings):
+            raise BuildError('map.py takes values from a web map but names none: it needs WEB = "<the web map\'s name>"')
         saved = {s['key']: s['value'] for s in (saved or [])}
         for s in self.settings:
             if s['key'] in saved:
@@ -180,12 +290,81 @@ class Map:
     def __getitem__(self, key):
         return self.values[key]
 
+    def _from_web(self):
+        """Resolve every value the web map gives (each setting so given carries it as `web`, its default), and
+        declare a print switch for each web layer."""
+        w, d = self.web, self.web['def']
+        legends = []
+        for s in self.settings:
+            v = s['value']
+            if not isinstance(v, From):
+                continue
+            if v.kind == 'legend':
+                legends.append(s)
+                continue
+            if v.kind == 'title':
+                s['value'] = str(d.get('title') or '')
+            elif v.kind == 'credits':
+                s['value'] = '\n'.join(x for x in (_plain(d.get('credits')), v.args[0]) if x)
+            else:
+                ref = _paint_ref(w, *v.args) if v.kind == 'paint' else v.args[0]
+                self.refs[s['key']] = ref
+                s['value'] = _hex(w, ref)
+            s['web'] = s['value']
+        by_ref = {}
+        for k, ref in self.refs.items():
+            by_ref.setdefault(ref.upper(), k)
+        for s in legends:   # the web legend, each colour that a colour setting carries written as that setting, so it follows print's changes
+            s['value'] = s['web'] = [{**({'heading': g['heading']} if g.get('heading') else {}),
+                                      'items': [{**it, 'color': by_ref.get(str(it.get('color', '')).upper(), it.get('color'))} for it in g.get('items') or []]}
+                                     for g in d.get('legend') or []]
+        keys = {s['key'] for s in self.settings}
+        for L in w['layers']:
+            if f'layer.{L["id"]}' not in keys:
+                self.settings.append(toggle(f'layer.{L["id"]}', L['id'].replace('-', ' ').title(), 'Layers', True, 'structure'))
+
+    def layer(self, id):
+        """Whether the web map's layer `id` is drawn: its print switch. Asking is how map.py says it draws that layer."""
+        if f'layer.{id}' not in self.values:
+            raise BuildError(f'the web map has no layer {id!r}')
+        self.asked.add(id)
+        return bool(self.values[f'layer.{id}'])
+
+    def check_web(self):
+        """Every web layer must be drawn in print: map.py asks about each."""
+        missing = [L['id'] for L in (self.web or {}).get('layers', []) if L['id'] not in self.asked]
+        if missing:
+            raise BuildError(f'the web map\'s {", ".join(missing)} {"is" if len(missing) == 1 else "are"} not drawn in print; '
+                             f'map.py must draw every layer of {self.web["name"]} (m.layer(\'<id>\'))')
+
+    def shown_legend(self, groups):
+        """The legend without the items of layers switched off in print: an item goes when every web layer using
+        its colour is off."""
+        off = {L['id'] for L in (self.web or {}).get('layers', []) if not self.values.get(f'layer.{L["id"]}', True)}
+        if not off:
+            return groups
+
+        def gone(c):
+            ref = self.refs.get(c, c)
+            users = {L['id'] for L in self.web['layers'] if isinstance(ref, str) and _mentions(L.get('paint'), ref)}
+            return bool(users) and users <= off
+        out = []
+        for g in groups:
+            items = [it for it in g.get('items', []) if not gone(it.get('color'))]
+            if items:
+                out.append({**g, 'items': items})
+        return out
+
     def var(self, key):
         return Var(key, self.values[key])
 
     def color(self, c):
-        """A colour written as itself, or the name of a colour setting, which then follows that setting."""
-        return self.var(c) if c in self.values else c
+        """A colour written as itself, a palette token, or the name of a colour setting, which then follows that setting."""
+        if c in self.values:
+            return self.var(c)
+        if self.web and isinstance(c, str) and c.startswith('--'):
+            return _hex(self.web, c)
+        return c
 
     def page(self, size, title='', subtitle='', credits='', keys=('title', 'subtitle', 'credits')):
         """A page. `keys` names the text settings its title, subtitle and credits come from, so they can be typed on it."""
@@ -241,7 +420,7 @@ class Page:
         standard layout it is a column `width` wide to the right of the frame (call it before `frame`); with
         `rect` (x, y, w, h) it fills that rectangle in `columns`, whole groups to a column (`split='group'`) or
         item by item (`split='item'`)."""
-        self._legend = dict(groups=groups or [], width=width, gap=gap, rect=rect, columns=columns, swatch=swatch, size=size, lead=lead, split=split)
+        self._legend = dict(groups=self.map.shown_legend(groups or []), width=width, gap=gap, rect=rect, columns=columns, swatch=swatch, size=size, lead=lead, split=split)
 
     def place(self, **where):
         """A layout of the map's own: title=(x, y), subtitle=(x, y), rule=(x, y, w), credits=(x, y, w),
@@ -827,8 +1006,17 @@ def load_settings(scripts):
     return json.loads(f.read_text())['settings'] if f.exists() else []
 
 
+def same(a, b):
+    """Two setting values the same, a colour whatever the case of its letters."""
+    if isinstance(a, str) and isinstance(b, str) and a.startswith('#') and b.startswith('#'):
+        return a.upper() == b.upper()
+    return a == b
+
+
 def settings_file(name, settings):
-    """The settings file's contents: the Basin's shape, a list of {key, label, group, type, value}."""
+    """The settings file's contents: the Basin's shape, a list of {key, label, group, type, value}. A setting that
+    follows the web map is written only when print has changed it."""
+    settings = [{k: v for k, v in s.items() if k != 'web'} for s in settings if not ('web' in s and same(s['value'], s['web']))]
     return json.dumps({'about': f'Settings for {name}, read by its build (Scripts/map.py, through the print engine in the davalerio.com '
                                 'repo, _writing/print) and tuned in the workbench. Each entry declares one setting: its kind, range and value.',
                        'settings': settings}, indent=1, ensure_ascii=False) + '\n'

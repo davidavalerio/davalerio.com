@@ -55,7 +55,9 @@ class Session:
             f.unlink()
         # nothing read before is trusted: the files may have changed since
         pm.CACHE.clear(); pm._read_cache.clear(); LB._chain_cache.clear(); relief._dems.clear()
-        m = pm.Map(self.project, self.mod.SETTINGS, pm.load_settings(self.scripts))
+        self.web = getattr(self.mod, 'WEB', None)
+        self.defaults = dict(pm.Map(self.project, self.mod.SETTINGS, [], web=self.web).values)      # what each setting is when nothing is saved
+        m = pm.Map(self.project, self.mod.SETTINGS, pm.load_settings(self.scripts), web=self.web)
         self.values = dict(m.values)
         self.labels_key = next((s['key'] for s in m.settings if s['type'] == 'labels'), None)
         return m.settings
@@ -63,9 +65,10 @@ class Session:
     def build(self):
         """Build every page from the current values; returns {n: (head, parts)}."""
         m = pm.Map(self.project, self.mod.SETTINGS, [{'key': k, 'value': v} for k, v in self.values.items()],
-                   dpi=DPI, margin=MARGIN, preview=True, fonts=self.fonts, raster_base=self.files)
+                   dpi=DPI, margin=MARGIN, preview=True, fonts=self.fonts, raster_base=self.files, web=self.web)
         m.name = self.mod.NAME
         self.mod.pages(m)
+        m.check_web()
         built = {p.n: (*p.render(self.cache), p) for p in m.pages}
         self.map = m
         pm.trim()                                   # keep only the stages this build used
@@ -236,8 +239,8 @@ class Session:
                 # the first that, put back to its default, lets the page build; failing that, every setting that differs
                 # from its default is put back, then each is returned to its saved value in turn and kept there if the
                 # page still builds, so only those the fault needs stay at their defaults. The editor is told which.
-                defaults = {d['key']: d['value'] for d in self.mod.SETTINGS}
-                differ = [k for k in self.values if self.values[k] != defaults[k]]
+                defaults = self.defaults
+                differ = [k for k in self.values if not pm.same(self.values[k], defaults[k])]
                 out, saved = None, dict(self.values)
                 for k in differ:
                     self.values = {**saved, k: defaults[k]}

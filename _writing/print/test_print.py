@@ -2,9 +2,10 @@
 
 It makes a project in a temporary folder (towns, a lake, a river, contours, all invented), and checks: all four
 kinds of label are placed and none overlap; two builds are identical; a layer without a citation stops the
-build; and pins hold their ground when the view shifts by a fifth and the page goes from letter to tabloid.
+build; pins hold their ground when the view shifts by a fifth and the page goes from letter to tabloid; and a
+print map follows its web map.
 """
-import math, sqlite3, sys, tempfile
+import json, math, sqlite3, sys, tempfile
 from pathlib import Path
 
 import geopandas as gpd
@@ -203,7 +204,55 @@ def main():
         assert not any(l.kind == 'line' and not l.pinned and math.hypot(l.anchor[0] - ox, l.anchor[1] - oy) < 20 for l in fa.label_result.placed)
         print(f'pins hold their ground: worst {worst:.1f} m; point offset kept in points; typed line break kept; omit pins honoured')
         more(Path(tmp), proj)
+        following(proj)
     print('ALL TESTS PASSED')
+
+
+def following(proj):
+    """A print map that follows a web map: its values come from the web map until print changes them, every web layer
+    has a switch and must be drawn, a layer switched off takes its legend items with it, and the settings file holds
+    only what print has changed."""
+    fake = {'name': 'fake', 'palette': {'--map-water': '#6F8FA6'},
+            'def': {'title': 'Web Title', 'credits': '[Data](https://example.com) one.\n\nTwo.',
+                    'legend': [{'heading': 'Water', 'items': [{'color': '--map-water', 'label': 'Lake'}, {'shape': 'dot', 'color': '#112233', 'label': 'Big town'}]}]},
+            'layers': [{'id': 'lakes', 'paint': {'fill-color': '--map-water'}}, {'id': 'rivers', 'paint': {'line-color': '--map-water'}},
+                       {'id': 'towns', 'paint': {'circle-color': ['match', ['get', 'k'], 'big', '#112233', '#445566']}}]}
+    fake['def']['layers'] = fake['layers']
+    real, pm.load_web = pm.load_web, lambda name: fake
+    try:
+        W = pm.web
+        decl = [pm.text('title', 'Title', 'Text', W.title), pm.text('credits', 'Credits', 'Text', W.credits('tail')),
+                pm.color('water', 'Water', 'Water', W.paint('lakes')), pm.color('town', 'Town', 'Towns', W.paint('towns', 'big')),
+                pm.color('small', 'Small Town', 'Towns', W.paint('towns')), pm.legend(value=W.legend), pm.number('w', 'Weight', 'Lines', 1, 0, 2, 0.1)]
+        m = pm.Map(proj, decl, [], web='fake')
+        assert m['title'] == 'Web Title' and m['credits'] == 'Data one.  ·  Two.\ntail', (m['title'], m['credits'])
+        assert (m['water'], m['town'], m['small']) == ('#6F8FA6', '#112233', '#445566')
+        assert [it['color'] for it in m['legend'][0]['items']] == ['water', 'town']       # follows print's colours
+        assert [s['key'] for s in m.settings if s['key'].startswith('layer.')] == ['layer.lakes', 'layer.rivers', 'layer.towns']
+        m = pm.Map(proj, decl, [{'key': 'water', 'value': '#000000'}, {'key': 'town', 'value': '#112233'}, {'key': 'layer.lakes', 'value': False}], web='fake')
+        assert m['water'] == '#000000' and next(s for s in m.settings if s['key'] == 'water')['web'] == '#6F8FA6'
+        kept = [s['key'] for s in json.loads(pm.settings_file('Test', m.settings))['settings']]
+        assert 'water' in kept and 'town' not in kept and 'title' not in kept and 'w' in kept and 'layer.lakes' in kept, kept
+        assert all('web' not in s for s in json.loads(pm.settings_file('Test', m.settings))['settings'])
+        items = lambda m: [it['label'] for g in m.shown_legend(m['legend']) for it in g['items']]
+        assert items(m) == ['Lake', 'Big town']                     # the rivers still use the water colour
+        m.values['layer.rivers'] = False
+        assert items(m) == ['Big town']
+        m.layer('lakes'); m.layer('towns')
+        try:
+            m.check_web()
+            raise AssertionError('an undrawn web layer was let through')
+        except pm.BuildError as e:
+            assert 'rivers' in str(e)
+        m.layer('rivers'); m.check_web()
+        try:
+            pm.Map(proj, decl, [])
+            raise AssertionError('values from no web map were let through')
+        except pm.BuildError:
+            pass
+    finally:
+        pm.load_web = real
+    print('following a web map: its values until print changes them; a switch per layer, each drawn; legend and settings file follow')
 
 
 if __name__ == '__main__':
