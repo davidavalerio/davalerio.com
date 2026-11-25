@@ -145,6 +145,42 @@ export function show(state, viewName, animate) {
     else map.jumpTo(cam);
 }
 
+// While the map loads, its still stands in the map's box at the scale and centre the map opens at, so the
+// hand-over adds ground at the edges at most, never a jump in scale. The still is the view as a 1200 × 800 map
+// shows it, held inside the map's bounds as MapLibre holds it (worked out here for a flat view); the live
+// map's own opening camera, also held inside its bounds, places it. On screen only: print keeps the still whole.
+const mx = lng => (lng + 180) / 360;
+const my = lat => {
+    const s = Math.sin((lat * Math.PI) / 180);
+    return 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI);
+};
+const lat = y => (Math.atan(Math.sinh(Math.PI * (1 - 2 * y))) * 180) / Math.PI;
+function stillCamera(v, b, w, h) {
+    let zoom = v.zoom, x = mx(v.center[0]), y = my(v.center[1]);
+    if (b) {
+        const [x1, x2, y1, y2] = [mx(b[0]), mx(b[2]), my(b[3]), my(b[1])];
+        zoom = Math.max(zoom, Math.log2(Math.max(w / (512 * (x2 - x1)), h / (512 * (y2 - y1)))));
+        const ws = 512 * 2 ** zoom;
+        x = Math.min(Math.max(x, x1 + w / 2 / ws), x2 - w / 2 / ws);
+        y = Math.min(Math.max(y, y1 + h / 2 / ws), y2 - h / 2 / ws);
+    }
+    return { zoom, center: [x * 360 - 180, lat(y)] };
+}
+function placeStill(el, viewName, map) {
+    const fig = el.querySelector('.still'), img = fig?.querySelector('img'), def = definition(el.dataset.map);
+    const v = def.views[viewName];
+    if (!img || !v) return;
+    const w = +img.getAttribute('width'), h = +img.getAttribute('height');
+    const cam = stillCamera(v, def.bounds, w, h);
+    const s = 2 ** (map.getZoom() - cam.zoom), at = map.project(cam.center);
+    fig.style.setProperty('--still-w', w * s + 'px');
+    fig.style.setProperty('--still-h', h * s + 'px');
+    fig.style.setProperty('--still-x', at.x + 'px');
+    fig.style.setProperty('--still-y', at.y + 'px');
+    fig.classList.add('placed');
+}
+const unplaceStill = el => el.querySelector('.still')?.classList.remove('placed');
+
 // The stills stay until the map has drawn once; a failed tile load brings them back.
 function whenDrawn(state, el) {
     state.map.once('idle', () => el.classList.add('ready'));
@@ -152,6 +188,7 @@ function whenDrawn(state, el) {
         console.warn('map:', e.error?.message || e);
         if (e.sourceId || e.tile) {
             el.classList.remove('ready', 'live');
+            unplaceStill(el);
             state.map.remove();
             el.querySelector('.map-canvas')?.remove();
         }
@@ -218,6 +255,7 @@ function scrolly(el) {
 function embed(el) {
     el.classList.add('live');
     const state = makeMap(el, el.dataset.map, { view: el.dataset.view, cooperative: true, popups: true });
+    placeStill(el, el.dataset.view, state.map);
     state.map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
     state.map.once('load', () => show(state, el.dataset.view, false));
     whenDrawn(state, el);
@@ -229,6 +267,7 @@ function full(el) {
     el.classList.add('live');
     // On a touch screen the page must still scroll past the map, so moving it takes two fingers.
     const state = makeMap(el, el.dataset.map, { view, interactive: !stillView, cooperative: matchMedia('(pointer: coarse)').matches, popups: !stillView });
+    if (!stillView) placeStill(el, view, state.map);
     if (!stillView) state.map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
     state.map.once('load', () => {
         show(state, view, false);
@@ -245,6 +284,7 @@ function start(fn) {
         } catch (e) {
             console.warn('map:', e.message);
             el.classList.remove('live', 'ready');
+            unplaceStill(el);
             el.querySelector('.map-canvas')?.remove();
         }
     };

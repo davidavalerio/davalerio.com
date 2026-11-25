@@ -268,6 +268,31 @@ body.wide main {
     display: none;
 }
 
+/* While the map loads, its still stands in its box at the scale and centre the map opens at (maps/map.js) */
+@media screen {
+    .still.placed {
+        position: absolute;
+        inset: 0;
+        margin: 0 !important;
+        overflow: hidden;
+    }
+
+    .still.placed img {
+        position: absolute;
+        left: var(--still-x);
+        top: var(--still-y);
+        width: var(--still-w) !important;
+        height: var(--still-h) !important;
+        max-width: none !important;
+        border: 0;
+        transform: translate(-50%, -50%);
+    }
+
+    .still.placed figcaption {
+        display: none;
+    }
+}
+
 /* Until the map has drawn, its still shows through. */
 .map-full.live:not(.ready) .map-canvas,
 .map-embed.live:not(.ready) .map-canvas {
