@@ -1,11 +1,11 @@
-# The Basin, Exploded: a turnable model, with the print's image for print and for browsers that can't draw it.
+# The Williston Basin, Exposed: a turnable model, with the print's image for print and for browsers that can't draw it.
 # Rebuilt in Drive (`build` below, under 1-Practice/GIS; Scripts/build.sh), which writes the PNG, the PDF and the model's
 # Web folder; copy the PNG here and the Web folder's .bin, .jpg and model.json into maps/basin-exploded/model/ when it
 # changes. Its settings are tuned in the workbench (_writing/workbench).
-title: The Basin, Exploded
+title: 'The Williston Basin, Exposed'
 date: 2026-11-22
 page: true
-note: Five surfaces of the Williston Basin, from the ground down to the Precambrian basement, cut as a core 196 miles across near McKenzie County, North Dakota, and lifted apart, with relief exaggerated 20 times. A plumb line from Watford City carries the depths.
+note: 'Five geologic units of the Williston Basin, from surface to basement. Cut as a core 196 miles across and lifted apart, with relief exaggerated 20 times. A well bore from Watford City marks the depths.'
 image: basin-exploded.png
 alt: Five round, floating sheets stacked one above another, showing the ground surface, the Pierre Shale, the Bakken Formation, the Red River Formation and the Precambrian basement beneath western North Dakota, each sagging into the basin's low under McKenzie County, with a vertical line from Watford City dropping through all five.
 model: model
