@@ -33,7 +33,11 @@ const config = JSON.parse(readFileSync(join(homedir(), '.local/share/workbench/c
 
 function yamlScalar(text, key) {
     const m = new RegExp('^' + key + ':\\s*(.+)$', 'm').exec(text);
-    return m ? m[1].trim().replace(/^(['"])(.*)\1$/, '$2') : null;
+    if (!m) return null;
+    const v = m[1].trim();
+    if (/^'.*'$/.test(v)) return v.slice(1, -1).replace(/''/g, "'");
+    if (/^".*"$/.test(v)) return JSON.parse(v);
+    return v;
 }
 
 function pieces() {
@@ -192,17 +196,21 @@ function saveDefinition(p, values) {
             else css = css.slice(0, pal.darkAt) + css.slice(pal.darkAt).replace(re, '$1' + v.toUpperCase());
         }
     }
-    if (!changed.length) return 0;
-    const title = changed.find(s => s.key === 'text.title') && values['text.title'].replace(/\s+/g, ' ').trim();
-    if (title === '') throw new Error('a map needs a title');
-    writeAndBuild(file, text, css === pal.css ? undefined : css);
-    // A new title also goes into the map's entry in the homepage's Maps list
-    if (title) {
-        const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        const home = readFileSync(HOME, 'utf8');
-        writeFileSync(HOME, home.replace(new RegExp('(<a href="/maps/' + p.name + '/">)[^<]*(</a>)', 'g'), (_, a, b) => a + esc(title) + b));
-    }
+    if (changed.some(s => s.key === 'text.title') && !values['text.title'].trim()) throw new Error('a map needs a title');
+    if (changed.length) writeAndBuild(file, text, css === pal.css ? undefined : css);
+    syncHome(p.name);
     return changed.length;
+}
+
+// The map's entry in the homepage's Maps list carries its title; every save brings it in line with the
+// definition, so a save whose homepage write failed is put right by the next
+function syncHome(name) {
+    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const title = esc(textSettings(name).find(s => s.key === 'text.title').value);
+    if (!title) return;
+    const home = readFileSync(HOME, 'utf8');
+    const next = home.replace(new RegExp('(<a href="/maps/' + name + '/">)[^<]*(</a>)', 'g'), (_, a, b) => a + title + b);
+    if (next !== home) writeFileSync(HOME, next);
 }
 
 function saveModel(p, values) {
