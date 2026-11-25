@@ -4,9 +4,9 @@
 // It listens on 127.0.0.1:8795 and, for as long as it runs, Tailscale publishes it to David's own
 // devices at https://<the mini's tailnet name>:8796/ (the tailnet's rules keep shared users to port 443).
 //
-// Every map definition in _writing/maps/ is a piece. Each has its page's text (the note and the
+// Every map definition in _writing/maps/ is a piece. Each has its page's text (the title, the note and the
 // credits), edited in place on the page as the workbench shows it and saved into the definition, after which
-// the map pages are rebuilt. Beyond the text:
+// the map pages are rebuilt; a new title also goes into the map's entry in the homepage's Maps list. Beyond the text:
 //   interactive maps (a definition with views): exaggeration when it has terrain, the palette colours its
 //     layers use (maps/map.css, light and dark), and its named views; saved into the definition and map.css.
 //   models (a definition with `model` and `build`): the settings their Drive build declares in
@@ -26,6 +26,7 @@ const PORT = 8795, PUBLIC_PORT = 8796;
 const HERE = join(ROOT, '_writing', 'workbench');
 const MAPS = join(ROOT, '_writing', 'maps');
 const CSS = join(ROOT, 'maps', 'map.css');
+const HOME = join(ROOT, 'index.html');
 const config = JSON.parse(readFileSync(join(homedir(), '.local/share/workbench/config.json'), 'utf8'));
 
 // --- Reading the pieces
@@ -44,7 +45,7 @@ function pieces() {
 }
 
 // The page's text, read with PyYAML as build.py reads it
-const TEXT = [['note', 'Description'], ['credits', 'Credits']];
+const TEXT = [['title', 'Title'], ['note', 'Description'], ['credits', 'Credits']];
 function textSettings(name) {
     const r = spawnSync('uv', ['run', '-q', '--no-project', '--with', 'pyyaml', 'python3', '-c',
         'import sys, json, yaml; d = yaml.safe_load(open(sys.argv[1])); print(json.dumps({k: d.get(k) or "" for k in ("title", "note", "credits")}))',
@@ -192,7 +193,15 @@ function saveDefinition(p, values) {
         }
     }
     if (!changed.length) return 0;
+    const title = changed.find(s => s.key === 'text.title') && values['text.title'].replace(/\s+/g, ' ').trim();
+    if (title === '') throw new Error('a map needs a title');
     writeAndBuild(file, text, css === pal.css ? undefined : css);
+    // A new title also goes into the map's entry in the homepage's Maps list
+    if (title) {
+        const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const home = readFileSync(HOME, 'utf8');
+        writeFileSync(HOME, home.replace(new RegExp('(<a href="/maps/' + p.name + '/">)[^<]*(</a>)', 'g'), (_, a, b) => a + esc(title) + b));
+    }
     return changed.length;
 }
 
