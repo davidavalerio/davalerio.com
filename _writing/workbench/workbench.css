@@ -187,6 +187,21 @@ li:hover > .wb-tool,
     cursor: pointer;
 }
 
+/* Dragging a group or an item: the text cannot be selected, and a line in the accent marks where it lands */
+.wb-dragging,
+.wb-dragging * {
+    cursor: grabbing !important;
+    user-select: none;
+}
+
+.wb-drop-before {
+    box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.wb-drop-after {
+    box-shadow: inset 0 -2px 0 var(--accent);
+}
+
 .wb-swatch-edit {
     display: flex;
     flex-wrap: wrap;
