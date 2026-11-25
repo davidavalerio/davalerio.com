@@ -1,4 +1,4 @@
-"""From the page to the PDF and the PNG: pinned Chromium prints, poppler checks, MuPDF draws."""
+"""From the page to the PDF and the PNG: pinned Chromium prints, poppler checks and draws."""
 import re, subprocess
 from pathlib import Path
 
@@ -64,6 +64,9 @@ def pdf_checks(pdf, strings, min_ppi=None, pages=1, size_in=None):
 
 
 def png(pdf, out, dpi=200):
-    """The PNG, drawn from the finished PDF by MuPDF, a renderer unrelated to the one that wrote it."""
-    subprocess.run(['mutool', 'draw', '-q', '-r', str(dpi), '-o', str(out), str(pdf), '1'], check=True)
+    """The PNG, drawn from the finished PDF's first page by poppler, a renderer unrelated to the one that wrote
+    it. (MuPDF 1.28.6 was the first choice and is not used: given two rotated figures set glyph by glyph it
+    draws one of them hundreds of times too large, on a PDF that poppler and Chromium both draw correctly.)"""
+    out = Path(out)
+    subprocess.run(['pdftoppm', '-png', '-singlefile', '-f', '1', '-l', '1', '-r', str(dpi), str(pdf), str(out.with_suffix(''))], check=True)
     return out
