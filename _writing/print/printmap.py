@@ -113,8 +113,6 @@ def load_web(name):
     palette = {}
     for css in (REPO / 'writing' / 'style.css', REPO / 'maps' / 'map.css'):
         text = css.read_text()
-        cut = text.find('prefers-color-scheme: dark')
-        text = text[:cut] if cut >= 0 else text          # the light colours
         palette.update({k: v.upper() for k, v in re.findall(r'(--[\w-]+):\s*(#[0-9A-Fa-f]{6})\s*;', text)})
     palette['--paper'] = '#FFFFFF'          # the page is white paper, whatever the site's ground
     return {'name': name, 'def': d, 'palette': palette, 'layers': d.get('layers') or []}

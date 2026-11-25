@@ -10,7 +10,7 @@
 // beneath the map is edited there too, whole (groups and items added, removed, moved, retyped, recoloured) and
 // saved into the definition. Beyond the text:
 //   interactive maps (a definition with views): exaggeration when it has terrain, the palette colours its
-//     layers use (maps/map.css, light and dark), and its named views; saved into the definition and map.css.
+//     layers use (maps/map.css), and its named views; saved into the definition and map.css.
 //   models (a definition with `model` and `build`): the settings their Drive build declares in
 //     <build>/Scripts/settings.json, shown from the build's own web copy (<build>/Web/); saved into that file.
 //   print pages (any other definition): their image, with nothing more to tune.
@@ -118,7 +118,7 @@ function textSettings(name) {
 const ITEM_KEYS = ['code', 'shape', 'dash', 'color', 'label'];
 function checkLegend(legend) {
     if (!Array.isArray(legend)) throw new Error('the legend is not a list of groups');
-    const colours = palette().light;   // the map's colour tokens (a token holding no colour is refused)
+    const colours = palette().colors;   // the map's colour tokens (a token holding no colour is refused)
     return legend.map(g => {
         const items = (g.items || []).map(it => {
             const out = {};
@@ -174,12 +174,10 @@ function terrainDef(name) {
     return JSON.parse(m[1].replace(/<\\\//g, '</'));
 }
 
-// map.css: the light palette is the first :root block, the dark one the :root inside the dark media query
+// map.css: the palette is its :root block
 function palette() {
     const css = readFileSync(CSS, 'utf8');
-    const darkAt = css.indexOf('prefers-color-scheme: dark');
-    const read = part => Object.fromEntries([...part.matchAll(/(--map-[\w-]+):\s*(#[0-9A-Fa-f]{6});/g)].map(m => [m[1], m[2].toUpperCase()]));
-    return { css, darkAt, light: read(css.slice(0, darkAt)), dark: read(css.slice(darkAt, css.indexOf('}', css.indexOf(':root', darkAt)))) };
+    return { css, colors: Object.fromEntries([...css.matchAll(/(--map-[\w-]+):\s*(#[0-9A-Fa-f]{6});/g)].map(m => [m[1], m[2].toUpperCase()])) };
 }
 
 const titleCase = s => s.replace(/(^|[-\s])(\w)/g, (_, a, b) => (a ? ' ' : '') + b.toUpperCase());
@@ -195,9 +193,8 @@ function terrainSettings(name) {
     const def = terrainDef(name), pal = palette(), list = [];
     if (def.sources.terrain) list.push({ key: 'exaggeration', label: 'Terrain Exaggeration', group: 'Shape', type: 'number', min: 1, max: 8, step: 0.1, value: def.exaggeration || 1 });
     const tokens = [...tokensUsed(def.layers.map(l => l.paint))].sort();
-    for (const mode of ['light', 'dark'])
-        for (const t of tokens)
-            list.push({ key: `token.${t}.${mode}`, label: titleCase(t.slice(6)), group: mode === 'light' ? 'Colors, Light Mode' : 'Colors, Dark Mode', type: 'color', value: pal[mode][t] });
+    for (const t of tokens)
+        list.push({ key: `token.${t}`, label: titleCase(t.slice(6)), group: 'Colors', type: 'color', value: pal.colors[t] });
     for (const [v, cam] of Object.entries(def.views))
         list.push({ key: 'view.' + v, label: titleCase(v), group: 'Views', type: 'view', value: { center: cam.center, zoom: cam.zoom, pitch: cam.pitch || 0, bearing: cam.bearing || 0 } });
     return { def, settings: list };
@@ -299,10 +296,7 @@ function saveDefinition(p, values) {
         else if (s.key === 'exaggeration') text = text.replace(/^exaggeration:.*$/m, 'exaggeration: ' + num(v, 2));
         else if (s.key.startsWith('view.')) text = setViewYaml(text, s.key.slice(5), v);
         else if (s.key.startsWith('token.')) {
-            const [, token, mode] = /^token\.(--map-[\w-]+)\.(light|dark)$/.exec(s.key);
-            const re = new RegExp('(' + token + ':\\s*)#[0-9A-Fa-f]{6}');
-            if (mode === 'light') css = css.slice(0, pal.darkAt).replace(re, '$1' + v.toUpperCase()) + css.slice(pal.darkAt);
-            else css = css.slice(0, pal.darkAt) + css.slice(pal.darkAt).replace(re, '$1' + v.toUpperCase());
+            css = css.replace(new RegExp('(' + s.key.slice(6) + ':\\s*)#[0-9A-Fa-f]{6}'), '$1' + v.toUpperCase());
         }
     }
     if (changed.some(s => s.key === 'text.title') && !values['text.title'].trim()) throw new Error('a map needs a title');
@@ -650,7 +644,7 @@ const server = createServer((req, res) => {
         }
         if (path === '/' || path.startsWith('/workbench/')) return sendFile(req, res, join(HERE, path === '/' ? 'index.html' : path.slice('/workbench/'.length)));
         if (path.startsWith('/maps/') || path.startsWith('/writing/') || path.startsWith('/fonts/') || path === '/favicon.png') return sendFile(req, res, join(ROOT, path));
-        // the site's own tab icon, the DV mark that follows light and dark, from the build's copy of it
+        // the site's own tab icon, the DV mark, from the build's copy of it
         if (path === '/favicon.svg') {
             const uri = readFileSync(join(ROOT, '_writing', 'favicon.txt'), 'utf8').trim();
             return res.writeHead(200, { 'Content-Type': 'image/svg+xml' }).end(decodeURIComponent(uri.slice(uri.indexOf(',') + 1)));

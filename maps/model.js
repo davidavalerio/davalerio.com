@@ -254,8 +254,6 @@ export async function turnable(view, opts = {}) {
         dirty = true;
     }
     colours();
-    const scheme = matchMedia('(prefers-color-scheme: dark)');
-    scheme.addEventListener('change', colours);
 
     function light() {
         shared.keyDir.value.copy(toward(S['light.key.azimuth'], S['light.key.elevation']));
@@ -512,7 +510,6 @@ export async function turnable(view, opts = {}) {
         stop() {
             running = false;
             resize.disconnect();
-            scheme.removeEventListener('change', colours);
             controls.dispose();
             scene.traverse(o => {
                 o.geometry?.dispose();
