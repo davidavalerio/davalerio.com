@@ -228,8 +228,30 @@ class Session:
         if op == 'open':
             settings = self.read()
             self.pages = {}
-            out = self.apply()
-            return {'name': self.mod.NAME, 'dir': str(self.cache), 'settings': settings, 'pages': out['pages'], 'notes': out['notes'], 'ms': out['ms'], 'rev': self.rev}
+            fallback = None
+            try:
+                out = self.apply()
+            except pm.BuildError as e:
+                # A saved value the page cannot be built with must not lock the map out: the setting at fault is found
+                # (the first that, put back to its default, lets the page build; failing that, all that differ from their
+                # defaults), the map opens with the default in its place, and the editor is told which.
+                defaults = {d['key']: d['value'] for d in self.mod.SETTINGS}
+                differ = [k for k in self.values if self.values[k] != defaults[k]]
+                out, saved = None, dict(self.values)
+                for k in differ:
+                    self.values = {**saved, k: defaults[k]}
+                    try:
+                        out, bad = self.apply(), [k]
+                        break
+                    except pm.BuildError:
+                        continue
+                if out is None:
+                    self.values, bad = {**saved, **{k: defaults[k] for k in differ}}, differ
+                    out = self.apply()
+                for d in settings:
+                    d['value'] = self.values[d['key']]
+                fallback = {'keys': bad, 'labels': [d['label'] for d in settings if d['key'] in bad], 'reason': str(e)}
+            return {'name': self.mod.NAME, 'dir': str(self.cache), 'settings': settings, 'pages': out['pages'], 'notes': out['notes'], 'ms': out['ms'], 'rev': self.rev, 'fallback': fallback}
         if msg.get('rev') != self.rev:               # made on a preview that has since been replaced
             return {'outdated': True, 'rev': self.rev}
         if op == 'page':

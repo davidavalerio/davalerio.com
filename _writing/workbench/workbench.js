@@ -309,6 +309,7 @@ async function printAdapter(piece) {
     // every change but paint goes to the session, a moment after the controls rest, one message at a time
     let timer = 0, busy = Promise.resolve();
     let refusal = '';   // the last edit the session would not take, for a save that was waiting on it
+    const bad = {};     // settings whose present value the session refused, and why: nothing is saved while one stands
     const queue = job => (busy = busy.then(() => alive && job()).catch(e => {
         console.error(e);
         refusal = 'The page could not be redrawn: ' + e.message;
@@ -316,11 +317,22 @@ async function printAdapter(piece) {
     }));
     function sync() {
         const edits = Object.fromEntries(Object.keys(values).filter(k => !isPaint(k) && JSON.stringify(values[k]) !== JSON.stringify(sent[k])).map(k => [k, structuredClone(values[k])]));
-        if (!Object.keys(edits).length) return;
+        // a value the session has refused is not sent again by itself, only along with a change to something
+        if (!Object.keys(edits).some(k => bad[k]?.value !== JSON.stringify(edits[k]))) return;
         Object.assign(sent, structuredClone(edits));
         const t0 = performance.now();
         const what = Object.keys(edits).every(k => kinds[k]?.effect === 'structure') ? 'structure' : 'geometry';
-        queue(async () => take(await post('set', { values: edits }), what, t0));
+        queue(async () => {
+            let r;
+            try {
+                r = await post('set', { values: edits });
+            } catch (e) {   // the page could not be built with these: they stay marked until a value that can be is sent
+                for (const k in edits) bad[k] = { why: e.message, value: JSON.stringify(edits[k]) }, delete sent[k];   // unsent again, so the next change sends every one of them
+                throw e;
+            }
+            for (const k in edits) delete bad[k];
+            return take(r, what, t0);
+        });
     }
     // a change made on the page (a pin, the extent) comes back as a value, which is then the page's and ours
     function adopt(key, value) {
@@ -527,7 +539,7 @@ async function printAdapter(piece) {
         } else if (e.key === 'Escape') select_(null);
         else if (e.key === 'Enter') {
             e.preventDefault();
-            const el = sel, r = el.getBoundingClientRect(), box = doc.createElement('textarea');
+            const el = sel, id = el.id, made = rev, r = el.getBoundingClientRect(), box = doc.createElement('textarea');   // the label and the preview as they were when the box opened
             box.className = 'wb-label-edit';
             box.rows = 2;
             box.value = el.querySelector('tspan') ? [...el.querySelectorAll('tspan')].map(t => t.textContent).join('\n') : el.textContent;
@@ -542,7 +554,7 @@ async function printAdapter(piece) {
                 edit = null;
                 const text = box.value;
                 box.remove();
-                if (keep) pin({ action: 'text', label: el.id, text });
+                if (keep) pin({ action: 'text', label: id, text }, made);
             };
             box.addEventListener('keydown', ev => {
                 ev.stopPropagation();   // the page's own keys (Return, Delete) are not for a box being typed in
@@ -635,7 +647,8 @@ async function printAdapter(piece) {
             endWheel();
             if (timer) clearTimeout(timer), (timer = 0), sync();
             await busy;
-            return refusal;
+            const held = Object.keys(bad).map(k => kinds[k]?.label || k);
+            return refusal || (held.length ? `${held.join(', ')}: the page cannot be drawn with this (${Object.values(bad)[0].why}). Change it and save again.` : '');
         },
         viewOnly,
         demote,
@@ -1081,6 +1094,11 @@ async function open(name) {
     if (adapter.viewOnly) {      // another tab is editing this map: nothing here can be changed
         gui.controllersRecursive().forEach(c => c.disable());
         if (legendEl) legendEl.inert = true;
+    }
+    if (current.fallback) {      // a saved value the page could not be drawn with: its default is shown, and a save will replace it
+        for (const k of current.fallback.keys) saved[k] = null;
+        changed();
+        say(`The saved ${current.fallback.labels.join(', ')} could not be used (${current.fallback.reason}); the default is shown, and Save will replace what is saved.`, 'error');
     }
     if (notice) say(notice, 'error'), (notice = '');
 }

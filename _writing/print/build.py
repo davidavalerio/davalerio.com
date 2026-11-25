@@ -2,10 +2,10 @@
 
 Reads the map's Scripts/map.py and Scripts/settings.json, writes each page as HTML, prints it in the pinned
 Chromium, joins the pages, checks the PDF, and draws the PNG from it. Everything is made in the out folder
-(default ~/.local/share/workbench/print/<map>-<mark of the project folder>/build); with --move, a build that passes every check is then
+(default: a folder of this build's own under ~/.local/share/workbench/print/<map>-<mark of the project folder>/); with --move, a build that passes every check is then
 moved into the project folder as YYYY-MM-DD-Name-Map.pdf and .png.
 """
-import argparse, importlib.util, shutil, sys, time
+import argparse, fcntl, importlib.util, os, shutil, sys, tempfile, time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -49,7 +49,24 @@ def build(project, scripts=None, out=None, labels=True, move=False, quiet=False,
     say = (lambda *a: None) if quiet else print
     t0 = time.time()
     m = load(project, scripts, labels=labels, **opts)
-    out = Path(out or scratch(project, m.name) / 'build')
+    # One build of a project at a time, whoever starts it (the workbench after a save, or this command by hand):
+    # a second waits for the first, up to two minutes. Each build works in a folder of its own.
+    home = scratch(project, m.name)
+    home.mkdir(parents=True, exist_ok=True)
+    lock = open(home / 'build.lock', 'w')
+    waited = time.time()
+    while True:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            break
+        except OSError:
+            if time.time() - waited > 120:
+                raise pm.BuildError('another build of this map has been running for two minutes; this one was not started')
+            time.sleep(0.25)
+    for old in home.glob('build-*'):        # with the lock held, any working folder left here is from a build that has ended
+        shutil.rmtree(old, ignore_errors=True)
+    own = out is None
+    out = Path(out) if out else Path(tempfile.mkdtemp(prefix='build-', dir=home))
     files = write_pages(m, out)
     t1 = time.time()
     stem = f'{m.today}-{m.output}'
@@ -90,10 +107,17 @@ def build(project, scripts=None, out=None, labels=True, move=False, quiet=False,
     say(f'time: pages {t1 - t0:.2f}s, Chromium {t2 - t1:.2f}s, checks and PNG {t3 - t2:.2f}s')
     result = {'ok': ok, 'pdf': pdf, 'png': image, 'pngs': images, 'pages': files, 'map': m}
     if ok and move:
-        for f in (pdf, *images):        # beside its place first, then renamed over it, so a failed copy leaves the last one whole
-            part = Path(project) / (f.name + '.part')
-            shutil.copyfile(f, part)
-            part.replace(Path(project) / f.name)
+        for f in (pdf, *images):        # beside its place first, under a name of this build's own, then renamed over it: a failed copy leaves the last one whole
+            part = Path(project) / f'{f.name}.{os.getpid()}.part'
+            try:
+                shutil.copyfile(f, part)
+                part.replace(Path(project) / f.name)
+            finally:
+                part.unlink(missing_ok=True)
+        if own:                         # the outputs are in the project; this build's working folder is done with
+            shutil.rmtree(out, ignore_errors=True)
+            pdf, image = Path(project) / pdf.name, Path(project) / image.name
+            result.update(pdf=pdf, png=image)
         say('moved into', project)
     say('BUILD', 'PASSED' if ok else 'FAILED', pdf)
     return result

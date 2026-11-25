@@ -25,7 +25,7 @@
 // For testing, WORKBENCH_PORT serves a second workbench on another port (not published over Tailscale) and
 // WORKBENCH_GIS points it at another GIS folder.
 import { createServer } from 'node:http';
-import { readFileSync, writeFileSync, readdirSync, existsSync, rmSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync, rmSync, openSync, writeSync, fsyncSync, closeSync, renameSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { createHash } from 'node:crypto';
 import { join, normalize } from 'node:path';
@@ -309,8 +309,27 @@ function saveModel(p, values) {
             s.value = values[s.key];
             n++;
         }
-    if (n) writeFileSync(file, JSON.stringify(doc, null, 1) + '\n');
+    if (n) writeWhole(file, JSON.stringify(doc, null, 1) + '\n');
     return n;
+}
+
+// A settings file is replaced whole or not at all: written beside itself, flushed to disk, then renamed over the
+// old one. If the write fails (a full disk), the old file stands.
+function writeWhole(file, text) {
+    const part = file + '.' + process.pid + '.part';
+    try {
+        const fd = openSync(part, 'w');
+        try {
+            writeSync(fd, text);
+            fsyncSync(fd);
+        } finally {
+            closeSync(fd);
+        }
+        renameSync(part, file);
+    } catch (e) {
+        rmSync(part, { force: true });
+        throw new Error('the settings file could not be written, and stands as it was: ' + e.message);
+    }
 }
 
 // --- Print maps: the session, saving, and the build
@@ -418,7 +437,7 @@ async function openPrint(p, cid) {
     const s = sessions.get(p.name + ':' + cid);
     Object.assign(s, { opened: true, dir: r.dir, settings: r.settings, rev: r.rev });
     declared.set(p.name, r.settings);
-    return { ...p, title: r.settings.find(x => x.key === 'title')?.value || p.title, settings: r.settings, pages: r.pages, notes: r.notes, rev: r.rev, role: mine, stamp: mark, building: builds.get(p.name) || null };
+    return { ...p, title: r.settings.find(x => x.key === 'title')?.value || p.title, settings: r.settings, pages: r.pages, notes: r.notes, rev: r.rev, fallback: r.fallback, role: mine, stamp: mark, building: builds.get(p.name) || null };
 }
 const declared = new Map();   // piece name -> the settings its map.py declares, as last opened
 // Saving writes the editor's changed values into the project's settings.json (a setting the map has since
@@ -443,7 +462,7 @@ function savePrint(p, values, mark) {
             n++;
         }
     }
-    if (n) writeFileSync(file, JSON.stringify(doc, null, 1) + '\n');
+    if (n) writeWhole(file, JSON.stringify(doc, null, 1) + '\n');
     buildPrint(p);
     const saved = Object.fromEntries(doc.settings.map(s => [s.key, s.value]));
     return { saved: n, stamp: stamp(p), piece: { ...p, title: saved.title || p.title, settings: (decl.length ? decl : doc.settings).map(s => ({ ...s, value: s.key in saved ? saved[s.key] : s.value })) } };
