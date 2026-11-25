@@ -19,7 +19,7 @@ Messages in ({"id": n, "op": ...}) and what comes back ({"id": n, ...} or {"id":
                            automatic), text (text), forget (index: a pin whose feature is gone)
 The session never writes settings.json: saving is the workbench's.
 """
-import importlib.util, json, re, sys, time
+import importlib.util, json, math, re, secrets, sys, time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -156,7 +156,7 @@ class Session:
                     pins[own] = pin
                 else:
                     if l.rule['kind'] in ('line', 'contour'):      # the pair is marked, so resetting one label undoes just these two
-                        n = 1 + max([p.get('id', 0) for p in pins] + [p.get('of', 0) for p in pins] + [0])
+                        n = secrets.token_hex(4)          # its own in every tab, so merged saves never share a mark
                         pin['id'] = n
                         pins.append({**base, 'pin': 'omit', 'at': lonlat(l.anchor), 'of': n})
                     pins.append(pin)
@@ -243,9 +243,12 @@ class Session:
             ax, ay = msg.get('ax', f.w / 2), msg.get('ay', f.h / 2)
             cx, cy = ax + (f.w / 2 - msg.get('dx', 0) - ax) / z, ay + (f.h / 2 - msg.get('dy', 0) - ay) / z
             lon, lat = f.frame_to_lonlat(cx, cy)
-            before = self.values[key]
-            # a drag keeps the width exactly; a zoom may take it from a city block to the whole globe
+            # a width as well as a centre: outside what the projection can show, the map stays where it is
             width = f.view['width_km'] if z == 1 else round(min(max(f.view['width_km'] / z, 0.05), 40000), 3)
+            if not all(map(math.isfinite, (lon, lat, width))) or abs(lat) > 90 or abs(lon) > 360:
+                raise pm.BuildError('the map cannot be moved there: that is outside what its projection can show')
+            before = self.values[key]
+            # (a drag keeps the width exactly; a zoom may take it from a city block to the whole globe)
             self.values[key] = {'center': [round(lon, 5), round(lat, 5)], 'width_km': width}
             try:
                 out = self.apply()
@@ -263,7 +266,10 @@ def main():
     for line in sys.stdin:
         if not line.strip():
             continue
-        msg = json.loads(line)
+        try:
+            msg = json.loads(line)
+        except Exception:
+            continue
         try:
             reply = {'id': msg.get('id'), **s.handle(msg)}
         except pm.BuildError as e:
@@ -272,7 +278,11 @@ def main():
             import traceback
             traceback.print_exc()
             reply = {'id': msg.get('id'), 'error': f'{type(e).__name__}: {e}'}
-        out.write(json.dumps(reply, ensure_ascii=False, default=float) + '\n')
+        try:                                     # every message is answered, and only with what can be read
+            line = json.dumps(reply, ensure_ascii=False, default=float, allow_nan=False)
+        except Exception as e:
+            line = json.dumps({'id': msg.get('id'), 'error': f'the answer could not be written: {e}'})
+        out.write(line + '\n')
         out.flush()
 
 

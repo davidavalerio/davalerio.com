@@ -105,15 +105,27 @@ class Result:
     def svg(self, gid, preview=False):
         f = self.frame
         css = [f'#{f.id} .r{i}{{{T.css(r["style"])};font-size:{r["size"]}px;fill:{r["color"]}}}' for i, r in enumerate(f.rules)]
-        out, n = [], {}
+        out = []
         self.ids = {}
         for l in self.placed:
-            base = f'{gid}-{slug(l.layer)}-{slug(l.key)}'
-            n[base] = n.get(base, 0) + 1
-            eid = f'{base}-{n[base]}'
+            eid = self._eid(gid, l)
             self.ids[eid] = l
             out.append(self._text(l, eid, preview))
         return f'<g id="{gid}"><style>{"".join(css)}</style>\n' + '\n'.join(out) + '\n</g>'
+
+    def _eid(self, gid, l):
+        """A label's element id: its layer and key, and for a name on a line which line and where along it, so the
+        other labels keep theirs when one is moved. An edit made against a preview that has since changed then finds
+        no such label, and is refused, where a number would have meant another label."""
+        eid = f'{gid}-{slug(l.layer)}-{slug(l.key)}'
+        if l.glyphs is not None and l.line is not None:
+            eid += f'-{l.line}-{l.along_i}'
+        elif l.kind == 'free':
+            eid += f'-free-{round(l.centre[0])}-{round(l.centre[1])}'
+        n = 2
+        while eid in self.ids:                 # two keys that spell alike
+            eid = f'{eid}-{n}'; n += 1
+        return eid
 
     def guide_id(self, gk):
         return f'{self.frame.id}-guide-{gk[0]}-{slug(gk[1])}-{gk[2]}'
@@ -129,8 +141,8 @@ class Result:
 
     def ghosts_svg(self, gid):
         out = []
-        for i, l in enumerate(self.ghosts):
-            eid = f'{gid}-{i + 1}'
+        for l in self.ghosts:
+            eid = self._eid(gid, l)
             self.ids[eid] = l
             out.append(self._text(l, eid, True, ghost=True))
         return f'<g id="{gid}" class="ghosts">' + ''.join(out) + '</g>'

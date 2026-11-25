@@ -443,16 +443,26 @@ async function printAdapter(piece) {
             wheel.zoom = Math.max(0.2, Math.min(5, wheel.zoom * Math.exp(-e.deltaY * 0.01)));
             content.setAttribute('transform', `translate(${wheel.ax} ${wheel.ay}) scale(${wheel.zoom}) translate(${-wheel.ax} ${-wheel.ay})`);
             clearTimeout(wheel.timer);
-            wheel.timer = setTimeout(() => {
-                const w = wheel;
-                wheel = null;
-                moveView(w.svg, { zoom: w.zoom, ax: w.ax, ay: w.ay });
-            }, 250);
+            wheel.timer = setTimeout(endWheel, 250);
         }, { passive: false });
+    }
+    // a zoom gesture at rest (or cut short by a save) goes to the session as one change of extent
+    function endWheel() {
+        const w = wheel;
+        if (!w) return;
+        clearTimeout(w.timer);
+        wheel = null;
+        moveView(w.svg, { zoom: w.zoom, ax: w.ax, ay: w.ay });
     }
     const moveView = (svg, how) => queue(async () => {
         const t0 = performance.now();
-        const r = await post('view', { frame: svg.id, ...how });
+        let r;
+        try {
+            r = await post('view', { frame: svg.id, ...how });
+        } catch (e) {   // an extent the map cannot take: the frame goes back to where it was
+            doc.getElementById(svg.id + '-content')?.removeAttribute('transform');
+            throw e;
+        }
         await take(r, 'geometry', t0);
         adopt(r.key, r.value);
     });
@@ -559,6 +569,7 @@ async function printAdapter(piece) {
         },
         // every change still on its way (a pin dropped, the extent, a control at rest) is in the values before a save reads them
         async settle() {
+            endWheel();
             if (timer) clearTimeout(timer), (timer = 0), sync();
             await busy;
         },

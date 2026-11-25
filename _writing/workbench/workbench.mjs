@@ -341,17 +341,20 @@ function session(p, cid) {
         let msg;
         try {
             msg = JSON.parse(line);
-        } catch {
-            return;
+        } catch {   // a line that will not read still answers its message, when its number can be made out
+            const id = +(/"id":\s*(\d+)/.exec(line) || [])[1];
+            msg = { id, error: 'the print session sent an answer that could not be read' };
         }
         const w = s.waiting.get(msg.id);
         if (!w) return;
         s.waiting.delete(msg.id);
         msg.error ? w.no(new Error(msg.error)) : w.ok(msg);
     });
+    proc.stdin.on('error', () => {});   // a pipe closing under a write (EPIPE) is this session's end, not the server's
+    proc.on('error', () => stop(s));
     proc.on('exit', () => {
         s.dead = true;
-        for (const w of s.waiting.values()) w.no(new Error('the print session stopped'));
+        for (const w of s.waiting.values()) w.no(STALE);
         s.waiting.clear();
         if (sessions.get(id) === s) sessions.delete(id);
         if (s.dir) rmSync(s.dir, { recursive: true, force: true });   // its preview pictures go with it
@@ -369,12 +372,21 @@ function ask(p, cid, msg) {
     heard(s);
     return new Promise((ok, no) => {
         const id = s.next++;
-        s.waiting.set(id, { ok, no });
-        s.proc.stdin.write(JSON.stringify({ ...msg, id }) + '\n');
+        // every message is answered: by the session, by its stopping, or, if it says nothing for a minute, by this
+        const late = setTimeout(() => s.waiting.delete(id) && no(new Error('the print session did not answer')), 60000);
+        s.waiting.set(id, { ok: v => (clearTimeout(late), ok(v)), no: e => (clearTimeout(late), no(e)) });
+        if (s.dead || !s.proc.stdin.writable) return s.waiting.delete(id), clearTimeout(late), no(STALE);
+        s.proc.stdin.write(JSON.stringify({ ...msg, id }) + '\n', err => err && s.waiting.delete(id) && (clearTimeout(late), no(STALE)));
     });
 }
+// A session is marked stopped before its pipe is closed, so nothing more is written to it; whatever was still
+// waiting on it is told so, and the page opens the map again.
 function stop(s) {
+    if (s.dead) return;
+    s.dead = true;
     clearTimeout(s.idle);
+    for (const w of s.waiting.values()) w.no(STALE);
+    s.waiting.clear();
     s.proc.stdin.end();
     s.proc.kill();
 }
