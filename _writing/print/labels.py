@@ -175,7 +175,7 @@ def straight(label, cx, cy, align='centre'):
     """Set a label's text as straight lines. `cx, cy` is the middle of the block (or, with align 'left', the
     start of the first baseline)."""
     r = label.rule
-    size, lead = r['size'], r['size'] * 1.12
+    size, lead = r['size'], r['size'] * r.get('lead', 1.12)
     rows = label.text.split('\n')
     widths = [T.width(t, r['style'], size, label.spacing) for t in rows]
     top, _ = vertical(rows[0], size)

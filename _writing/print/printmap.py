@@ -223,7 +223,7 @@ class Page:
     def place(self, **where):
         """A layout of the map's own: title=(x, y), subtitle=(x, y), rule=(x, y, w), credits=(x, y, w),
         scale=[(frame key, x, y, greatest width, 'mi' or 'km', segments)], north=(frame key, right, top),
-        title_size, subtitle_size. A piece not named is not drawn."""
+        title_size, subtitle_size, credits_size, credits_lead. A piece not named is not drawn."""
         self.custom = True
         self.L = {**(self.L or {}), **where}
 
@@ -259,10 +259,11 @@ class Page:
         self.frames.append(f)
         return f
 
-    def image(self, source, rect, key='main', citation=True):
+    def image(self, source, rect, key='main', citation=True, picture=None):
         """A frame holding a picture (a Blender render) in place of ground: positions in it run 0 to 1 across and
-        down, and labels are pinned by those."""
-        f = ImageFrame(self, key, rect, source, citation)
+        down, and labels are pinned by those. `picture` (x, y, w, h in the frame's reference points) sets the
+        picture in part of the frame, leaving room round it for its lettering."""
+        f = ImageFrame(self, key, rect, source, citation, picture)
         self.frames.append(f)
         return f
 
@@ -312,7 +313,7 @@ class Page:
         return [l for l in lines if l] if items else lines
 
     def _credit_lines(self):
-        return self._wrap(self._credit_text(with_sources=bool(self.frames)), 'serif', self.CREDIT_SIZE, self.L['credits'][2], items=True)
+        return self._wrap(self._credit_text(with_sources=bool(self.frames)), 'serif', self.L.get('credits_size', self.CREDIT_SIZE), self.L['credits'][2], items=True)
 
     def _legend_svg(self):
         lg = self._legend
@@ -413,7 +414,7 @@ class Page:
         if 'credits' in L:
             cx, cy, cwid = L['credits']
             parts.append((f'{i}-credits', f'<div id="{i}-credits" class="credits" data-setting="{self.keys[2]}" style="left:{pt(cx)};top:{pt(cy)};width:{pt(cwid + 40)};'
-                          f'font-size:{pt(self.CREDIT_SIZE)};line-height:{pt(self.CREDIT_LEAD)}">' + '<br>'.join(esc(l) for l in self.credit_lines) + '</div>'))
+                          f'font-size:{pt(L.get("credits_size", self.CREDIT_SIZE))};line-height:{pt(L.get("credits_lead", self.CREDIT_LEAD))}">' + '<br>'.join(esc(l) for l in self.credit_lines) + '</div>'))
         if 'north' in L:
             parts.append((f'{by_key[L["north"][0]].id}-north', by_key[L['north'][0]].north_arrow_svg(L['north'][1], L['north'][2])))
         for n, t in enumerate(self.notes):
@@ -647,7 +648,8 @@ class Frame:
                 name = f'{gid}-{hashlib.sha1(src.read_bytes()).hexdigest()[:10]}{src.suffix}'
                 if not (Path(raster_dir) / name).exists():
                     shutil.copyfile(src, Path(raster_dir) / name)
-                out.append((gid, f'<image id="{gid}" href="{m.raster_base}{name}" x="0" y="0" width="{self.w:.3f}" height="{self.h:.3f}" preserveAspectRatio="none"/>'))
+                px, py, pw, ph = self.picture
+                out.append((gid, f'<image id="{gid}" href="{m.raster_base}{name}" x="{px:.3f}" y="{py:.3f}" width="{pw:.3f}" height="{ph:.3f}" preserveAspectRatio="none"/>'))
                 continue
             css.append(self._css(L))
             if L['kind'] == 'point':
@@ -670,7 +672,7 @@ class Frame:
                 out.append((f'{self.id}-guides', res.guides_svg(f'{self.id}-guides')))
                 out.append((f'{self.id}-ghosts', res.ghosts_svg(f'{self.id}-ghosts')))
         w, h = f'{self.w:.3f}', f'{self.h:.3f}'
-        opening = (f'<svg id="{self.id}" xmlns="http://www.w3.org/2000/svg" style="left:{self.x * k:.2f}pt;top:{self.y * k:.2f}pt;'
+        opening = (f'<svg id="{self.id}" xmlns="http://www.w3.org/2000/svg"{"" if self.view else " data-fixed=1"} style="left:{self.x * k:.2f}pt;top:{self.y * k:.2f}pt;'
                    f'width:{self.w * k:.2f}pt;height:{self.h * k:.2f}pt;overflow:visible" viewBox="0 0 {w} {h}">\n'
                    f'<defs><clipPath id="{self.id}-clip"><rect width="{w}" height="{h}"/></clipPath></defs>\n'
                    f'<g clip-path="url(#{self.id}-clip)"><g id="{self.id}-content">')
@@ -731,8 +733,9 @@ class _Plain:
 class ImageFrame(Frame):
     """A rectangle on the page holding a picture in place of ground. Positions in it run 0 to 1 across and down;
     lettering, lines and labels are given in those, and a label's pin is kept in them."""
-    def __init__(self, page, key, rect, source, citation=True):
+    def __init__(self, page, key, rect, source, citation=True, picture=None):
         self.page, self.key, self.view = page, key, None
+        self.picture = picture or (0, 0, rect[2], rect[3])      # where in the frame the picture sits, in its units
         self.x, self.y, self.w, self.h = rect
         self.crs, self.s = _Plain(), 1.0
         self.id = f'{page.id}-{key}'

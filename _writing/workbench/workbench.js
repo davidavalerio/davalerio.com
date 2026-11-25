@@ -360,7 +360,7 @@ async function printAdapter(piece) {
                 const s = label.ownerSVGElement;
                 drag = { type: 'label', el: label, svg: s, x: e.clientX, y: e.clientY, start: svgPoint(s, e), on: false,
                     guide: label.dataset.guide ? doc.getElementById(label.dataset.guide) : null, was: ['x', 'y', 'rotate'].map(a => label.getAttribute(a)) };
-            } else if (svg && doc.getElementById(svg.id + '-content') && !e.target.closest('[data-setting]')) {
+            } else if (svg && !svg.dataset.fixed && doc.getElementById(svg.id + '-content') && !e.target.closest('[data-setting]')) {
                 drag = { type: 'frame', svg, x: e.clientX, y: e.clientY, start: svgPoint(svg, e), on: false };
                 select_(null);
             } else select_(null);
@@ -410,7 +410,7 @@ async function printAdapter(piece) {
         // a pinch, or the wheel with Control or Command held, zooms the frame's extent about the pointer
         doc.addEventListener('wheel', e => {
             const svg = e.target.closest?.('svg[id]'), content = svg && doc.getElementById(svg.id + '-content');
-            if (!content || !(e.ctrlKey || e.metaKey)) return;
+            if (!content || svg.dataset.fixed || !(e.ctrlKey || e.metaKey)) return;
             e.preventDefault();
             const p = svgPoint(svg, e);
             wheel ||= { svg, ax: p.x, ay: p.y, zoom: 1 };
