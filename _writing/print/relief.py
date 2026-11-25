@@ -36,22 +36,35 @@ def shade(z, cell, exaggeration, azimuth, altitude):
     return (total / 2) / math.sin(alt)
 
 
-def render(frame, dem, dpi, stops, low, high, empty=None, exaggeration=1.0, azimuth=292.5, altitude=45.0, strength=0.5):
-    """The relief for a frame as an RGB array at `dpi` on the page."""
+_dems = {}
+
+
+def _elevation(path, empty):
+    """An elevation raster's cells, empty ones as NaN, read once in a process."""
+    if (path, empty) not in _dems:
+        with rasterio.open(path) as src:
+            z = src.read(1).astype('float32')
+            if src.nodata is not None:
+                z[z == src.nodata] = np.nan
+            if empty is not None:
+                z[z <= empty] = np.nan
+            _dems[(path, empty)] = (z, src.transform, src.crs)
+    return _dems[(path, empty)]
+
+
+def render(frame, dem, dpi, stops, low, high, empty=None, exaggeration=1.0, azimuth=292.5, altitude=45.0, strength=0.5, margin=0.0):
+    """The relief for a frame (and a margin of ground around it, a share of its width and height) as an RGB
+    array at the given dots per inch on the page."""
     k = frame.page.k
-    W = max(2, round(frame.w * k / 72 * dpi))
-    H = max(2, round(frame.h * k / 72 * dpi))
     gx0, gy0, gx1, gy1 = frame.ground
+    mx, my = margin * (gx1 - gx0), margin * (gy1 - gy0)
+    gx0, gy0, gx1, gy1 = gx0 - mx, gy0 - my, gx1 + mx, gy1 + my
+    W = max(2, round(frame.w * (1 + 2 * margin) * k / 72 * dpi))
+    H = max(2, round(frame.h * (1 + 2 * margin) * k / 72 * dpi))
     cell = (gx1 - gx0) / W
     dst = np.full((H, W), np.nan, 'float32')
-    with rasterio.open(dem) as src:
-        z = src.read(1).astype('float32')
-        nodata = src.nodata
-        if nodata is not None:
-            z[z == nodata] = np.nan
-        if empty is not None:
-            z[z <= empty] = np.nan
-        reproject(z, dst, src_transform=src.transform, src_crs=src.crs, src_nodata=np.nan,
+    z, src_transform, src_crs = _elevation(str(dem), empty)
+    reproject(z, dst, src_transform=src_transform, src_crs=src_crs, src_nodata=np.nan,
                   dst_transform=from_origin(gx0, gy1, cell, (gy1 - gy0) / H), dst_crs=frame.crs.to_wkt(), dst_nodata=np.nan,
                   resampling=Resampling.cubic)
     hole = np.isnan(dst)
@@ -66,13 +79,14 @@ def render(frame, dem, dpi, stops, low, high, empty=None, exaggeration=1.0, azim
     return np.clip(rgb + 0.5, 0, 255).astype('uint8')
 
 
-def tiles(frame, dem, out, name, dpi, **opts):
+def tiles(frame, dem, out, name, dpi, margin=0.0, **opts):
     """Write the relief as JPEG tiles into `out`; returns [(file, x, y, w, h)] in frame units. The file names
     carry a mark of the pixels, so a changed relief is a new file and an unchanged one is not rewritten."""
-    rgb = render(frame, dem, dpi, **opts)
+    rgb = render(frame, dem, dpi, margin=margin, **opts)
     H, W = rgb.shape[:2]
     mark = hashlib.sha1(rgb.tobytes()).hexdigest()[:10]
-    ux, uy = frame.w / W, frame.h / H
+    ux, uy = frame.w * (1 + 2 * margin) / W, frame.h * (1 + 2 * margin) / H
+    ox, oy = -margin * frame.w, -margin * frame.h
     res = []
     for ty in range(0, H, TILE):
         for tx in range(0, W, TILE):
@@ -80,5 +94,5 @@ def tiles(frame, dem, out, name, dpi, **opts):
             f = f'{name}-{mark}-{ty // TILE}-{tx // TILE}.jpg'
             if not (Path(out) / f).exists():
                 Image.fromarray(part).save(Path(out) / f, quality=93, subsampling=0)
-            res.append((f, tx * ux, ty * uy, part.shape[1] * ux, part.shape[0] * uy))
+            res.append((f, ox + tx * ux, oy + ty * uy, part.shape[1] * ux, part.shape[0] * uy))
     return res

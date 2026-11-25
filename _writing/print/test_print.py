@@ -16,15 +16,22 @@ import build
 import printmap as pm
 
 MAP = '''
-from printmap import number, color, text, choice, view, labels, PAGES
+from printmap import number, color, text, choice, toggle, view, labels, legend, PAGES
 NAME = 'Test'
 SETTINGS = [choice('page', 'Page', 'Page', 'Letter Landscape', list(PAGES)), view('view', 'Extent', 'Page', [-103.6, 48.15], 24),
-            color('water', 'Water', 'Water', '#b7d2e6'), labels()]
+            text('title', 'Title', 'Text', 'Test Map'), text('subtitle', 'Subtitle', 'Text', 'Four Kinds of Label'),
+            text('credits', 'Credits', 'Text', 'Made-up data  ·  {date}\\n{sources}'),
+            color('water', 'Water', 'Water', '#b7d2e6'), number('contour.weight', 'Contour Weight', 'Contours', 0.5, 0, 2, 0.05),
+            toggle('contours.show', 'Contours', 'Contours', True, 'paint'),
+            legend(value=[{'heading': 'Water', 'items': [{'color': 'water', 'label': 'Lake'}, {'shape': 'line', 'color': '#4a7fae', 'label': 'River'}]},
+                          {'items': [{'shape': 'dot', 'color': '#22282B', 'label': 'Town'}, {'shape': 'line', 'dash': 'dashed', 'color': '#8a6646', 'code': 'c', 'label': 'Contour, every 100 feet of elevation above the sea'}]}]),
+            labels()]
 def pages(m):
-    p = m.page(m['page'], 'Test Map', 'Four Kinds of Label', 'Made-up data  ·  {date}\\n{sources}')
+    p = m.page(m['page'], m['title'], m['subtitle'], m['credits'])
+    p.legend(m['legend'])
     f = p.frame('EPSG:32613', m['view'])
     f.fill('lakes', 'test.gpkg', 'lakes', fill=m.var('water'), stroke='#4a7fae', weight=0.3)
-    f.line('contours', 'test.gpkg', 'contours', stroke='#8a6646', weight=0.5)
+    f.line('contours', 'test.gpkg', 'contours', show=m.var('contours.show'), stroke='#8a6646', weight=m.var('contour.weight'))
     f.line('rivers', 'test.gpkg', 'rivers', stroke='#4a7fae', weight=0.7)
     f.point('towns', 'test.gpkg', 'towns', radius=1.6)
     f.label('towns', 'name', 'point', style='sans-semibold', size=8, priority=1)

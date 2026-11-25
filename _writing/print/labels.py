@@ -52,44 +52,88 @@ class Label:
         self.glyphs = None          # curved: [(chars, x, y, degrees)]
         self.lines = None           # straight: [(text, x, baseline)]
         self.pinned = False
+        self.pin = None             # the pin that placed it
         self.anchor = None          # frame position the label is tied to
         self.centre = None          # frame position of the text's middle
         self.line = self.along = self.along_i = self.offset = None
         self.spacing = 0.0
+        self.clusters = self.width = self.guide = None      # curved: its shaped text and the guide it rides
+        self._area = None
+
+    def area(self):
+        """The ground the label covers, as one polygon."""
+        if self._area is None:
+            if len(self.boxes) == 1:
+                self._area = self.boxes[0]
+            else:
+                strip = None
+                if self.glyphs is not None:      # a curved label: a strip along the tops of its glyphs and back along their feet
+                    c = [np.asarray(b.exterior.coords) for b in self.boxes]
+                    strip = shapely.Polygon([q[0] for q in c] + [c[-1][1], c[-1][2]] + [q[3] for q in reversed(c)])
+                self._area = strip if strip is not None and strip.is_valid else shapely.union_all(np.array(self.boxes, dtype=object))
+        return self._area
 
 
 class Result:
     def __init__(self, frame):
         self.frame = frame
         self.placed, self.unplaced, self.dormant, self.orphans, self.overlapping_pins = [], [], [], [], []
-        self.cut = {}
+        self.ghosts = []            # labels left off, set where they would have gone, for the workbench to offer
+        self.cut = {}               # layer id -> (geometries with gaps under the labels, which of them changed)
+        self.guides = {}            # (rule, key, line) -> Guide
+        self.ids = {}               # element id -> Label, as last written
 
-    def svg(self, gid):
+    def _text(self, l, eid, preview, ghost=False):
         f = self.frame
-        css, out = [], []
-        for i, r in enumerate(f.rules):
-            css.append(f'#{gid} .r{i}{{{T.css(r["style"])};font-size:{r["size"]}px;fill:{r["color"]}}}')
-        n = {}
+        attrs = (f'id="{eid}" class="r{f.rules.index(l.rule)}" data-layer="{esc(l.layer)}" data-key="{esc(l.key)}" data-kind="{l.kind}"'
+                 + (' data-pinned="1"' if l.pinned else '') + (' data-ghost="1"' if ghost else ''))
+        if l.glyphs is not None:
+            if preview and l.guide is not None:
+                attrs += (f' data-guide="{self.guide_id(l.guide)}" data-x="{" ".join(fmt(c[1]) for c in l.clusters)}"'
+                          f' data-n="{" ".join(str(len(c[0])) for c in l.clusters)}" data-w="{fmt(l.width)}" data-off="{fmt(l.offset)}"')
+            chars = ''.join(g[0] for g in l.glyphs)
+            xs = ' '.join(fmt(g[1]) for g in l.glyphs for _ in g[0])
+            ys = ' '.join(fmt(g[2]) for g in l.glyphs for _ in g[0])
+            rs = ' '.join(fmt(g[3]) for g in l.glyphs for _ in g[0])
+            return f'<text {attrs} x="{xs}" y="{ys}" rotate="{rs}">{esc(chars)}</text>'
+        sp = f' style="letter-spacing:{l.spacing:.2f}px"' if l.spacing else ''
+        if len(l.lines) == 1:
+            t, x, y = l.lines[0]
+            return f'<text {attrs}{sp} x="{fmt(x)}" y="{fmt(y)}">{esc(t)}</text>'
+        return f'<text {attrs}{sp}>' + ''.join(f'<tspan x="{fmt(x)}" y="{fmt(y)}">{esc(t)}</tspan>' for t, x, y in l.lines) + '</text>'
+
+    def svg(self, gid, preview=False):
+        f = self.frame
+        css = [f'#{f.id} .r{i}{{{T.css(r["style"])};font-size:{r["size"]}px;fill:{r["color"]}}}' for i, r in enumerate(f.rules)]
+        out, n = [], {}
+        self.ids = {}
         for l in self.placed:
-            ri = f.rules.index(l.rule)
             base = f'{gid}-{slug(l.layer)}-{slug(l.key)}'
             n[base] = n.get(base, 0) + 1
-            attrs = (f'id="{base}-{n[base]}" class="r{ri}" data-layer="{esc(l.layer)}" data-key="{esc(l.key)}" data-kind="{l.kind}"'
-                     + (' data-pinned="1"' if l.pinned else ''))
-            if l.glyphs is not None:
-                chars = ''.join(g[0] for g in l.glyphs)
-                xs = ' '.join(fmt(g[1]) for g in l.glyphs for _ in g[0])
-                ys = ' '.join(fmt(g[2]) for g in l.glyphs for _ in g[0])
-                rs = ' '.join(fmt(g[3]) for g in l.glyphs for _ in g[0])
-                out.append(f'<text {attrs} x="{xs}" y="{ys}" rotate="{rs}">{esc(chars)}</text>')
-            else:
-                sp = f' style="letter-spacing:{l.spacing:.2f}px"' if l.spacing else ''
-                if len(l.lines) == 1:
-                    t, x, y = l.lines[0]
-                    out.append(f'<text {attrs}{sp} x="{fmt(x)}" y="{fmt(y)}">{esc(t)}</text>')
-                else:
-                    out.append(f'<text {attrs}{sp}>' + ''.join(f'<tspan x="{fmt(x)}" y="{fmt(y)}">{esc(t)}</tspan>' for t, x, y in l.lines) + '</text>')
+            eid = f'{base}-{n[base]}'
+            self.ids[eid] = l
+            out.append(self._text(l, eid, preview))
         return f'<g id="{gid}"><style>{"".join(css)}</style>\n' + '\n'.join(out) + '\n</g>'
+
+    def guide_id(self, gk):
+        return f'{self.frame.id}-guide-{gk[0]}-{slug(gk[1])}-{gk[2]}'
+
+    def guides_svg(self, gid):
+        """The guides labels may slide along, where they run through the frame: hidden paths for the workbench."""
+        out = []
+        for gk, g in self.guides.items():
+            d = ''.join('M' + ' '.join(f'{x:.1f},{y:.1f}' for x, y in g.smooth[a:b:2]) for a, b in g.runs() if b - a > 4)
+            if d:
+                out.append(f'<path id="{self.guide_id(gk)}" d="{d}"/>')
+        return f'<g id="{gid}" class="guides">' + ''.join(out) + '</g>'
+
+    def ghosts_svg(self, gid):
+        out = []
+        for i, l in enumerate(self.ghosts):
+            eid = f'{gid}-{i + 1}'
+            self.ids[eid] = l
+            out.append(self._text(l, eid, True, ghost=True))
+        return f'<g id="{gid}" class="ghosts">' + ''.join(out) + '</g>'
 
 
 def esc(s):
@@ -264,26 +308,29 @@ def set_along(label, guide, centre_i, width, clusters, offset=None, gap=None, ma
         return False
     at = lambda d: (np.interp(d, cum, path[:, 0]), np.interp(d, cum, path[:, 1]))
     top, bottom = vertical(label.text, size)
-    glyphs, polys, angles = [], [], []
-    for chars, x, adv in clusters:
-        x0, y0 = at(start + x)
-        x1, y1 = at(start + x + max(adv, 0.5))
-        ang = math.atan2(y1 - y0, x1 - x0)
-        glyphs.append((chars, float(x0), float(y0), math.degrees(ang)))
-        if chars.strip():
-            angles.append(ang)
-            c, s = math.cos(ang), math.sin(ang)
-            corners = [(-PAD, -top - PAD), (adv + PAD, -top - PAD), (adv + PAD, bottom + PAD), (-PAD, bottom + PAD)]
-            polys.append(shapely.Polygon([(x0 + px * c - py * s, y0 + px * s + py * c) for px, py in corners]))
-    if max_turn is not None and len(angles) > 1:
-        ang = np.unwrap(angles)
-        if np.abs(np.diff(ang)).max() > math.radians(max_turn) or np.abs(np.degrees(ang)).max() > 100:
+    cl = [c for c in clusters]
+    xs = np.array([c[1] for c in cl]); adv = np.array([max(c[2], 0.5) for c in cl])
+    x0, y0 = np.interp(start + xs, cum, path[:, 0]), np.interp(start + xs, cum, path[:, 1])
+    x1, y1 = np.interp(start + xs + adv, cum, path[:, 0]), np.interp(start + xs + adv, cum, path[:, 1])
+    ang = np.arctan2(y1 - y0, x1 - x0)
+    glyphs = [(c[0], float(a), float(b), float(d)) for c, a, b, d in zip(cl, x0, y0, np.degrees(ang))]
+    ink = np.array([bool(c[0].strip()) for c in cl])
+    if max_turn is not None and ink.sum() > 1:
+        un = np.unwrap(ang[ink])
+        if np.abs(np.diff(un)).max() > math.radians(max_turn) or np.abs(np.degrees(un)).max() > 100:
             return False
+    c, sn = np.cos(ang[ink]), np.sin(ang[ink])
+    w = np.array([cc[2] for cc in cl])[ink]
+    px = np.stack([-PAD + 0 * w, w + PAD, w + PAD, -PAD + 0 * w, -PAD + 0 * w], 1)
+    py = np.array([-top - PAD, -top - PAD, bottom + PAD, bottom + PAD, -top - PAD])[None, :] + 0 * px
+    ring = np.stack([x0[ink][:, None] + px * c[:, None] - py * sn[:, None], y0[ink][:, None] + px * sn[:, None] + py * c[:, None]], -1)
+    polys = list(shapely.polygons(ring))
     label.glyphs, label.boxes = glyphs, polys
     label.centre = tuple(float(v) for v in at(cum[-1] / 2))
     label.anchor = tuple(float(v) for v in guide.raw[int(centre_i)])
     label.along_i = int(centre_i)
     label.offset = float(offset)
+    label.clusters, label.width = clusters, width
     return True
 
 
@@ -345,12 +392,14 @@ def place(frame):
             res.orphans.append(p)
             used_pins.add(i)
 
-    guides = {}
+    guides = res.guides
 
     def guide(rule, key, n, coords):
         gk = (frame.rules.index(rule), key, n)
         if gk not in guides:
-            guides[gk] = Guide(frame, coords, rule.get('smooth', {'contour': 0.35}.get(rule['kind'], 2.0)) * rule['size'])
+            sigma = rule.get('smooth', {'contour': 0.35}.get(rule['kind'], 2.0)) * rule['size']
+            from printmap import cached
+            guides[gk] = cached(('guide', frame.at, frame.crs.to_wkt(), id(coords), sigma), lambda: Guide(frame, coords, sigma))
         return guides[gk]
 
     def line_metrics(rule, text, run_len=None):
@@ -376,21 +425,28 @@ def place(frame):
 
     def clutter(label):
         """How much of the linework a rule asks to avoid lies under a label, in lengths of its type size."""
-        total = 0.0
-        for t in label.rule.get('avoid', []):
-            if t not in by_id:
-                continue
-            if t not in avoid_trees:
-                geoms = np.array(by_id[t]['geoms'], dtype=object)
-                if by_id[t]['kind'] == 'fill':
-                    geoms = shapely.boundary(geoms)
-                avoid_trees[t] = (STRtree(geoms), geoms)
-            tree, geoms = avoid_trees[t]
-            area = shapely.union_all(np.array(label.boxes, dtype=object))
-            hit = tree.query(area, predicate='intersects')
-            if len(hit):
-                total += float(shapely.length(shapely.intersection(geoms[hit], area)).sum())
-        return total / label.rule['size']
+        ids = tuple(t for t in label.rule.get('avoid', []) if t in by_id)
+        if not ids:
+            return 0.0
+        if ids not in avoid_trees:          # the avoided layers' lines together, in short pieces, searched as one
+            def make():
+                pieces = []
+                for t in ids:
+                    geoms = np.array(by_id[t]['geoms'], dtype=object)
+                    lines = shapely.get_parts(shapely.get_parts(shapely.boundary(geoms) if by_id[t]['kind'] == 'fill' else geoms))
+                    for line in lines:
+                        c = shapely.get_coordinates(line)
+                        pieces += [c[i:i + 25] for i in range(0, len(c) - 1, 24)]
+                geoms = np.array([shapely.LineString(c) for c in pieces if len(c) > 1], dtype=object)
+                return STRtree(geoms), geoms
+            from printmap import cached
+            avoid_trees[ids] = cached(('avoid', str(frame.page.map.project), frame.at, frame.crs.to_wkt(), ids, tuple(by_id[t]['where'] for t in ids)), make)
+        tree, geoms = avoid_trees[ids]
+        area = label.area()
+        hit = tree.query(area, predicate='intersects')
+        if not len(hit):
+            return 0.0
+        return float(shapely.length(shapely.intersection(geoms[hit], area)).sum()) / label.rule['size']
 
     # ---- 1. pins, placed first and never moved
     for rule, L, feats in prepared:
@@ -410,6 +466,7 @@ def place(frame):
                             clusters, width, spacing = line_metrics(rule, label.text.replace('\n', ' '), run)
                             label.spacing, label.line = spacing, n
                             off, gap = clearance(rule, label.text)
+                            label.guide = (frame.rules.index(rule), key, n)
                             ok = set_along(label, g, ci, width, clusters, p.get('offset', off), gap)
                 elif 'at' in p:
                     xy = frame.lonlat_to_frame(*p['at'])
@@ -496,6 +553,10 @@ def place(frame):
                     commit(label)
                 else:
                     res.unplaced.append(f'{rule["layer"]}: {text}')
+                    ghost = Label(rule, key, text, kind)
+                    straight(ghost, options[0][1][0], options[0][1][1], align=options[0][2])
+                    ghost.anchor = (float(pt[0]), float(pt[1])) if kind == 'point' else options[0][1]
+                    res.ghosts.append(ghost)
             continue
 
         # line and contour labels
@@ -515,6 +576,12 @@ def place(frame):
                 for a, b in g.runs():
                     work.append((-(b - a), key, n, a, b, text))
         work.sort(key=lambda w: (w[0], w[1], w[2], w[3]))
+        fallback = {}
+        # What a window costs and how the text sits in it do not depend on the other labels, so they are kept
+        # from one placement to the next (in the workbench, a dropped pin re-places everything)
+        from printmap import cached
+        sig = repr(sorted((k, str(v)) for k, v in rule.items() if not callable(v))) + repr([t for t in rule.get('avoid', []) if t in by_id])
+        memo = cached(('windows', str(frame.page.map.project), frame.at, frame.crs.to_wkt(), L['id'], L['where'], sig), dict)
         for neg, key, n, a, b, text in work:
             g = guide(rule, key, n, feats[key][1][n])
             run_len = (b - a) * STEP
@@ -526,27 +593,34 @@ def place(frame):
             section = (b - a) / count
             for si in range(count):
                 lo, hi = int(a + si * section), int(a + (si + 1) * section)
-                cands, wins = [], []
-                for c in range(lo, hi, stride):
-                    win = g.window(c, width / 2 + 3)
-                    if win and win[0] >= a and win[1] <= b:
-                        cands.append(c)
-                        wins.append(win)
-                if not cands:
+                mk = ('costs', key, n, a, b, si)
+                if mk not in memo:
+                    cands, wins = [], []
+                    for c in range(lo, hi, stride):
+                        win = g.window(c, width / 2 + 3)
+                        if win and win[0] >= a and win[1] <= b:
+                            cands.append(c)
+                            wins.append(win)
+                    if not cands:
+                        memo[mk] = None
+                    # cost of each window: how much the line turns under the text, how far the raw line strays from
+                    # the smoothed guide, how steep the text would stand, and how far from the middle of its stretch
+                    costs = np.empty(len(cands))
+                    for j, (c, (wa, wb)) in enumerate(zip(cands, wins)):
+                        th = g.theta[wa:wb]
+                        every = max(1, int(round((wb - wa) / max(2.0, width / (size * 0.5)))))     # about one glyph's worth of samples
+                        turn = np.abs(np.diff(th[::every]))
+                        dev = g.dev[wa:wb].max()
+                        steep = abs(math.remainder(th[len(th) // 2], math.pi)) / (math.pi / 2)
+                        centre = abs(c - (lo + hi) / 2) / max(1.0, section)
+                        costs[j] = 60 * float((turn ** 2).sum()) + 18 * turn.max(initial=0) + 0.6 * dev + 1.2 * steep + 1.5 * centre
+                        if dev > rule.get('max_dev', 0.8 if on_line else 9.0):
+                            costs[j] = np.inf
+                    if cands:
+                        memo[mk] = (cands, costs)
+                if memo[mk] is None:
                     continue
-                # cost of each window: how much the line turns under the text, how far the raw line strays from
-                # the smoothed guide, how steep the text would stand, and how far from the middle of its stretch
-                costs = np.empty(len(cands))
-                for j, (c, (wa, wb)) in enumerate(zip(cands, wins)):
-                    th = g.theta[wa:wb]
-                    every = max(1, int(round((wb - wa) / max(2.0, width / (size * 0.5)))))     # about one glyph's worth of samples
-                    turn = np.abs(np.diff(th[::every]))
-                    dev = g.dev[wa:wb].max()
-                    steep = abs(math.remainder(th[len(th) // 2], math.pi)) / (math.pi / 2)
-                    centre = abs(c - (lo + hi) / 2) / max(1.0, section)
-                    costs[j] = 60 * float((turn ** 2).sum()) + 18 * turn.max(initial=0) + 0.6 * dev + 1.2 * steep + 1.5 * centre
-                    if dev > rule.get('max_dev', 0.8 if on_line else 9.0):
-                        costs[j] = np.inf
+                cands, costs = memo[mk]
                 best, tried = None, 0
                 for j in np.argsort(costs, kind='stable'):
                     if not np.isfinite(costs[j]) or (best is not None and costs[j] >= best[0]) or tried >= 60:
@@ -561,13 +635,19 @@ def place(frame):
                         continue
                     off, gap = clearance(rule, text)
                     for below in ((False,) if on_line else (False, True)):      # above the line first, then beneath it
-                        label = Label(rule, key, text, kind)
-                        label.spacing, label.line = spacing, n
-                        if not set_along(label, g, c, width, clusters, off, gap, max_turn, below):
+                        ck = ('window', key, n, c, below)
+                        if ck not in memo:
+                            label = Label(rule, key, text, kind)
+                            label.spacing, label.line, label.guide = spacing, n, (frame.rules.index(rule), key, n)
+                            ok = set_along(label, g, c, width, clusters, off, gap, max_turn, below) and fits_frame(label)
+                            memo[ck] = (label, clutter(label)) if ok else None
+                        if memo[ck] is None:
                             continue
-                        if not fits_frame(label) or index.hits(np.array(label.boxes, dtype=object)):
+                        label, mess = memo[ck]
+                        label.rule = rule            # the rule as this build declares it
+                        fallback.setdefault(key, label)
+                        if index.hits(np.array(label.boxes, dtype=object)):
                             continue
-                        mess = clutter(label)
                         if mess > rule.get('max_clutter', math.inf):
                             continue
                         tried += 1
@@ -581,8 +661,10 @@ def place(frame):
                 seen = any(g.inside.any() for (ri, k, n), g in guides.items() if frame.rules[ri] is rule and k == key)
                 if seen and not same(key) and not omitted(rule['layer'], key, (0, 0), -1):
                     res.unplaced.append(f'{rule["layer"]}: {text}')
+                    if key in fallback:
+                        res.ghosts.append(fallback[key])
 
-    for l in res.placed:
+    for l in res.placed + res.ghosts:
         if l.along_i is not None:
             l.along = l.along_i * STEP / frame.s
     res.dormant += [p for i, p in enumerate(pins) if i not in used_pins and p.get('pin') == 'place' and p not in res.dormant]
@@ -600,7 +682,7 @@ def place(frame):
                 raise AssertionError(f'labels overlap: {owners[i].text!r} and {owners[j].text!r}')
 
     # ---- 4. clear what lies under the labels: a real gap in the lines, never a white box or a halo
-    clear = {}
+    clear, cut_trees = {}, {}
     for l in res.placed:
         targets = list(l.rule.get('clear', []))
         if l.kind == 'contour' and l.layer not in targets:
@@ -616,8 +698,9 @@ def place(frame):
         if not len(geoms):
             continue
         hole = shapely.union_all(shapely.buffer(np.array(polys, dtype=object), 0.5))
-        hit = STRtree(geoms).query(hole, predicate='intersects')
+        tree = cut_trees.get(t) or cut_trees.setdefault(t, STRtree(geoms))
+        hit = tree.query(hole, predicate='intersects')
         geoms[hit] = shapely.difference(geoms[hit], hole)
-        res.cut[t] = geoms
+        res.cut[t] = (geoms, None if L['kind'] == 'fill' else hit)
     return res
 
