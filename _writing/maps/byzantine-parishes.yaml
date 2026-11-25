@@ -1,13 +1,16 @@
 # Byzantine Catholic Parishes. Tiles are built by byzantine-parishes.py beside this file,
 # from the Byzantine Catholic Parishes project in Drive. Group colors are the print map's.
-title: Byzantine Catholic Parishes
+title: 'Byzantine-Rite Catholic Parishes of the United States'
 date: '2026-11-14'
 page: true
-note: The 562 Byzantine Catholic parishes, missions and communities in the United States, colored by church and eparchy, over the coal fields of the lower 48, shaded by rank.
+note: 'Byzantine-Rite Catholic parishes, missions, and communities in the United States, colored by church and eparchy, over the coal fields of the lower 48.'
 start: country
-credits: 'Parish records compiled from eparchy directories, GCatholic.org and parish websites, checked 2026-11-14; some locations are approximate.
-  Coal fields: U.S. Geological Survey, Coal Fields of the Conterminous United States (East, 2013, Open-File Report 2012-1205). State boundaries:
-  U.S. Census Bureau.'
+credits: |-
+  Parish records compiled from eparchy directories, [GCatholic.org](https://gcatholic.org/) and parish websites, checked 2026-11-14.
+
+  Coal fields: U.S. Geological Survey, [Coal Fields of the Conterminous United States](https://doi.org/10.3133/ofr20121205) (East, 2013, Open-File Report 2012-1205).
+
+  State boundaries: U.S. Census Bureau, [2025 Cartographic Boundary Files](https://www.census.gov/geographies/mapping-files/time-series/geo/cartographic-boundary.2025.html), States, 1:500,000.
 bounds: [-179, 12, -50, 73]
 sources:
   vectors: {type: vector, url: vectors.pmtiles}
