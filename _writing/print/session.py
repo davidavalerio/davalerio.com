@@ -1,7 +1,10 @@
 """The workbench's session with one print map: a long-lived process that keeps the map's data and its built
 stages in memory and answers over its pipes, one JSON message a line.
 
-    uv run session.py "<project folder>" <fonts URL base> <files URL base>
+    uv run session.py "<project folder>" <fonts URL base> <files URL base> <editor id>
+
+Each open editor has a session of its own, with its own preview folder, so two tabs on one map do not share
+unsaved changes.
 
 Messages in ({"id": n, "op": ...}) and what comes back ({"id": n, ...} or {"id": n, "error": "..."}):
   open                     reads map.py and settings.json afresh; returns the declared settings and the pages
@@ -12,8 +15,8 @@ Messages in ({"id": n, "op": ...}) and what comes back ({"id": n, ...} or {"id":
                            returns the frame's new extent (its setting's key and value) and the changed pieces
   pin {action, label, ...} a label (its element id) moved, deleted, reset or reworded on the page; returns the new pins and the
                            changed pieces. Actions: move (dx, dy for a label that moves freely; x, y on its guide,
-                           or free, for one that slides), delete, reset, text (text), forget (index: a pin whose
-                           feature is gone)
+                           or free, for one that slides), delete, reset (the clicked label alone goes back to
+                           automatic), text (text), forget (index: a pin whose feature is gone)
 The session never writes settings.json: saving is the workbench's.
 """
 import importlib.util, json, re, sys, time
@@ -27,8 +30,8 @@ DPI, MARGIN = 150, 0.15          # the preview's raster resolution, and the grou
 
 
 class Session:
-    def __init__(self, project, fonts, files):
-        self.project, self.fonts, self.files = Path(project), fonts, files
+    def __init__(self, project, fonts, files, editor='one'):
+        self.project, self.fonts, self.files, self.editor = Path(project), fonts, files, editor
         self.scripts = self.project / 'Scripts'
         self.mod = None
         self.values = {}
@@ -40,11 +43,13 @@ class Session:
         spec = importlib.util.spec_from_file_location('map_definition', self.scripts / 'map.py')
         self.mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(self.mod)
-        self.cache = Path.home() / '.local/share/workbench/print' / self.mod.NAME / 'preview'
+        import build, relief
+        self.cache = build.scratch(self.project, self.mod.NAME) / f'preview-{self.editor}'
         self.cache.mkdir(parents=True, exist_ok=True)
-        for f in self.cache.glob('*.jpg'):
+        for f in self.cache.iterdir():
             f.unlink()
-        pm.CACHE.clear()
+        # nothing read before is trusted: the files may have changed since
+        pm.CACHE.clear(); pm._read_cache.clear(); LB._chain_cache.clear(); relief._dems.clear()
         m = pm.Map(self.project, self.mod.SETTINGS, pm.load_settings(self.scripts))
         self.values = dict(m.values)
         self.labels_key = next((s['key'] for s in m.settings if s['type'] == 'labels'), None)
@@ -58,6 +63,11 @@ class Session:
         self.mod.pages(m)
         built = {p.n: (*p.render(self.cache), p) for p in m.pages}
         self.map = m
+        pm.trim()                                   # keep only the stages this build used
+        used = ''.join(h for _, parts, _ in built.values() for _, h in parts if '<image' in h)
+        for f in self.cache.iterdir():              # and only the pictures it shows
+            if f.name not in used:
+                f.unlink()
         return built
 
     @staticmethod
@@ -140,13 +150,16 @@ class Session:
                 """Set the label's pin: in place of its own, or new, with (for an automatic label on a line) an
                 omit pin where it was, so no automatic label returns there."""
                 if own is not None:
-                    if 'text' in pins[own]:
-                        pin['text'] = pins[own]['text']
+                    for k in ('text', 'id'):
+                        if k in pins[own]:
+                            pin[k] = pins[own][k]
                     pins[own] = pin
                 else:
+                    if l.rule['kind'] in ('line', 'contour'):      # the pair is marked, so resetting one label undoes just these two
+                        n = 1 + max([p.get('id', 0) for p in pins] + [p.get('of', 0) for p in pins] + [0])
+                        pin['id'] = n
+                        pins.append({**base, 'pin': 'omit', 'at': lonlat(l.anchor), 'of': n})
                     pins.append(pin)
-                    if l.rule['kind'] in ('line', 'contour'):
-                        pins.append({**base, 'pin': 'omit', 'at': lonlat(l.anchor)})
 
             if action == 'move':
                 if slides and not msg.get('free'):
@@ -175,8 +188,10 @@ class Session:
                     pins.append({**base, 'pin': 'omit', 'at': lonlat(l.anchor if l.anchor else l.centre)})
                 else:
                     pins = [p for p in pins if not (mine(p) and p.get('pin') == 'omit')] + [{**base, 'pin': 'omit'}]
-            elif action == 'reset':
-                pins = [p for p in pins if not mine(p)]
+            elif action == 'reset':          # the clicked label alone: its own pin, and the omit pin made with it
+                if own is not None:
+                    n = pins[own].get('id')
+                    pins = [p for i, p in enumerate(pins) if i != own and not (n and p.get('of') == n)]
             else:
                 raise ValueError('unknown pin action ' + action)
         before = self.values.get(self.labels_key)
@@ -207,7 +222,7 @@ class Session:
             settings = self.read()
             self.pages = {}
             out = self.apply()
-            return {'name': self.mod.NAME, 'settings': settings, 'pages': out['pages'], 'notes': out['notes'], 'ms': out['ms']}
+            return {'name': self.mod.NAME, 'dir': str(self.cache), 'settings': settings, 'pages': out['pages'], 'notes': out['notes'], 'ms': out['ms']}
         if op == 'page':
             head, parts, _ = self.pages[int(msg['n'])]
             return {'html': head + '\n'.join(h for _, h in parts) + '\n</body></html>\n'}
@@ -240,7 +255,7 @@ class Session:
 
 
 def main():
-    s = Session(*sys.argv[1:4])
+    s = Session(*sys.argv[1:5])
     out = sys.stdout
     sys.stdout = sys.stderr                      # nothing but answers goes down the pipe
     for line in sys.stdin:

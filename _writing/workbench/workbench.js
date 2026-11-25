@@ -8,6 +8,7 @@ import GUI from './lib/lil-gui.esm.min.js';
 const $ = id => document.getElementById(id);
 const stage = $('stage'), panel = $('panel'), status = $('status'), saveBtn = $('save'), revertBtn = $('revert'), select = $('piece');
 let gui = null, current = null, saved = null, values = null, adapter = null, generation = 0, host = stage;
+const EDITOR = crypto.randomUUID().slice(0, 8);   // this tab: a print map's session and unsaved preview are its own
 
 const say = (text, cls = '') => {
     status.textContent = text;
@@ -128,9 +129,30 @@ async function printAdapter(piece) {
     const kinds = Object.fromEntries(piece.settings.map(s => [s.key, s]));
     const isPaint = k => kinds[k]?.effect === 'paint';
     const labelsKey = piece.settings.find(s => s.type === 'labels')?.key;
+    let alive = true;   // false once another piece is opened: whatever is still on its way back is then dropped
+    const send = async (what, body) => {
+        const res = await fetch(api + what + '?cid=' + EDITOR, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        return res.json();
+    };
+    // The session is stopped after half an hour left alone. The next message then finds none: the map is opened
+    // again, given back every unsaved value, and the message sent once more.
+    const unsaved = () => Object.fromEntries(Object.keys(values).filter(k => !isPaint(k) && JSON.stringify(values[k]) !== JSON.stringify(saved[k])).map(k => [k, values[k]]));
+    async function revive() {
+        const res = await fetch('/api/piece/' + name + '?cid=' + EDITOR);
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'the map could not be opened again');
+        const edits = unsaved();
+        if (Object.keys(edits).length) {
+            const r = await send('set', { values: edits });
+            if (r.error) throw new Error(r.error);
+        }
+    }
     const post = async (what, body) => {
-        const res = await fetch(api + what, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-        const r = await res.json();
+        let r = await send(what, body);
+        if (r.stale) {
+            await revive();
+            await load();
+            r = await send(what, body);
+        }
         if (r.error) throw new Error(r.error);
         return r;
     };
@@ -217,6 +239,7 @@ async function printAdapter(piece) {
 
     // --- the session's answer: changed pieces swapped in by their ids, or the page loaded again
     async function take(r, what, t0) {
+        if (!alive) return;
         pages = r.pages;
         if (!pages.some(p => p.n === pageN)) pageN = 1;
         drawBar();
@@ -241,7 +264,7 @@ async function printAdapter(piece) {
     }
     // every change but paint goes to the session, a moment after the controls rest, one message at a time
     let timer = 0, busy = Promise.resolve();
-    const queue = job => (busy = busy.then(job).catch(e => (console.error(e), say('The page could not be redrawn: ' + e.message, 'error'))));
+    const queue = job => (busy = busy.then(() => alive && job()).catch(e => (console.error(e), say('The page could not be redrawn: ' + e.message, 'error'))));
     function sync() {
         const edits = Object.fromEntries(Object.keys(values).filter(k => !isPaint(k) && JSON.stringify(values[k]) !== JSON.stringify(sent[k])).map(k => [k, structuredClone(values[k])]));
         if (!Object.keys(edits).length) return;
@@ -252,6 +275,7 @@ async function printAdapter(piece) {
     }
     // a change made on the page (a pin, the extent) comes back as a value, which is then the page's and ours
     function adopt(key, value) {
+        if (!alive) return;
         values[key] = value;
         sent[key] = structuredClone(value);
         changed();
@@ -470,8 +494,10 @@ async function printAdapter(piece) {
     addEventListener('keydown', outerKeys);
 
     let ghosts = false;
-    function load() {
+    async function load() {
         const t0 = performance.now();
+        const url = '/print/' + name + '/page/' + pageN + '?cid=' + EDITOR;
+        if ((await fetch(url, { method: 'HEAD' })).status === 409) await revive();   // the session was stopped while the map sat open
         return new Promise(ok => {
             frame.addEventListener('load', async () => {
                 doc = frame.contentDocument;
@@ -484,7 +510,7 @@ async function printAdapter(piece) {
                 timed('load', t0);
                 ok();
             }, { once: true });
-            frame.src = '/print/' + name + '/page/' + pageN + '?' + Date.now();
+            frame.src = url + '&t=' + Date.now();
         });
     }
     drawBar();
@@ -518,7 +544,7 @@ async function printAdapter(piece) {
             const mine = ++building, t0 = performance.now();
             const poll = async () => {
                 if (mine !== building) return;
-                const b = await (await fetch(api + 'build')).json();
+                const b = await (await fetch(api + 'build?cid=' + EDITOR)).json();
                 if (b.state === 'building') return setTimeout(poll, 500);
                 times.push({ what: 'build', ms: Math.round(performance.now() - t0) });
                 if (same()) say(b.state === 'done' ? 'Saved. ' + b.message : b.message, b.state === 'done' ? '' : 'error');
@@ -526,6 +552,9 @@ async function printAdapter(piece) {
             setTimeout(poll, 500);
         },
         cleanup() {
+            alive = false;
+            clearTimeout(timer);
+            clearTimeout(wheel?.timer);
             building++;
             removeEventListener('resize', layout);
             removeEventListener('keydown', outerKeys);
@@ -910,7 +939,7 @@ async function open(name) {
     stage.replaceChildren();
     for (const k in textEls) delete textEls[k];
     try {
-        const res = await fetch('/api/piece/' + name);
+        const res = await fetch('/api/piece/' + name + '?cid=' + EDITOR);
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'could not read it');
         const piece = await res.json();
         if (mine !== generation) return;

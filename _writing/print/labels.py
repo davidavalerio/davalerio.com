@@ -206,8 +206,9 @@ _chain_cache = {}
 
 def chains(frame, L, rule):
     """The joined lines of each key, in ground coordinates, unclipped, longest first: {key: (text, [coords])}."""
-    ck = (str(frame.page.map.path(L['source'])), L['layer'], L['where'], repr(rule['key']) if callable(rule['key']) else rule['key'],
-          repr(rule['text']) if callable(rule['text']) else rule['text'], frame.crs.to_wkt())
+    # a rule's own function is known by where it is written, not by the object, which is new at every build
+    ident = lambda f: (f.__code__.co_filename, f.__code__.co_firstlineno, f.__code__.co_code) if callable(f) else f
+    ck = (str(frame.page.map.path(L['source'])), L['layer'], L['where'], ident(rule['key']), ident(rule['text']), frame.crs.to_wkt())
     if ck in _chain_cache:
         return _chain_cache[ck]
     out = {}
@@ -390,8 +391,11 @@ def place(frame):
         prepared.append((rule, L, feats))
 
     known = {(rule['layer'], k) for rule, L, feats in prepared for k in feats}
+    labelled = {rule['layer'] for rule in frame.rules}       # a pin of a layer whose labels are switched off waits; it is not lost
     for i, p in enumerate(pins):
-        if (p.get('layer'), str(p.get('key'))) not in known:
+        if p.get('layer') not in labelled:
+            used_pins.add(i)
+        elif (p.get('layer'), str(p.get('key'))) not in known:
             res.orphans.append(p)
             used_pins.add(i)
 

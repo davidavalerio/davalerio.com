@@ -57,6 +57,8 @@ def shape(text, style, size, spacing=0.0):
     """Shape one line. Returns (clusters, width): clusters is a tuple of (characters, x, advance) in points, one
     per run of characters that HarfBuzz draws as a unit (a ligature stays whole), in reading order; `spacing` is
     added after every cluster, as CSS letter-spacing does (ligatures are turned off when it is set, as browsers do)."""
+    if not text:
+        return (), 0.0
     font, upem, _ = _font(style)
     buf = hb.Buffer()
     buf.add_str(text)

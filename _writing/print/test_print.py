@@ -14,6 +14,7 @@ from shapely.geometry import LineString, Point, Polygon
 sys.path.insert(0, str(Path(__file__).parent))
 import build
 import printmap as pm
+import labels as LB
 
 MAP = '''
 from printmap import number, color, text, choice, toggle, view, labels, legend, PAGES
@@ -66,6 +67,54 @@ def project(folder, cite=True):
         con.execute("update gpkg_contents set description = 'Test: invented ' || table_name")
         con.commit(); con.close()
     return folder
+
+
+def more(tmp, proj):
+    """Smaller things that once went wrong."""
+    import copy, session, text as T
+    # a blank line in a label's text; the same layer labelled and drawn; credits that do not print their sources
+    assert T.shape('', 'sans', 7) == ((), 0.0)
+    m = build.load(proj)
+    f = m.pages[0].frames[0]
+    f.data('rivers-again', 'test.gpkg', 'rivers'); f.line('rivers-drawn', 'test.gpkg', 'rivers')
+    assert 'id="p1-main-rivers-drawn" class="line" d="M' in m.pages[0].html(tmp), 'a layer drawn after being only labelled lost its paths'
+    bare = project(tmp / 'bare2', cite=False)
+    try:
+        build.load(bare, saved=[{'key': 'credits', 'value': 'No sources named'}]).pages[0].html(tmp)
+        raise AssertionError('a map with no citations built once its credits stopped printing them')
+    except pm.BuildError:
+        print('citations are checked whether or not the credits print them')
+    # the footer takes the height the credits need, and the frame what is left
+    short = build.load(proj); short.pages[0].html(tmp)
+    long = build.load(proj, saved=[{'key': 'credits', 'value': '\n'.join(['A line of credits'] * 7) + '\n{sources}'}]); long.pages[0].html(tmp)
+    assert long.pages[0].frames[0].h < short.pages[0].frames[0].h - 30 and len(long.pages[0].credit_lines) == 8
+    print(f'eight lines of credits: the frame gives way, {short.pages[0].frames[0].h:.0f} to {long.pages[0].frames[0].h:.0f} points tall')
+    # the session: one label reset leaves the others of its name; a label group switched off does not orphan its pins;
+    # reopening forgets what was read; panning does not pile up
+    s = session.Session(proj, '/f/', '/r/', 'test'); s.handle({'op': 'open'})
+    ids = sorted(i for i in s.pages[1][2].frames[0].label_result.ids if 'crooked-river' in i)
+    assert len(ids) >= 2
+    for i in ids[:2]:
+        g = s.pages[1][2].frames[0]; l = g.label_result.ids[i]
+        r = s.handle({'op': 'pin', 'action': 'move', 'label': i, 'x': l.anchor[0] + 25, 'y': l.anchor[1]})
+    pinned = sorted(i for i, l in s.pages[1][2].frames[0].label_result.ids.items() if l.pinned)
+    assert len(pinned) == 2 and len(r['labels']) == 4, (pinned, r['labels'])
+    r = s.handle({'op': 'pin', 'action': 'reset', 'label': pinned[0]})
+    assert len(r['labels']) == 2 and sum(l.pinned for l in s.pages[1][2].frames[0].label_result.ids.values()) == 1
+    print('double-click resets the one label: the other pinned label of its name stays')
+    s.values[s.labels_key] = s.values[s.labels_key] + [{'page': 1, 'frame': 'main', 'layer': 'no-such-rule', 'key': 'x', 'pin': 'place', 'at': [-103.6, 48.15]}]
+    assert not s.apply()['notes']['orphans']
+    print('a pin of a layer with no label rule in force waits, and is not called lost')
+    assert pm._read_cache and LB._chain_cache
+    s.handle({'op': 'open'})
+    import resource
+    v = copy.deepcopy(s.values['view']); sizes = []
+    for i in range(30):
+        v['center'][0] += 0.004
+        s.handle({'op': 'set', 'values': {'view': copy.deepcopy(v)}})
+        sizes.append(len(pm.CACHE))
+    assert max(sizes[5:]) == min(sizes[5:]), sizes
+    print(f'thirty pans: the cache holds {sizes[-1]} stages throughout; preview pictures kept: {len(list(s.cache.iterdir()))}')
 
 
 def ground(frame, xy):
@@ -152,6 +201,7 @@ def main():
         ox, oy = fa.lonlat_to_frame(*pins[3]['at'])
         assert not any(l.kind == 'line' and not l.pinned and math.hypot(l.anchor[0] - ox, l.anchor[1] - oy) < 20 for l in fa.label_result.placed)
         print(f'pins hold their ground: worst {worst:.1f} m; point offset kept in points; typed line break kept; omit pins honoured')
+        more(Path(tmp), proj)
     print('ALL TESTS PASSED')
 
 

@@ -2,7 +2,7 @@
 
 Reads the map's Scripts/map.py and Scripts/settings.json, writes each page as HTML, prints it in the pinned
 Chromium, joins the pages, checks the PDF, and draws the PNG from it. Everything is made in the out folder
-(default ~/.local/share/workbench/print/<map>/build); with --move, a build that passes every check is then
+(default ~/.local/share/workbench/print/<map>-<mark of the project folder>/build); with --move, a build that passes every check is then
 moved into the project folder as YYYY-MM-DD-Name-Map.pdf and .png.
 """
 import argparse, importlib.util, shutil, sys, time
@@ -11,6 +11,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 import printmap as pm
 from export import print_pdf, pdf_checks, png
+
+
+def scratch(project, name):
+    """A map's working folder, its own for each project folder: a copy of a project elsewhere does not share it."""
+    import hashlib
+    return Path.home() / '.local/share/workbench/print' / f'{name}-{hashlib.sha1(str(Path(project).resolve()).encode()).hexdigest()[:8]}'
 
 
 def load(project, scripts=None, **opts):
@@ -43,7 +49,7 @@ def build(project, scripts=None, out=None, labels=True, move=False, quiet=False,
     say = (lambda *a: None) if quiet else print
     t0 = time.time()
     m = load(project, scripts, labels=labels, **opts)
-    out = Path(out or Path.home() / '.local/share/workbench/print' / m.name / 'build')
+    out = Path(out or scratch(project, m.name) / 'build')
     files = write_pages(m, out)
     t1 = time.time()
     stem = f'{m.today}-{m.output}'
@@ -84,8 +90,10 @@ def build(project, scripts=None, out=None, labels=True, move=False, quiet=False,
     say(f'time: pages {t1 - t0:.2f}s, Chromium {t2 - t1:.2f}s, checks and PNG {t3 - t2:.2f}s')
     result = {'ok': ok, 'pdf': pdf, 'png': image, 'pngs': images, 'pages': files, 'map': m}
     if ok and move:
-        for f in (pdf, *images):
-            shutil.copyfile(f, Path(project) / f.name)
+        for f in (pdf, *images):        # beside its place first, then renamed over it, so a failed copy leaves the last one whole
+            part = Path(project) / (f.name + '.part')
+            shutil.copyfile(f, part)
+            part.replace(Path(project) / f.name)
         say('moved into', project)
     say('BUILD', 'PASSED' if ok else 'FAILED', pdf)
     return result

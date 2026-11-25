@@ -25,7 +25,7 @@
 // For testing, WORKBENCH_PORT serves a second workbench on another port (not published over Tailscale) and
 // WORKBENCH_GIS points it at another GIS folder.
 import { createServer } from 'node:http';
-import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync, rmSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { join, normalize } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
@@ -53,7 +53,13 @@ function yamlScalar(text, key) {
 
 // The print maps: every project in the GIS folder with a map.py and a settings.json in its Scripts folder
 function printPieces() {
-    return readdirSync(config.gis, { withFileTypes: true }).filter(d => d.isDirectory()
+    let folders;
+    try {
+        folders = readdirSync(config.gis, { withFileTypes: true });
+    } catch {
+        return [];   // the GIS folder is away (Drive not mounted): the web maps still list
+    }
+    return folders.filter(d => d.isDirectory()
         && existsSync(join(config.gis, d.name, 'Scripts', 'map.py')) && existsSync(join(config.gis, d.name, 'Scripts', 'settings.json')))
         .map(d => {
             let title = d.name;
@@ -309,15 +315,19 @@ function saveModel(p, values) {
 // --- Print maps: the session, saving, and the build
 
 const PRINT = join(ROOT, '_writing', 'print');
-const sessions = new Map();   // piece name -> its running session
+const sessions = new Map();   // piece name and editor id -> that editor's running session
 const builds = new Map();     // piece name -> { state: 'building' | 'done' | 'failed', message }
 
-function session(p) {
-    let s = sessions.get(p.name);
+// Every open editor (a browser tab) has a session of its own, so two tabs on one map do not share unsaved
+// changes. A session left alone for half an hour is stopped; the editor then opens another and gives it back its
+// unsaved values (the page's own doing, on hearing `stale`).
+function session(p, cid) {
+    const id = p.name + ':' + cid;
+    let s = sessions.get(id);
     if (s && !s.dead) return s;
-    const proc = spawn('uv', ['run', '-q', '--project', PRINT, 'python', join(PRINT, 'session.py'), join(config.gis, p.folder), '/print-fonts/', '/print/' + p.name + '/files/'],
+    const proc = spawn('uv', ['run', '-q', '--project', PRINT, 'python', join(PRINT, 'session.py'), join(config.gis, p.folder), '/print-fonts/', '/print/' + p.name + '/files/' + cid + '/', cid],
         { cwd: ROOT, stdio: ['pipe', 'pipe', 'inherit'] });
-    s = { proc, waiting: new Map(), next: 1, dead: false, name: null, settings: null, idle: null };
+    s = { proc, waiting: new Map(), next: 1, dead: false, opened: false, dir: null, settings: null, idle: null };
     createInterface({ input: proc.stdout }).on('line', line => {
         let msg;
         try {
@@ -334,14 +344,19 @@ function session(p) {
         s.dead = true;
         for (const w of s.waiting.values()) w.no(new Error('the print session stopped'));
         s.waiting.clear();
+        if (sessions.get(id) === s) sessions.delete(id);
+        if (s.dir) rmSync(s.dir, { recursive: true, force: true });   // its preview pictures go with it
     });
-    sessions.set(p.name, s);
+    sessions.set(id, s);
     return s;
 }
-// One message to a piece's session, and its answer. A session left alone for half an hour is stopped; the
-// next message starts another.
-function ask(p, msg) {
-    const s = session(p);
+const STALE = Object.assign(new Error('the print session was stopped; the map is being opened again'), { stale: true });
+// One message to an editor's session, and its answer. Only `open` may start a session: any other message to a
+// session not yet opened is answered `stale`, and the page opens the map again with its unsaved values.
+function ask(p, cid, msg) {
+    const live = sessions.get(p.name + ':' + cid);
+    if (msg.op !== 'open' && !(live && !live.dead && live.opened)) return Promise.reject(STALE);
+    const s = session(p, cid);
     clearTimeout(s.idle);
     s.idle = setTimeout(() => s.proc.kill(), 30 * 60 * 1000);
     return new Promise((ok, no) => {
@@ -350,24 +365,25 @@ function ask(p, msg) {
         s.proc.stdin.write(JSON.stringify({ ...msg, id }) + '\n');
     });
 }
-async function openPrint(p) {
-    const r = await ask(p, { op: 'open' });
-    const s = sessions.get(p.name);
-    s.name = r.name;
-    s.settings = r.settings;
+async function openPrint(p, cid) {
+    const r = await ask(p, cid, { op: 'open' });
+    const s = sessions.get(p.name + ':' + cid);
+    Object.assign(s, { opened: true, dir: r.dir, settings: r.settings });
+    declared.set(p.name, r.settings);
     return { ...p, title: r.settings.find(x => x.key === 'title')?.value || p.title, settings: r.settings, pages: r.pages, notes: r.notes, building: builds.get(p.name) || null };
 }
+const declared = new Map();   // piece name -> the settings its map.py declares, as last opened
 // Saving writes the changed values into the project's settings.json (a setting the map has since declared
 // joins the file with it), then rebuilds the PDF in the background
 function savePrint(p, values) {
     const file = join(config.gis, p.folder, 'Scripts', 'settings.json');
     const doc = JSON.parse(readFileSync(file, 'utf8'));
-    const declared = sessions.get(p.name)?.settings || [];
+    const decl = declared.get(p.name) || [];
     let n = 0;
     for (const [k, v] of Object.entries(values)) {
         let s = doc.settings.find(x => x.key === k);
         if (!s) {
-            const d = declared.find(x => x.key === k);
+            const d = decl.find(x => x.key === k);
             if (!d) continue;
             doc.settings.push((s = { ...d }));
         }
@@ -379,7 +395,7 @@ function savePrint(p, values) {
     if (n) writeFileSync(file, JSON.stringify(doc, null, 1) + '\n');
     buildPrint(p);
     const saved = Object.fromEntries(doc.settings.map(s => [s.key, s.value]));
-    return { saved: n, piece: { ...p, title: saved.title || p.title, settings: (declared.length ? declared : doc.settings).map(s => ({ ...s, value: s.key in saved ? saved[s.key] : s.value })) } };
+    return { saved: n, piece: { ...p, title: saved.title || p.title, settings: (decl.length ? decl : doc.settings).map(s => ({ ...s, value: s.key in saved ? saved[s.key] : s.value })) } };
 }
 // The build: in scratch, checked, and only then moved into the project; a failed build leaves the last PDF
 function buildPrint(p) {
@@ -425,14 +441,20 @@ const server = createServer((req, res) => {
         if (m && !pp) return json(res, 404, { error: 'no such piece' });
         if (pp) {
             const rest = m[2] || '';
-            if (req.method === 'GET') {
-                if (path.startsWith('/api/piece/')) return void openPrint(pp).then(p => json(res, 200, p), fail);
+            const cid = (new URL(req.url, 'http://x').searchParams.get('cid') || 'one').replace(/[^\w-]/g, '').slice(0, 40) || 'one';
+            const fail = e => json(res, e.stale ? 409 : 500, { error: e.message, stale: !!e.stale });
+            if (req.method === 'GET' || req.method === 'HEAD') {
+                if (path.startsWith('/api/piece/')) return void openPrint(pp, cid).then(p => json(res, 200, p), fail);
                 if (rest === 'build') return json(res, 200, (({ state, message }) => ({ state, message }))(builds.get(pp.name) || { state: 'none', message: '' }));
                 const page = /^page\/(\d+)$/.exec(rest);
-                if (page) return void ask(pp, { op: 'page', n: +page[1] }).then(r => res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }).end(r.html), fail);
-                const file = /^files\/([\w.-]+)$/.exec(rest);
-                const s = sessions.get(pp.name);
-                if (file && s?.name) return sendFile(req, res, join(homedir(), '.local/share/workbench/print', s.name, 'preview', file[1]));
+                if (page && req.method === 'HEAD') {   // is this editor's session still there?
+                    const live = sessions.get(pp.name + ':' + cid);
+                    return res.writeHead(live && !live.dead && live.opened ? 200 : 409).end();
+                }
+                if (page) return void ask(pp, cid, { op: 'page', n: +page[1] }).then(r => res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }).end(r.html), fail);
+                const file = /^files\/([\w-]+)\/([\w.-]+)$/.exec(rest);
+                const s = file && sessions.get(pp.name + ':' + file[1]);
+                if (s?.dir) return sendFile(req, res, join(s.dir, file[2]));
                 return res.writeHead(404).end();
             }
             if (req.method === 'POST') {
@@ -445,7 +467,7 @@ const server = createServer((req, res) => {
                     try {
                         const data = JSON.parse(body);
                         if (path.startsWith('/api/piece/')) return json(res, 200, savePrint(pp, data.values));
-                        if (['set', 'pin', 'view'].includes(rest)) return void ask(pp, { ...data, op: rest }).then(r => json(res, 200, r), fail);
+                        if (['set', 'pin', 'view'].includes(rest)) return void ask(pp, cid, { ...data, op: rest }).then(r => json(res, 200, r), fail);
                         json(res, 404, { error: 'no such message' });
                     } catch (e) {
                         fail(e);

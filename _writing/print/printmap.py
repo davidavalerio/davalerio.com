@@ -129,12 +129,35 @@ def raster_citation(path):
 # ---------------------------------------------------------------- the map, its pages and frames
 
 CACHE = {}        # stages kept between builds in one process (the workbench session), each under what it read
+_USED = set()
+EXTENT_STAGES = {'frame', 'simple', 'relief', 'guide', 'windows', 'spots', 'avoid'}      # stages that depend on a frame's extent or scale
 
 
 def cached(key, make):
+    _USED.add(key)
     if key not in CACHE:
         CACHE[key] = make()
     return CACHE[key]
+
+
+def trim():
+    """Forget every extent-dependent stage the last build did not use, so a session that is panned and zoomed
+    all day holds one extent's worth; the source data (layers read, lines joined, citations) is kept."""
+    for k in [k for k in CACHE if k[0] in EXTENT_STAGES and k not in _USED]:
+        del CACHE[k]
+    _USED.clear()
+
+
+class Layer(dict):
+    """A drawn layer. Its geometry in the frame (`geoms`) and path data (`d`) are worked out when first asked
+    for, by which time the page has settled the frame's rectangle."""
+    make = None
+
+    def __missing__(self, key):
+        if key in ('geoms', 'd') and self.make:
+            self['geoms'], self['d'] = self.make()
+            return self[key]
+        raise KeyError(key)
 
 
 class Map:
@@ -203,7 +226,7 @@ class Page:
         self.k = max(1.0, min(self.W, self.H) / 792)          # reference points to page points
         self.title, self.subtitle, self.credits = title, subtitle, credits
         self.frames, self.notes = [], []
-        self._legend = None
+        self._legend, self._final = None, False
         self.L = None             # where each piece goes
         self.custom = False
         self.id = f'p{n}'
@@ -243,11 +266,24 @@ class Page:
         lines = self._credit_lines()
         self.foot_h = max(34, len(lines) * self.CREDIT_LEAD + 2)
         fh = Hr - self.FRAME_TOP - self.FOOT_GAP - self.foot_h - self.BOTTOM
+        if fh < 72:
+            raise BuildError('the credits leave no room for the map; shorten them')
         fy2 = self.FRAME_TOP + fh + self.FOOT_GAP
         self.L.update(frame=(x0, self.FRAME_TOP, fw, fh), credits=(x0 + full * 0.37, fy2, full * 0.63 - 40),
                       scale=[('main', x0, fy2, fw * self.BAR_FRACTION, 'mi', 4)], north=('main', x0 + full, fy2))
         if lg and lg['groups']:
             lg['rect'] = (x0 + fw + lg['gap'], self.FRAME_TOP, lg['width'], fh)
+
+    def finalize(self):
+        """Settle the standard layout once every layer is known: the credits, with their sources, are wrapped, the
+        footer takes the height they need, and the frame takes what is left."""
+        if self._final:
+            return
+        self._final = True
+        if self.custom or self.L is None or not self.frames:
+            return
+        self._layout()
+        self.frames[0].set_rect(self.L['frame'])
 
     def frame(self, crs, view, key='main', rect=None, border=True):
         if rect is None:
@@ -391,9 +427,10 @@ class Page:
         L = self.L
         i = self.id
         pt = lambda v: f'{v * k:.2f}pt'
-        self.credit_lines = self._credit_lines() if 'credits' in L else []     # now that every layer is known
-        if not self.custom and max(34, len(self.credit_lines) * self.CREDIT_LEAD + 2) > self.foot_h + 0.01:
-            raise BuildError('the credits need more lines than the page was laid out for; shorten them or the sources')
+        self.sources()                 # every drawn layer must carry a citation, whether or not the credits print them
+        self.finalize()
+        L = self.L
+        self.credit_lines = self._credit_lines() if 'credits' in L else []
         parts = []
         if 'title' in L:
             ts = L.get('title_size', 18)
@@ -459,17 +496,23 @@ class Frame:
         self.crs = pyproj.CRS.from_user_input(crs)
         self.to_ground, self.to_lonlat = cached(('proj', self.crs.to_wkt()), lambda: (
             pyproj.Transformer.from_crs('EPSG:4326', self.crs, always_xy=True), pyproj.Transformer.from_crs(self.crs, 'EPSG:4326', always_xy=True)))
-        cx, cy = self.to_ground.transform(*view['center'])
-        gw = view['width_km'] * 1000.0
+        self.id = f'{page.id}-{key}'
+        self.interactive = any(v is view for v in page.map.values.values())      # its extent is a setting, so it can be dragged
+        self.set_rect(rect)
+        self.layers, self.rules, self.citations, self.notes = [], [], [], []
+        self.label_result = None
+        self.border = True
+
+    def set_rect(self, rect):
+        """Take a rectangle on the page: the view's ground width fills its width, and its height follows."""
+        self.x, self.y, self.w, self.h = rect
+        cx, cy = self.to_ground.transform(*self.view['center'])
+        gw = self.view['width_km'] * 1000.0
         self.s = self.w / gw                                   # reference points per ground unit
         gh = self.h / self.s
         self.gx0, self.gy1 = cx - gw / 2, cy + gh / 2
         self.ground = (self.gx0, self.gy1 - gh, self.gx0 + gw, self.gy1)
-        self.id = f'{page.id}-{key}'
-        self.at = (round(self.gx0, 3), round(self.gy1, 3), round(self.s, 12), round(self.w, 4), round(self.h, 4), page.map.margin)   # what a cached stage depends on
-        self.layers, self.rules, self.citations, self.notes = [], [], [], []
-        self.label_result = None
-        self.border = True
+        self.at = (round(self.gx0, 3), round(self.gy1, 3), round(self.s, 12), round(self.w, 4), round(self.h, 4), self.page.map.margin)   # what a cached stage depends on
 
     # ground <-> frame
     def to_frame(self, xy):
@@ -515,8 +558,9 @@ class Frame:
             return None
         g = self._ground_geoms(source, layer, where)
         invert = more.pop('invert', False)
-        L = {'kind': kind, 'id': id_, 'source': source, 'layer': layer, 'where': where, 'style': style, 'data': g, **more}
-        key = ('frame', str(m.path(source)), layer, where, self.crs.to_wkt(), self.at, m.preview, invert)
+        L = Layer({'kind': kind, 'id': id_, 'source': source, 'layer': layer, 'where': where, 'style': style, 'data': g, **more})
+        drawn = kind not in ('data', 'point')          # a layer drawn as paths keeps its path data; one only labelled does not
+        src = (str(m.path(source)), layer, where, self.crs.to_wkt())
 
         # Simplified once for the scale, to a tolerance too small to see, and before it is cut to the frame: what
         # lies in the frame is then the same whatever ground is kept around it, so the preview's labels are the print's
@@ -530,9 +574,9 @@ class Frame:
             return out
 
         def make():
-            geoms = self._to_frame_geoms(cached(('simple', *key[1:5], round(self.s, 12), invert and self.at), simplify))
-            return geoms, ([] if kind in ('data', 'point') else [self.path_one(x) for x in geoms])
-        L['geoms'], L['d'] = cached(key, make)
+            geoms = self._to_frame_geoms(cached(('simple', *src, round(self.s, 12), invert and self.at), simplify))
+            return geoms, ([self.path_one(x) for x in geoms] if drawn else [])
+        L.make = lambda: cached(('frame', *src, self.at, m.preview, invert, drawn), make)      # worked out once the frame is settled
         self.layers.append(L)
         if cite:
             self.citations.append((f'{Path(source).name}, layer {layer}', cached(('cite', str(m.path(source)), layer), lambda: layer_citation(m.path(source), layer))))
@@ -571,12 +615,16 @@ class Frame:
     def note(self, text, at, style='sans', size=7, color=STONE, rotate=0, spacing=0):
         """Lettering set on the map by hand: text centred at a longitude and latitude, turned counter-clockwise by
         the given degrees and letterspaced. It is drawn as given; labels do not move for it."""
+        self.notes.append((text, at, style, size, color, rotate, spacing))
+
+    def _note_svg(self, text, at, style, size, color, rotate, spacing):
         x, y = self.lonlat_to_frame(*at)
         w = T.width(text, style, size, spacing)
-        self.notes.append(f'<text x="{fmt(x - w / 2)}" y="{fmt(y + size * 0.33)}" transform="rotate({-rotate} {fmt(x)} {fmt(y)})" '
-                          f'style="{T.css(style)};font-size:{size}px;fill:{color};letter-spacing:{spacing}px">{esc(text)}</text>')
+        return (f'<text x="{fmt(x - w / 2)}" y="{fmt(y + size * 0.33)}" transform="rotate({-rotate} {fmt(x)} {fmt(y)})" '
+                f'style="{T.css(style)};font-size:{size}px;fill:{color};letter-spacing:{spacing}px">{esc(text)}</text>')
 
     def place_labels(self):
+        self.page.finalize()
         if self.label_result is None and self.rules and self.page.map.labels:
             import labels
             self.label_result = labels.place(self)
@@ -673,12 +721,12 @@ class Frame:
                 out.append((f'{self.id}-guides', res.guides_svg(f'{self.id}-guides')))
                 out.append((f'{self.id}-ghosts', res.ghosts_svg(f'{self.id}-ghosts')))
         w, h = f'{self.w:.3f}', f'{self.h:.3f}'
-        opening = (f'<svg id="{self.id}" xmlns="http://www.w3.org/2000/svg"{"" if self.view else " data-fixed=1"} style="left:{self.x * k:.2f}pt;top:{self.y * k:.2f}pt;'
+        opening = (f'<svg id="{self.id}" xmlns="http://www.w3.org/2000/svg"{"" if self.interactive else " data-fixed=1"} style="left:{self.x * k:.2f}pt;top:{self.y * k:.2f}pt;'
                    f'width:{self.w * k:.2f}pt;height:{self.h * k:.2f}pt;overflow:visible" viewBox="0 0 {w} {h}">\n'
                    f'<defs><clipPath id="{self.id}-clip"><rect width="{w}" height="{h}"/></clipPath></defs>\n'
                    f'<g clip-path="url(#{self.id}-clip)"><g id="{self.id}-content">')
         if self.notes:
-            out.append((f'{self.id}-notes', f'<g id="{self.id}-notes">' + ''.join(self.notes) + '</g>'))
+            out.append((f'{self.id}-notes', f'<g id="{self.id}-notes">' + ''.join(self._note_svg(*n) for n in self.notes) + '</g>'))
         closing = '</g></g>\n' + (f'<rect width="{w}" height="{h}" fill="none" stroke="{INK}" stroke-width="0.5"/>\n' if self.border else '') + '</svg>'
         return [(None, opening), (f'{self.id}-style', f'<style id="{self.id}-style">{"".join(css)}</style>'), *out, (None, closing)]
 
@@ -737,6 +785,7 @@ class ImageFrame(Frame):
     def __init__(self, page, key, rect, source, citation=True, picture=None):
         self.page, self.key, self.view = page, key, None
         self.picture = picture or (0, 0, rect[2], rect[3])      # where in the frame the picture sits, in its units
+        self.interactive = False
         self.x, self.y, self.w, self.h = rect
         self.crs, self.s = _Plain(), 1.0
         self.id = f'{page.id}-{key}'
@@ -763,8 +812,8 @@ class ImageFrame(Frame):
         import geopandas as gpd
         rows = style.pop('rows', None)
         g = gpd.GeoDataFrame(rows or {}, geometry=list(geoms))
-        L = {'kind': kind, 'id': id, 'source': None, 'layer': id, 'where': None, 'data': g, 'radius': style.pop('radius', 0),
-             'style': {'fill': 'none', 'stroke': 'none', 'weight': 0, **style}}
+        L = Layer({'kind': kind, 'id': id, 'source': None, 'layer': id, 'where': None, 'data': g, 'radius': style.pop('radius', 0),
+                   'style': {'fill': 'none', 'stroke': 'none', 'weight': 0, **style}})
         L['geoms'] = shapely.transform(np.array(g.geometry.values, dtype=object), self.to_frame)
         L['d'] = [] if kind in ('data', 'point') else [self.path_one(x) for x in L['geoms']]
         self.layers.append(L)
