@@ -27,6 +27,7 @@
 import { createServer } from 'node:http';
 import { readFileSync, writeFileSync, readdirSync, existsSync, rmSync } from 'node:fs';
 import { createInterface } from 'node:readline';
+import { createHash } from 'node:crypto';
 import { join, normalize } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { homedir } from 'node:os';
@@ -395,26 +396,35 @@ function heard(s) {
     clearTimeout(s.idle);
     s.idle = setTimeout(() => stop(s), QUIET);
 }
+// One tab edits a print map at a time. The first to open it is its editor; another tab opening it meanwhile is
+// view-only until it takes over, at which the first becomes view-only (it learns at its next word to the server,
+// within ten seconds, and its unsaved changes are discarded). A tab is known by the first part of its editor id.
+const editors = new Map();    // piece name -> the tab editing it
+const tab = cid => cid.split('-')[0];
+function role(p, cid) {
+    const ed = editors.get(p.name);
+    const live = ed && [...sessions.entries()].some(([id, x]) => !x.dead && id.startsWith(p.name + ':' + ed + '-'));
+    if (!ed || !live || ed === tab(cid)) editors.set(p.name, tab(cid));
+    return editors.get(p.name) === tab(cid) ? 'editor' : 'viewer';
+}
+const stamp = p => createHash('sha1').update(readFileSync(join(config.gis, p.folder, 'Scripts', 'settings.json'))).digest('hex');
 async function openPrint(p, cid) {
+    const mine = role(p, cid);
+    const mark = stamp(p);       // the settings file as this opening read it; a save is refused if it has changed since
     const r = await ask(p, cid, { op: 'open' });
     const s = sessions.get(p.name + ':' + cid);
-    Object.assign(s, { opened: true, dir: r.dir, settings: r.settings });
+    Object.assign(s, { opened: true, dir: r.dir, settings: r.settings, rev: r.rev });
     declared.set(p.name, r.settings);
-    return { ...p, title: r.settings.find(x => x.key === 'title')?.value || p.title, settings: r.settings, pages: r.pages, notes: r.notes, building: builds.get(p.name) || null };
+    return { ...p, title: r.settings.find(x => x.key === 'title')?.value || p.title, settings: r.settings, pages: r.pages, notes: r.notes, rev: r.rev, role: mine, stamp: mark, building: builds.get(p.name) || null };
 }
 const declared = new Map();   // piece name -> the settings its map.py declares, as last opened
-// Saving writes the changed values into the project's settings.json (a setting the map has since declared
-// joins the file with it), then rebuilds the PDF in the background
-// Pins are merged one by one: `base` is the pin list this editor last knew as saved, so what it removed and what
-// it added are told apart from what another tab saved meanwhile, and neither tab's pins are lost.
-function mergePins(disk, base, mine) {
-    const key = x => JSON.stringify(x), had = new Set(base.map(key)), now = new Set(mine.map(key));
-    const kept = disk.filter(x => !(had.has(key(x)) && !now.has(key(x))));          // on disk, and not removed here
-    const there = new Set(kept.map(key));
-    return [...kept, ...mine.filter(x => !had.has(key(x)) && !there.has(key(x)))];   // and what was added here
-}
-function savePrint(p, values, base = {}) {
+// Saving writes the editor's changed values into the project's settings.json (a setting the map has since
+// declared joins the file with it), then rebuilds the PDF in the background. Nothing is merged: if the file is
+// not as this editor read it (another workbench, a hand edit), the save is refused and the editor offered a reload.
+const CONFLICT = Object.assign(new Error('the settings file has changed on disk since this map was opened here'), { conflict: true });
+function savePrint(p, values, mark) {
     const file = join(config.gis, p.folder, 'Scripts', 'settings.json');
+    if (stamp(p) !== mark) throw CONFLICT;
     const doc = JSON.parse(readFileSync(file, 'utf8'));
     const decl = declared.get(p.name) || [];
     let n = 0;
@@ -425,16 +435,15 @@ function savePrint(p, values, base = {}) {
             if (!d) continue;
             doc.settings.push((s = { ...d }));
         }
-        const next = s.type === 'labels' && Array.isArray(base[k]) ? mergePins(s.value || [], base[k], v || []) : v;
-        if (JSON.stringify(s.value) !== JSON.stringify(next)) {
-            s.value = next;
+        if (JSON.stringify(s.value) !== JSON.stringify(v)) {
+            s.value = v;
             n++;
         }
     }
     if (n) writeFileSync(file, JSON.stringify(doc, null, 1) + '\n');
     buildPrint(p);
     const saved = Object.fromEntries(doc.settings.map(s => [s.key, s.value]));
-    return { saved: n, piece: { ...p, title: saved.title || p.title, settings: (decl.length ? decl : doc.settings).map(s => ({ ...s, value: s.key in saved ? saved[s.key] : s.value })) } };
+    return { saved: n, stamp: stamp(p), piece: { ...p, title: saved.title || p.title, settings: (decl.length ? decl : doc.settings).map(s => ({ ...s, value: s.key in saved ? saved[s.key] : s.value })) } };
 }
 // The build: in scratch, checked, and only then moved into the project; a failed build leaves the last PDF
 function buildPrint(p) {
@@ -481,16 +490,21 @@ const server = createServer((req, res) => {
         if (pp) {
             const rest = m[2] || '';
             const cid = (new URL(req.url, 'http://x').searchParams.get('cid') || 'one').replace(/[^\w-]/g, '').slice(0, 40) || 'one';
-            const fail = e => json(res, e.stale ? 409 : 500, { error: e.message, stale: !!e.stale });
+            const fail = e => json(res, e.stale || e.conflict ? 409 : 500, { error: e.message, stale: !!e.stale, conflict: !!e.conflict });
+            const live = sessions.get(pp.name + ':' + cid);
+            const editing = () => editors.get(pp.name) === tab(cid);
             if (req.method === 'GET' || req.method === 'HEAD') {
                 if (path.startsWith('/api/piece/')) return void openPrint(pp, cid).then(p => json(res, 200, p), fail);
                 if (rest === 'build') return json(res, 200, (({ state, message }) => ({ state, message }))(builds.get(pp.name) || { state: 'none', message: '' }));
                 const page = /^page\/(\d+)$/.exec(rest);
-                if (page && req.method === 'HEAD') {   // is this editor's session still there?
-                    const live = sessions.get(pp.name + ':' + cid);
-                    return res.writeHead(live && !live.dead && live.opened ? 200 : 409).end();
+                if (page && req.method === 'HEAD')   // is this tab's session still there, and which preview does it hold?
+                    return res.writeHead(live && !live.dead && live.opened ? 200 : 409, { 'X-Preview-Revision': String(live?.rev ?? '') }).end();
+                if (page) {
+                    const rev = +new URL(req.url, 'http://x').searchParams.get('rev');
+                    return void ask(pp, cid, { op: 'page', n: +page[1], rev }).then(r => r.outdated
+                        ? json(res, 409, { outdated: true, rev: r.rev })
+                        : res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }).end(r.html), fail);
                 }
-                if (page) return void ask(pp, cid, { op: 'page', n: +page[1] }).then(r => res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }).end(r.html), fail);
                 const file = /^files\/([\w-]+)\/([\w.-]+)$/.exec(rest);
                 const s = file && sessions.get(pp.name + ':' + file[1]);
                 if (s?.dir) return sendFile(req, res, join(s.dir, file[2]));
@@ -505,11 +519,14 @@ const server = createServer((req, res) => {
                 req.on('end', () => {
                     try {
                         const data = JSON.parse(body);
-                        if (path.startsWith('/api/piece/')) return json(res, 200, savePrint(pp, data.values, data.base));
-                        const mine = sessions.get(pp.name + ':' + cid);
-                        if (rest === 'ping') return mine && !mine.dead ? (heard(mine), json(res, 200, { ok: true })) : json(res, 409, { stale: true });
+                        const mine = live;
+                        if (rest === 'ping') return mine && !mine.dead ? (heard(mine), json(res, 200, { ok: true, role: editing() ? 'editor' : 'viewer' })) : json(res, 409, { stale: true });
                         if (rest === 'close') return mine && stop(mine), json(res, 200, { ok: true });
-                        if (['set', 'pin', 'view'].includes(rest)) return void ask(pp, cid, { ...data, op: rest }).then(r => json(res, 200, r), fail);
+                        if (rest === 'take') return editors.set(pp.name, tab(cid)), json(res, 200, { ok: true });
+                        // only the tab editing the map may change or save it
+                        if (!editing()) return json(res, 403, { error: 'this map is being edited in another tab', viewer: true });
+                        if (path.startsWith('/api/piece/')) return json(res, 200, savePrint(pp, data.values, data.stamp));
+                        if (['set', 'pin', 'view'].includes(rest)) return void ask(pp, cid, { ...data, op: rest }).then(r => (r.rev && mine && (mine.rev = r.rev), json(res, 200, r)), fail);
                         json(res, 404, { error: 'no such message' });
                     } catch (e) {
                         fail(e);

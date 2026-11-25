@@ -9,7 +9,7 @@ const $ = id => document.getElementById(id);
 const stage = $('stage'), panel = $('panel'), status = $('status'), saveBtn = $('save'), revertBtn = $('revert'), select = $('piece');
 let gui = null, current = null, saved = null, values = null, adapter = null, generation = 0, host = stage;
 const EDITOR = crypto.randomUUID().slice(0, 8);   // this tab: a print map's session and unsaved preview are its own
-let editorId = EDITOR;
+let editorId = EDITOR, notice = '';   // a notice to show once the piece has opened again
 
 const say = (text, cls = '') => {
     status.textContent = text;
@@ -132,6 +132,16 @@ async function printAdapter(piece) {
     const isPaint = k => kinds[k]?.effect === 'paint';
     const labelsKey = piece.settings.find(s => s.type === 'labels')?.key;
     let alive = true;   // false once another piece is opened: whatever is still on its way back is then dropped
+    const viewOnly = piece.role === 'viewer';   // another tab is editing this map
+    let rev = piece.rev, locked = viewOnly;      // the preview this page shows; whether its page may be edited just now
+    // This tab has stopped being the map's editor (another took over): it says so and opens the map again, view-only
+    let demoted = false;
+    function demote() {
+        if (demoted || !alive) return;
+        demoted = true;
+        notice = 'Another tab has taken over this map. The unsaved changes in this tab were discarded.';
+        open(current.name);
+    }
     const send = async (what, body) => {
         const res = await fetch(api + what + '?cid=' + CID, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         return res.json();
@@ -141,19 +151,37 @@ async function printAdapter(piece) {
     const unsaved = () => Object.fromEntries(Object.keys(values).filter(k => !isPaint(k) && JSON.stringify(values[k]) !== JSON.stringify(saved[k])).map(k => [k, values[k]]));
     async function revive() {
         const res = await fetch('/api/piece/' + name + '?cid=' + CID);
-        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'the map could not be opened again');
+        const again = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(again.error || 'the map could not be opened again');
+        if (again.role === 'viewer' && !viewOnly) return demote();
+        rev = again.rev;
         const edits = unsaved();
         if (Object.keys(edits).length) {
-            const r = await send('set', { values: edits });
+            const r = await send('set', { values: edits, rev });
             if (r.error) throw new Error(r.error);
+            rev = r.rev;
         }
     }
+    // Every message names the preview it was made on (`body.rev`, or the current one). One made on a preview since
+    // replaced is not acted on: a change of settings is sent again on the current preview; a label or extent edit
+    // is dropped, the page redrawn, and the reason said.
     const post = async (what, body) => {
-        let r = await send(what, body);
+        const made = body.rev;
+        let r = await send(what, { ...body, rev: made ?? rev });
         if (r.stale) {
             await revive();
             await load();
-            r = await send(what, body);
+            if (made !== undefined) throw new Error('the map had to be opened again, so that change was not applied; the page shows it as it stands');
+            r = await send(what, { ...body, rev });
+        }
+        if (r.viewer) return demote(), new Promise(() => {});
+        if (r.outdated) {
+            rev = r.rev;
+            if (made === undefined) r = await send(what, { ...body, rev });
+            else {
+                await load();
+                throw new Error('the page had changed since that was done, so it was not applied; the page shows it as it stands');
+            }
         }
         if (r.error) throw new Error(r.error);
         return r;
@@ -208,6 +236,16 @@ async function printAdapter(piece) {
         tool('−', 'Smaller', () => ((zoom = Math.max(0.1, scale / 1.25)), layout())),
         tool('+', 'Larger', () => ((zoom = Math.min(8, scale * 1.25)), layout())), zoomLabel, pagePick);
     addEventListener('resize', layout);
+    if (viewOnly) {
+        const note = document.createElement('span');
+        note.className = 'wb-print-viewonly';
+        note.textContent = 'This map is being edited in another tab. This tab is view-only.';
+        bar.append(note, tool('Take Over', 'Edit the map here; the other tab becomes view-only and its unsaved changes are discarded', async () => {
+            await send('take', {});
+            open(current.name);
+        }));
+        frame.style.pointerEvents = 'none';
+    }
 
     // --- paint: a variable on the page
     const cssName = k => '--' + k.replace(/\./g, '-');
@@ -217,7 +255,7 @@ async function printAdapter(piece) {
     const rendered = {};   // the session's latest drawing of each text box, shown again once the box is left
     function dress() {
         doc.querySelectorAll('[data-setting]').forEach(el => {
-            el.contentEditable = 'plaintext-only';
+            el.contentEditable = locked ? 'false' : 'plaintext-only';
             el.spellcheck = true;
             rendered[el.id] ??= el.outerHTML;
         });
@@ -242,6 +280,7 @@ async function printAdapter(piece) {
     // --- the session's answer: changed pieces swapped in by their ids, or the page loaded again
     async function take(r, what, t0) {
         if (!alive) return;
+        rev = r.rev;
         pages = r.pages;
         if (!pages.some(p => p.n === pageN)) pageN = 1;
         drawBar();
@@ -282,9 +321,9 @@ async function printAdapter(piece) {
         sent[key] = structuredClone(value);
         changed();
     }
-    const pin = body => queue(async () => {
+    const pin = (body, made = rev) => queue(async () => {      // `made`: the preview the label was seen on when it was dragged
         const t0 = performance.now();
-        const r = await post('pin', body);
+        const r = await post('pin', { ...body, rev: made });
         await take(r, 'pin', t0);
         adopt(labelsKey, r.labels);
     });
@@ -380,7 +419,7 @@ async function printAdapter(piece) {
             keys(e);
         });
         doc.addEventListener('pointerdown', e => {
-            if (e.button !== 0 || edit) return;
+            if (e.button !== 0 || edit || locked) return;
             const label = e.target.closest?.('text[data-layer]'), svg = e.target.closest?.('svg[id]');
             if (label) {
                 const s = label.ownerSVGElement;
@@ -431,12 +470,12 @@ async function printAdapter(piece) {
         doc.addEventListener('pointercancel', up);
         doc.addEventListener('dblclick', e => {
             const label = e.target.closest?.('text[data-layer]');
-            if (label) pin({ action: 'reset', label: label.id });
+            if (label && !locked) pin({ action: 'reset', label: label.id });
         });
         // a pinch, or the wheel with Control or Command held, zooms the frame's extent about the pointer
         doc.addEventListener('wheel', e => {
             const svg = e.target.closest?.('svg[id]'), content = svg && doc.getElementById(svg.id + '-content');
-            if (!content || svg.dataset.fixed || !(e.ctrlKey || e.metaKey)) return;
+            if (!content || locked || svg.dataset.fixed || !(e.ctrlKey || e.metaKey)) return;
             e.preventDefault();
             const p = svgPoint(svg, e);
             wheel ||= { svg, ax: p.x, ay: p.y, zoom: 1 };
@@ -454,11 +493,11 @@ async function printAdapter(piece) {
         wheel = null;
         moveView(w.svg, { zoom: w.zoom, ax: w.ax, ay: w.ay });
     }
-    const moveView = (svg, how) => queue(async () => {
+    const moveView = (svg, how, made = rev) => queue(async () => {
         const t0 = performance.now();
         let r;
         try {
-            r = await post('view', { frame: svg.id, ...how });
+            r = await post('view', { frame: svg.id, ...how, rev: made });
         } catch (e) {   // an extent the map cannot take: the frame goes back to where it was
             doc.getElementById(svg.id + '-content')?.removeAttribute('transform');
             throw e;
@@ -468,7 +507,7 @@ async function printAdapter(piece) {
     });
     // Delete removes the selected label; Return rewords it (Shift-Return for a line break in a name that is not on a line)
     function keys(e) {
-        if (!sel) return;
+        if (!sel || locked) return;
         if (e.key === 'Delete' || e.key === 'Backspace') {
             e.preventDefault();
             pin({ action: 'delete', label: sel.id });
@@ -508,8 +547,13 @@ async function printAdapter(piece) {
     let ghosts = false;
     async function load() {
         const t0 = performance.now();
-        const url = '/print/' + name + '/page/' + pageN + '?cid=' + CID;
-        if ((await fetch(url, { method: 'HEAD' })).status === 409) await revive();   // the session was stopped while the map sat open
+        let head = await fetch('/print/' + name + '/page/' + pageN + '?cid=' + CID, { method: 'HEAD' });
+        if (head.status === 409) {   // the session was stopped while the map sat open
+            await revive();
+            head = await fetch('/print/' + name + '/page/' + pageN + '?cid=' + CID, { method: 'HEAD' });
+        }
+        rev = +head.headers.get('X-Preview-Revision') || rev;
+        const url = '/print/' + name + '/page/' + pageN + '?cid=' + CID + '&rev=' + rev;
         return new Promise(ok => {
             frame.addEventListener('load', async () => {
                 doc = frame.contentDocument;
@@ -530,7 +574,11 @@ async function printAdapter(piece) {
     showNotes(piece.notes);
     let building = 0;
     // the session lives as long as this editor: word every half minute keeps it, and it is told when the editor goes
-    const beat = setInterval(() => fetch(api + 'ping?cid=' + CID, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => {}), 30000);
+    // (the answer also says whether this tab is still the map's editor; if another has taken over, it learns here)
+    const beat = setInterval(async () => {
+        const r = await send('ping', {}).catch(() => ({}));
+        if (r.role === 'viewer' && !viewOnly) demote();
+    }, 10000);
     const bye = () => navigator.sendBeacon(api + 'close?cid=' + CID, new Blob(['{}'], { type: 'application/json' }));
     addEventListener('pagehide', bye);
     return {
@@ -573,7 +621,14 @@ async function printAdapter(piece) {
             if (timer) clearTimeout(timer), (timer = 0), sync();
             await busy;
         },
-        labelsKey,
+        viewOnly,
+        demote,
+        // the page itself, its labels, extent and text, is shut while a save runs, and for good in a view-only tab
+        lock(on) {
+            locked = on || viewOnly;
+            frame.style.pointerEvents = locked ? 'none' : '';
+            if (doc) dress();
+        },
         cleanup() {
             alive = false;
             clearInterval(beat);
@@ -1006,37 +1061,47 @@ async function open(name) {
     build(current);
     history.replaceState(null, '', '?piece=' + name);
     changed();
+    if (adapter.viewOnly) {      // another tab is editing this map: nothing here can be changed
+        gui.controllersRecursive().forEach(c => c.disable());
+        if (legendEl) legendEl.inert = true;
+    }
+    if (notice) say(notice, 'error'), (notice = '');
 }
 
 saveBtn.addEventListener('click', async () => {
-    saveBtn.disabled = true;
-    await adapter.settle?.();   // a label or extent change still being drawn is part of what is saved
-    // Only what this page changed is sent, so a save from another open workbench is not undone; a print map's
-    // pins go with the list this page last knew as saved, to be merged pin by pin with what is saved now
-    const edits = Object.fromEntries(Object.keys(values).filter(k => JSON.stringify(values[k]) !== JSON.stringify(saved[k])).map(k => [k, values[k]]));
-    const base = adapter.labelsKey && adapter.labelsKey in edits ? { [adapter.labelsKey]: saved[adapter.labelsKey] } : undefined;
+    // From the click until the save's answer has been applied nothing can be edited, or the piece switched: the
+    // panel, the legend, the text, and (a print map) the page itself with its labels and extent
     const controls = gui.controllersRecursive();
     const lock = on => {
         if (legendEl) legendEl.inert = on;
-        controls.forEach(c => c.enable(!on));   // nothing can be edited, or the piece switched, while the save is under way
+        controls.forEach(c => c.enable(!on));
         Object.values(textEls).forEach(el => (el.contentEditable = on ? 'false' : 'plaintext-only'));
+        adapter.lock?.(on);
         select.disabled = revertBtn.disabled = saveBtn.disabled = on;
     };
     lock(true);
     say('Saving…');
+    await adapter.settle?.();   // a label, a zoom or a control still being drawn is finished first, and is part of what is saved
+    // Only what this page changed is sent, so a save from another open workbench is not undone
+    const edits = Object.fromEntries(Object.keys(values).filter(k => JSON.stringify(values[k]) !== JSON.stringify(saved[k])).map(k => [k, values[k]]));
     let res = null, body;
     try {
-        res = await fetch('/api/piece/' + current.name, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ values: edits, base }) });
+        res = await fetch('/api/piece/' + current.name + '?cid=' + editorId, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ values: edits, stamp: current.stamp }) });
         body = await res.json();
     } catch (e) {
         body = { error: e.message };
     }
-    lock(false);
     if (!res?.ok) {
+        lock(false);
         changed();
-        return say('Not saved: ' + body.error, 'error');
+        if (body.viewer) return adapter.demote?.();
+        say('Not saved: ' + body.error, 'error');
+        // a print map's settings file changed under this editor: nothing is merged; the map can be read again from disk
+        if (body.conflict && confirm('Not saved: ' + body.error + '.\n\nRead the map again from disk? The unsaved changes here will be lost.')) open(current.name);
+        return;
     }
     saved = Object.fromEntries(body.piece.settings.map(s => [s.key, s.value]));
+    if (body.stamp) current.stamp = body.stamp;
     // Anything saved elsewhere since this page opened comes into the controls and the preview too
     for (const [k, v] of Object.entries(saved))
         if (JSON.stringify(values[k]) !== JSON.stringify(v)) {
@@ -1048,6 +1113,7 @@ saveBtn.addEventListener('click', async () => {
     const title = saved['text.title'] ?? saved.title ?? current.title;
     select.selectedOptions[0].text = title;
     gui.title(title);
+    lock(false);
     changed();
     if (adapter.afterSave) adapter.afterSave();
     else say(current.kind === 'model' ? 'Saved. The next rebuild uses these settings.' : 'Saved. The site changes when the map is deployed.');

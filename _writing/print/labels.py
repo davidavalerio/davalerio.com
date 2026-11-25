@@ -119,7 +119,7 @@ class Result:
         no such label, and is refused, where a number would have meant another label."""
         eid = f'{gid}-{slug(l.layer)}-{slug(l.key)}'
         if l.glyphs is not None and l.line is not None:
-            eid += f'-{l.line}-{l.along_i}'
+            eid += f'-{l.line}-{round(l.along_i * STEP / self.frame.s)}'      # which line, and how many ground units along it
         elif l.kind == 'free':
             eid += f'-free-{round(l.centre[0])}-{round(l.centre[1])}'
         n = 2

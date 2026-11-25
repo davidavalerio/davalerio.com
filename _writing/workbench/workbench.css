@@ -300,6 +300,11 @@ li:hover > .wb-tool,
     cursor: pointer;
 }
 
+.wb-print-viewonly {
+    margin-left: 0.6rem;
+    color: var(--wb-error);
+}
+
 .wb-print-view {
     overflow: auto;
     max-height: calc(100vh - 140px);

@@ -6,6 +6,10 @@ stages in memory and answers over its pipes, one JSON message a line.
 Each open editor has a session of its own, with its own preview folder, so two tabs on one map do not share
 unsaved changes.
 
+Every preview the session builds has a number (`rev`), returned with it. A page, set, pin or view message says
+which preview it was made on, and one made on a preview since replaced is not acted on: it is answered
+{"outdated": true, "rev": the current number}, and the page redraws from the current preview.
+
 Messages in ({"id": n, "op": ...}) and what comes back ({"id": n, ...} or {"id": n, "error": "..."}):
   open                     reads map.py and settings.json afresh; returns the declared settings and the pages
   page {n}                 the page's whole HTML, as last built
@@ -36,6 +40,7 @@ class Session:
         self.mod = None
         self.values = {}
         self.pages = {}           # n -> {'head', 'parts', 'page'}
+        self.rev = 0              # the number of the preview now held
         self.map = None
 
     def read(self):
@@ -91,6 +96,8 @@ class Session:
                 before = dict(p for p in old[1] if p[0])
                 out['fragments'] += [{'page': n, 'id': i, 'html': h} for i, h in parts if i and before.get(i) != h]
         self.pages = built
+        self.rev += 1
+        out['rev'] = self.rev
         if out['reload']:
             out['fragments'] = []
         out.update(pages=self.page_list(), notes=self.notes(), ms=round((time.time() - t) * 1000))
@@ -222,7 +229,9 @@ class Session:
             settings = self.read()
             self.pages = {}
             out = self.apply()
-            return {'name': self.mod.NAME, 'dir': str(self.cache), 'settings': settings, 'pages': out['pages'], 'notes': out['notes'], 'ms': out['ms']}
+            return {'name': self.mod.NAME, 'dir': str(self.cache), 'settings': settings, 'pages': out['pages'], 'notes': out['notes'], 'ms': out['ms'], 'rev': self.rev}
+        if msg.get('rev') != self.rev:               # made on a preview that has since been replaced
+            return {'outdated': True, 'rev': self.rev}
         if op == 'page':
             head, parts, _ = self.pages[int(msg['n'])]
             return {'html': head + '\n'.join(h for _, h in parts) + '\n</body></html>\n'}

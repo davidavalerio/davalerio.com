@@ -96,10 +96,11 @@ def more(tmp, proj):
     assert len(ids) >= 2
     for i in ids[:2]:
         g = s.pages[1][2].frames[0]; l = g.label_result.ids[i]
-        r = s.handle({'op': 'pin', 'action': 'move', 'label': i, 'x': l.anchor[0] + 25, 'y': l.anchor[1]})
+        r = s.handle({'op': 'pin', 'action': 'move', 'label': i, 'x': l.anchor[0] + 25, 'y': l.anchor[1], 'rev': s.rev})
     pinned = sorted(i for i, l in s.pages[1][2].frames[0].label_result.ids.items() if l.pinned)
     assert len(pinned) == 2 and len(r['labels']) == 4, (pinned, r['labels'])
-    r = s.handle({'op': 'pin', 'action': 'reset', 'label': pinned[0]})
+    assert s.handle({'op': 'pin', 'action': 'reset', 'label': pinned[0], 'rev': s.rev - 1}).get('outdated'), 'an edit made on an older preview was acted on'
+    r = s.handle({'op': 'pin', 'action': 'reset', 'label': pinned[0], 'rev': s.rev})
     assert len(r['labels']) == 2 and sum(l.pinned for l in s.pages[1][2].frames[0].label_result.ids.values()) == 1
     print('double-click resets the one label: the other pinned label of its name stays')
     s.values[s.labels_key] = s.values[s.labels_key] + [{'page': 1, 'frame': 'main', 'layer': 'no-such-rule', 'key': 'x', 'pin': 'place', 'at': [-103.6, 48.15]}]
@@ -111,7 +112,7 @@ def more(tmp, proj):
     v = copy.deepcopy(s.values['view']); sizes = []
     for i in range(30):
         v['center'][0] += 0.004
-        s.handle({'op': 'set', 'values': {'view': copy.deepcopy(v)}})
+        s.handle({'op': 'set', 'values': {'view': copy.deepcopy(v)}, 'rev': s.rev})
         sizes.append(len(pm.CACHE))
     assert max(sizes[5:]) == min(sizes[5:]), sizes
     print(f'thirty pans: the cache holds {sizes[-1]} stages throughout; preview pictures kept: {len(list(s.cache.iterdir()))}')
