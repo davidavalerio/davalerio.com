@@ -32,6 +32,11 @@ body {
     font: 15px/1.4 'Source Serif 4', Georgia, serif;
 }
 
+.wb-bar select {
+    min-width: 0;
+    max-width: 100%;
+}
+
 .wb-bar select,
 .wb-bar button {
     font: inherit;

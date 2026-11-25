@@ -132,13 +132,26 @@ function textBox(tag, key, cls, placeholder, plain = false) {
     // While being edited the box shows its markdown, line breaks and all; once left, it shows it rendered
     el.addEventListener('focus', () => (el.textContent = values[key] ?? ''));
     el.addEventListener('blur', () => render(el, values[key]));
-    el.addEventListener('keydown', e => (e.key === 'Escape' || (plain && e.key === 'Enter')) && (e.preventDefault(), el.blur()));
+    el.addEventListener('keydown', e => {
+        if (e.key === 'Escape' || (plain && e.key === 'Enter')) return e.preventDefault(), el.blur();
+        if (!plain && (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') e.preventDefault(), link();
+    });
     el.addEventListener('input', () => {
         values[key] = plain ? el.textContent.replace(/\s+/g, ' ').trim() : el.innerText.replace(/[ \t]+\n/g, '\n').trim();
         changed();
     });
     textEls[key] = el;
     return el;
+}
+
+// Command-K makes the selected words a markdown link, [words](), with the cursor where the address goes
+// (or in the brackets when nothing is selected), as Obsidian and VS Code do; a selection across paragraphs
+// cannot be one link, so it is left as it is
+function link() {
+    const sel = getSelection(), words = sel.toString();
+    if (/\n\s*\n/.test(words)) return;
+    document.execCommand('insertText', false, '[' + words + ']()');   // through the editor, so Undo takes it back
+    for (let i = 0; i < (words ? 1 : 3); i++) sel.modify('move', 'backward', 'character');
 }
 
 // Markdown rendered by build.py, as the map's page renders it; only the box's latest render is shown
