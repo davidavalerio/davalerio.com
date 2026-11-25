@@ -1146,6 +1146,7 @@ saveBtn.addEventListener('click', async () => {
         Object.values(textEls).forEach(el => (el.contentEditable = on ? 'false' : 'plaintext-only'));
         adapter.lock?.(on);
         select.disabled = revertBtn.disabled = saveBtn.disabled = on;
+        forms.querySelectorAll('button').forEach(b => (b.disabled = on));
     };
     const mine = generation, editor = adapter;   // this editor: an answer that comes back to another is not applied
     saving = true;
@@ -1198,8 +1199,19 @@ saveBtn.addEventListener('click', async () => {
     lock(false);
     changed();
     if (adapter.afterSave) adapter.afterSave();
-    else say((current.kind === 'model' ? 'Saved. The next rebuild uses these settings.' : 'Saved. The site changes when the map is deployed.')
-        + (body.prints?.length ? ' The print PDF of ' + body.prints.join(', ') + ' is being rebuilt.' : ''));
+    else {
+        const done = current.kind === 'model' ? 'Saved. The next rebuild uses these settings.' : 'Saved. The site changes when the map is deployed.';
+        say(done + (body.prints?.length ? ' The print PDF of ' + body.prints.join(', ') + ' is being rebuilt.' : ''));
+        if (body.prints?.length && current.print) {   // this map's print PDF: how its rebuild went
+            const piece = current, poll = async () => {
+                if (current !== piece) return;
+                const b = await (await fetch('/api/print/' + piece.print + '/build')).json().catch(() => ({ state: 'failed', message: 'The print build could not be checked.' }));
+                if (b.state === 'building') return setTimeout(poll, 1000);
+                if (current === piece && same()) say(done + (b.state === 'done' ? ' Print: ' + b.message : ' ' + b.message), b.state === 'done' ? '' : 'error');
+            };
+            setTimeout(poll, 1000);
+        }
+    }
 });
 
 // A map and its print form share one entry in the list; the switch beside it turns between them
@@ -1221,7 +1233,7 @@ forms.addEventListener('click', e => {
     const b = e.target.closest('button');
     const web = b && byName[entryOf(current.name)];
     const to = b && (b.dataset.form === 'print' ? web.print : web.name);
-    if (to && to !== current.name && leave()) open(to);
+    if (to && (to !== current.name || !adapter) && leave()) open(to);   // (a form that failed to open can be opened again)
 });
 addEventListener('beforeunload', e => {
     if (values && !same()) e.preventDefault();

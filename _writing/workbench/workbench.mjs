@@ -369,14 +369,15 @@ const builds = new Map();     // piece name -> { state: 'building' | 'done' | 'f
 // minute), and no more than four run at once, the one longest unheard stopped to make room. An editor that finds
 // its session gone opens another and gives it back its unsaved values (the page's own doing, on hearing `stale`).
 const QUIET = 2 * 60 * 1000, MOST = 4;
+let synced = false;   // the engine's environment matches its lockfile
 function session(p, cid) {
     const id = p.name + ':' + cid;
     let s = sessions.get(id);
     if (s && !s.dead) return s;
     // the engine's own Python, started directly so that stopping the session stops Python itself (uv makes the
-    // environment on first use)
+    // environment on first use, and brings it in line with the lockfile once each time the workbench starts)
     const python = join(PRINT, '.venv', 'bin', 'python');
-    if (!existsSync(python)) spawnSync('uv', ['sync', '-q', '--project', PRINT], { cwd: ROOT });
+    if (!synced) synced = spawnSync('uv', ['sync', '-q', '--project', PRINT], { cwd: ROOT }).status === 0;
     const proc = spawn(python, [join(PRINT, 'session.py'), join(config.gis, p.folder), '/print-fonts/', '/print/' + p.name + '/files/' + cid + '/', cid],
         { cwd: ROOT, stdio: ['pipe', 'pipe', 'inherit'] });
     s = { proc, waiting: new Map(), next: 1, dead: false, opened: false, dir: null, settings: null, idle: null, heard: Date.now() };
