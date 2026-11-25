@@ -304,7 +304,8 @@ class Page:
         return f
 
     def sources(self):
-        """The printed credit of every layer drawn on this page, in drawing order, each once."""
+        """The printed credit of every layer drawn on this page, in drawing order, each once: the first line of its
+        citation (a picture made from several sources carries a citation for each, a blank line between)."""
         out = []
         for f in self.frames:
             for name, cite in f.citations:
@@ -312,9 +313,10 @@ class Page:
                     raise BuildError(f'{name} has no citation. A drawn layer must carry one: a GeoPackage layer in its '
                                      'description (gpkg_contents.description), a raster in its image description or a '
                                      '.citation.txt beside it.')
-                line = cite.splitlines()[0].strip()
-                if line not in out:
-                    out.append(line)
+                for block in cite.split('\n\n'):       # one citation, or several set apart by a blank line: each one's first line prints
+                    line = block.strip().splitlines()[0].strip() if block.strip() else ''
+                    if line and line not in out:
+                        out.append(line)
         return out
 
     def _credit_text(self, with_sources=True):
