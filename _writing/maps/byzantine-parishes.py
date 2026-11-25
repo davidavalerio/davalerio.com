@@ -8,7 +8,8 @@ Run on the mini from the repo root with QGIS's Python and its data paths:
 
 Reads the Byzantine Catholic Parishes project in Drive without touching it and
 writes vectors.pmtiles into maps/byzantine-parishes/: the parishes with what a
-reader sees on clicking one, the state boundaries, and the USGS coal fields of
+reader sees on clicking one, the state boundaries (the Census Bureau's 2025
+cartographic boundary file of the states, 1:500,000), and the USGS coal fields of
 the conterminous United States by rank (East 2013, Open-File Report 2012-1205,
 kept in the project as Coal Fields.gpkg).
 """
