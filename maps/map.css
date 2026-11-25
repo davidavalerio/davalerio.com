@@ -282,6 +282,29 @@ body.wide main {
     color: var(--stone);
 }
 
+/* A map's note and credits are written in markdown: paragraphs, line breaks, lists and links */
+div.subtitle > *,
+div.map-credits > * {
+    margin: 0;
+}
+
+div.subtitle > * + *,
+div.map-credits > * + * {
+    margin-top: 0.5em;
+}
+
+div.subtitle ul,
+div.subtitle ol,
+div.map-credits ul,
+div.map-credits ol {
+    padding-left: 1.4em;
+}
+
+div.subtitle li + li,
+div.map-credits li + li {
+    margin-top: 0.2em;
+}
+
 .showpiece img {
     display: block;
     max-width: 100%;

@@ -128,13 +128,31 @@ function textBox(tag, key, cls, placeholder) {
     el.spellcheck = true;
     el.dataset.key = key;
     el.dataset.placeholder = placeholder;
-    el.addEventListener('keydown', e => e.key === 'Enter' && (e.preventDefault(), el.blur()));
+    // While being edited the box shows its markdown, line breaks and all; once left, it shows it rendered
+    el.addEventListener('focus', () => (el.textContent = values[key] ?? ''));
+    el.addEventListener('blur', () => render(el, values[key]));
+    el.addEventListener('keydown', e => e.key === 'Escape' && el.blur());
     el.addEventListener('input', () => {
-        values[key] = el.textContent.replace(/\s+/g, ' ').trim();
+        values[key] = el.innerText.replace(/[ \t]+\n/g, '\n').trim();
         changed();
     });
     textEls[key] = el;
     return el;
+}
+
+// Markdown rendered by build.py, as the map's page renders it
+async function render(el, text) {
+    if (!text) return void (el.textContent = '');
+    try {
+        const res = await fetch('/api/render', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
+        const { html, error } = await res.json();
+        if (error) throw new Error(error);
+        // An editable box keeps every line break it holds, so the HTML's own (between its tags) are taken out
+        if (document.activeElement !== el) el.innerHTML = html.replace(/\n/g, '');
+    } catch (e) {
+        if (document.activeElement !== el) el.textContent = text;
+        say('Could not show the text as the page will: ' + e.message, 'error');
+    }
 }
 
 // The title and the note above the piece and the credits below it, laid out as the map's page has them
@@ -143,15 +161,12 @@ function pageText(piece) {
     header.className = 'post wb-text';
     const h1 = document.createElement('h1');
     h1.textContent = piece.title;
-    const sub = document.createElement('p');
-    sub.className = 'subtitle';
-    sub.append(textBox('span', 'text.note', 'wb-edit', 'Description'));
-    header.append(h1, sub);
-    return { header, credits: textBox('p', 'text.credits', 'map-credits wb-edit', 'Credits') };
+    header.append(h1, textBox('div', 'text.note', 'subtitle wb-edit', 'Description'));
+    return { header, credits: textBox('div', 'text.credits', 'map-credits wb-edit', 'Credits') };
 }
 
 function apply(k, v) {
-    if (textEls[k]) textEls[k].textContent = v;
+    if (textEls[k]) render(textEls[k], v);
     else adapter.set(k, v);
 }
 
@@ -223,7 +238,7 @@ async function open(name) {
         saved = Object.fromEntries(current.settings.map(s => [s.key, s.value]));
         values = structuredClone(saved);
         for (const k in textEls) {
-            textEls[k].textContent = values[k] ?? '';
+            render(textEls[k], values[k]);
             textEls[k].contentEditable = 'plaintext-only';
         }
     } catch (e) {
