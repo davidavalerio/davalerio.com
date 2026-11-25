@@ -63,9 +63,13 @@ function printPieces() {
     return folders.filter(d => d.isDirectory()
         && existsSync(join(config.gis, d.name, 'Scripts', 'map.py')) && existsSync(join(config.gis, d.name, 'Scripts', 'settings.json')))
         .map(d => {
+            // listed by the map's title: the saved one, or the one its map.py declares when none has been saved
             let title = d.name;
+            const isTitle = k => k === 'title' || k.endsWith('.title'), scripts = join(config.gis, d.name, 'Scripts');
             try {
-                title = JSON.parse(readFileSync(join(config.gis, d.name, 'Scripts', 'settings.json'), 'utf8')).settings.find(s => s.key === 'title')?.value || title;
+                title = JSON.parse(readFileSync(join(scripts, 'settings.json'), 'utf8')).settings.find(s => isTitle(s.key))?.value
+                    || readFileSync(join(scripts, 'map.py'), 'utf8').match(/\btext\(\s*'(?:[\w.]*\.)?title'\s*,\s*'[^']*'\s*,\s*'[^']*'\s*,\s*'((?:[^'\\]|\\.)*)'/)?.[1].replace(/\\(.)/g, '$1')
+                    || title;
             } catch { /* a settings file that will not read still lists, under its folder's name */ }
             return { name: 'print-' + d.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), title, kind: 'print', folder: d.name, group: 'Print Maps' };
         }).sort((a, b) => a.title.localeCompare(b.title));
