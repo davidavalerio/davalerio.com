@@ -164,8 +164,10 @@ class Map:
         """A colour written as itself, or the name of a colour setting, which then follows that setting."""
         return self.var(c) if c in self.values else c
 
-    def page(self, size, title='', subtitle='', credits=''):
+    def page(self, size, title='', subtitle='', credits='', keys=('title', 'subtitle', 'credits')):
+        """A page. `keys` names the text settings its title, subtitle and credits come from, so they can be typed on it."""
         p = Page(self, len(self.pages) + 1, size, title, subtitle, credits)
+        p.keys = keys
         self.pages.append(p)
         return p
 
@@ -394,10 +396,10 @@ class Page:
         parts = []
         if 'title' in L:
             ts = L.get('title_size', 18)
-            parts.append((f'{i}-title', f'<div id="{i}-title" class="title" data-setting="title" style="left:{pt(L["title"][0])};top:{pt(L["title"][1])};font-size:{pt(ts)};line-height:{pt(ts * 1.33)}">{esc(self.title)}</div>'))
+            parts.append((f'{i}-title', f'<div id="{i}-title" class="title" data-setting="{self.keys[0]}" style="left:{pt(L["title"][0])};top:{pt(L["title"][1])};font-size:{pt(ts)};line-height:{pt(ts * 1.33)}">{esc(self.title)}</div>'))
         if 'subtitle' in L:
             ss = L.get('subtitle_size', 9.5)
-            parts.append((f'{i}-subtitle', f'<div id="{i}-subtitle" class="subtitle" data-setting="subtitle" style="left:{pt(L["subtitle"][0])};top:{pt(L["subtitle"][1])};font-size:{pt(ss)};line-height:{pt(ss * 1.47)}">{esc(self.subtitle)}</div>'))
+            parts.append((f'{i}-subtitle', f'<div id="{i}-subtitle" class="subtitle" data-setting="{self.keys[1]}" style="left:{pt(L["subtitle"][0])};top:{pt(L["subtitle"][1])};font-size:{pt(ss)};line-height:{pt(ss * 1.47)}">{esc(self.subtitle)}</div>'))
         if 'rule' in L:
             parts.append((None, f'<div class="rule" style="left:{pt(L["rule"][0])};top:{pt(L["rule"][1])};width:{pt(L["rule"][2])};height:{pt(1)}"></div>'))
         for f in self.frames:
@@ -410,7 +412,7 @@ class Page:
             parts.append((f'{f.id}-scale-{unit}', f.scale_bar_svg(x, y, max_w, unit, segs)))
         if 'credits' in L:
             cx, cy, cwid = L['credits']
-            parts.append((f'{i}-credits', f'<div id="{i}-credits" class="credits" data-setting="credits" style="left:{pt(cx)};top:{pt(cy)};width:{pt(cwid + 40)};'
+            parts.append((f'{i}-credits', f'<div id="{i}-credits" class="credits" data-setting="{self.keys[2]}" style="left:{pt(cx)};top:{pt(cy)};width:{pt(cwid + 40)};'
                           f'font-size:{pt(self.CREDIT_SIZE)};line-height:{pt(self.CREDIT_LEAD)}">' + '<br>'.join(esc(l) for l in self.credit_lines) + '</div>'))
         if 'north' in L:
             parts.append((f'{by_key[L["north"][0]].id}-north', by_key[L['north'][0]].north_arrow_svg(L['north'][1], L['north'][2])))

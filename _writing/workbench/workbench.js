@@ -344,12 +344,12 @@ async function printAdapter(piece) {
             const el = e.target.closest?.('[data-setting]');
             if (!el) return;
             const key = el.dataset.setting;
-            values[key] = key === 'credits' ? el.innerText.replace(/[ \t]+\n/g, '\n').replace(/\n+$/, '') : el.textContent.replace(/\s+/g, ' ').trim();
+            values[key] = el.classList.contains('credits') ? el.innerText.replace(/[ \t]+\n/g, '\n').replace(/\n+$/, '') : el.textContent.replace(/\s+/g, ' ').trim();
             changed();
         });
         doc.addEventListener('keydown', e => {
             const el = e.target.closest?.('[data-setting]');
-            if (el && (e.key === 'Escape' || (e.key === 'Enter' && el.dataset.setting !== 'credits'))) return e.preventDefault(), el.blur();
+            if (el && (e.key === 'Escape' || (e.key === 'Enter' && !el.classList.contains('credits')))) return e.preventDefault(), el.blur();
             if (el || edit) return;
             keys(e);
         });

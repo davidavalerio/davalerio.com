@@ -532,6 +532,8 @@ def place(frame):
                 if not polys:
                     return None, []
                 big = max(polys, key=lambda p: p.area)
+                if big.is_empty or big.area < 4:
+                    return None, []
                 pole = shapely.get_coordinates(shapely.maximum_inscribed_circle(big, tolerance=0.5))[0]
                 x0, y0, x1, y1 = big.bounds
                 n = 12
