@@ -1,4 +1,16 @@
-/* The workbench: the piece as the site draws it, with a control panel in Solarized beside it. */
+/* The workbench: the piece as the site draws it, with a control panel beside it in the house style, light and dark. */
+
+:root {
+    --wb-field: color-mix(in srgb, var(--ink) 5%, var(--paper));
+    --wb-hover: color-mix(in srgb, var(--ink) 9%, var(--paper));
+    --wb-error: #9B3B32;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --wb-error: #D9867B;
+    }
+}
 
 body {
     margin: 0;
@@ -14,17 +26,18 @@ body {
     align-items: center;
     gap: 0.8rem;
     padding: 0.6rem 1rem;
-    background: #002B36;
-    color: #93A1A1;
-    font: 14px/1.4 -apple-system, system-ui, sans-serif;
+    background: var(--paper);
+    color: var(--stone);
+    border-bottom: 1px solid var(--hair);
+    font: 15px/1.4 'Source Serif 4', Georgia, serif;
 }
 
 .wb-bar select,
 .wb-bar button {
     font: inherit;
-    color: #EEE8D5;
-    background: #073642;
-    border: 1px solid #586E75;
+    color: var(--ink);
+    background: var(--wb-field);
+    border: 1px solid var(--hair);
     border-radius: 4px;
     padding: 0.25rem 0.7rem;
 }
@@ -38,17 +51,17 @@ body {
 }
 
 #save:not(:disabled) {
-    border-color: #6C71C4;
-    color: #FDF6E3;
-    background: #6C71C4;
+    border-color: var(--accent);
+    color: var(--paper);
+    background: var(--accent);
 }
 
 #status.unsaved {
-    color: #B58900;
+    color: var(--accent);
 }
 
 #status.error {
-    color: #DC322F;
+    color: var(--wb-error);
 }
 
 .wb-main {
@@ -72,22 +85,24 @@ body {
     overflow-y: auto;
 }
 
-/* lil-gui in Solarized */
+/* lil-gui in the house style */
 #panel .lil-gui {
     --width: 320px;
-    --background-color: #002B36;
-    --widget-color: #073642;
-    --hover-color: #0B4452;
-    --focus-color: #0D4F5F;
-    --text-color: #93A1A1;
-    --title-background-color: #073642;
-    --title-text-color: #EEE8D5;
-    --number-color: #2AA198;
-    --string-color: #859900;
-    --font-size: 12px;
+    --background-color: var(--paper);
+    --widget-color: var(--wb-field);
+    --hover-color: var(--wb-hover);
+    --focus-color: var(--wb-hover);
+    --text-color: var(--ink);
+    --title-background-color: var(--wb-field);
+    --title-text-color: var(--ink);
+    --number-color: var(--accent);
+    --string-color: var(--accent);
+    --font-family: 'Source Serif 4', Georgia, serif;
+    --font-size: 13px;
     --input-font-size: 12px;
     --widget-height: 22px;
     --name-width: 46%;
+    border-left: 1px solid var(--hair);
 }
 
 /* The map's page as the site lays it out, 1200px across at most */
@@ -111,7 +126,7 @@ body {
 }
 
 .wb-edit:focus {
-    outline: 1px solid #6C71C4;
+    outline: 1px solid var(--accent);
 }
 
 .wb-edit:empty::before {
