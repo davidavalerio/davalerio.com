@@ -76,8 +76,8 @@ popup:
   lines: ['{city}, {state}', '{eparchy}', '{sunday_liturgy}']
 views:
   country:
-    center: [-96.5, 38.6]
-    zoom: 3.9
+    center: [-95.9865, 38.0624]
+    zoom: 3.81
     show: [coal, states, parishes]
     alt: Map of the United States with Byzantine Catholic parishes as colored points over gray coal fields, the points thickest on and around the Appalachian
       coal fields from Ohio and Pennsylvania to New York and New Jersey, and scattered across Florida, Texas, Arizona and California.
@@ -90,21 +90,21 @@ views:
       and Ruthenian parishes on the small dark anthracite fields of eastern Pennsylvania, with more in New Jersey and New York.
     caption: From Ohio to New England, where most of the parishes are.
 legend:
-- heading: Coal Fields
+- heading: 'Ruthenian'
   items:
-  - {shape: fill, color: --map-coal-anthracite, label: Anthracite}
-  - {shape: fill, color: --map-coal-bituminous, label: Bituminous}
-  - {shape: fill, color: --map-coal-subbituminous, label: Subbituminous}
-  - {shape: fill, color: --map-coal-lignite, label: Lignite}
-- heading: Ruthenian
+  - {shape: 'dot', color: '#B27C10', label: 'Pittsburgh'}
+  - {shape: 'dot', color: '#C25E1B', label: 'Passaic'}
+  - {shape: 'dot', color: '#B03F27', label: 'Parma'}
+  - {shape: 'dot', color: '#8C2C39', label: 'Phoenix'}
+- heading: 'Other Churches'
   items:
-  - {shape: dot, color: '#B27C10', label: Pittsburgh}
-  - {shape: dot, color: '#C25E1B', label: Passaic}
-  - {shape: dot, color: '#B03F27', label: Parma}
-  - {shape: dot, color: '#8C2C39', label: Phoenix}
-- heading: Other Churches
+  - {shape: 'dot', color: '#1F6FA8', label: 'Ukrainian'}
+  - {shape: 'dot', color: '#2C8878', label: 'Melkite'}
+  - {shape: 'dot', color: '#6A4FA0', label: 'Romanian'}
+  - {shape: 'dot', color: '#56616F', label: 'Italo-Albanian, Russian, Belarusian'}
+- heading: 'Coal Fields'
   items:
-  - {shape: dot, color: '#1F6FA8', label: Ukrainian}
-  - {shape: dot, color: '#2C8878', label: Melkite}
-  - {shape: dot, color: '#6A4FA0', label: Romanian}
-  - {shape: dot, color: '#56616F', label: 'Italo-Albanian, Russian, Belarusian'}
+  - {color: '--map-coal-anthracite', label: 'Anthracite'}
+  - {color: '--map-coal-bituminous', label: 'Bituminous'}
+  - {color: '--map-coal-subbituminous', label: 'Subbituminous'}
+  - {color: '--map-coal-lignite', label: 'Lignite'}
