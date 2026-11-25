@@ -244,7 +244,9 @@ class Session:
             cx, cy = ax + (f.w / 2 - msg.get('dx', 0) - ax) / z, ay + (f.h / 2 - msg.get('dy', 0) - ay) / z
             lon, lat = f.frame_to_lonlat(cx, cy)
             before = self.values[key]
-            self.values[key] = {'center': [round(lon, 5), round(lat, 5)], 'width_km': round(min(max(f.view['width_km'] / z, 0.2), 2000), 3)}
+            # a drag keeps the width exactly; a zoom may take it from a city block to the whole globe
+            width = f.view['width_km'] if z == 1 else round(min(max(f.view['width_km'] / z, 0.05), 40000), 3)
+            self.values[key] = {'center': [round(lon, 5), round(lat, 5)], 'width_km': width}
             try:
                 out = self.apply()
             except Exception:

@@ -319,15 +319,24 @@ const sessions = new Map();   // piece name and editor id -> that editor's runni
 const builds = new Map();     // piece name -> { state: 'building' | 'done' | 'failed', message }
 
 // Every open editor (a browser tab) has a session of its own, so two tabs on one map do not share unsaved
-// changes. A session left alone for half an hour is stopped; the editor then opens another and gives it back its
-// unsaved values (the page's own doing, on hearing `stale`).
+// changes. A session is stopped as soon as its editor goes (the page says so as it closes, reloads or turns to
+// another piece), or when nothing has been heard from it for two minutes (an open editor sends word every half
+// minute), and no more than four run at once, the one longest unheard stopped to make room. An editor that finds
+// its session gone opens another and gives it back its unsaved values (the page's own doing, on hearing `stale`).
+const QUIET = 2 * 60 * 1000, MOST = 4;
 function session(p, cid) {
     const id = p.name + ':' + cid;
     let s = sessions.get(id);
     if (s && !s.dead) return s;
-    const proc = spawn('uv', ['run', '-q', '--project', PRINT, 'python', join(PRINT, 'session.py'), join(config.gis, p.folder), '/print-fonts/', '/print/' + p.name + '/files/' + cid + '/', cid],
+    // the engine's own Python, started directly so that stopping the session stops Python itself (uv makes the
+    // environment on first use)
+    const python = join(PRINT, '.venv', 'bin', 'python');
+    if (!existsSync(python)) spawnSync('uv', ['sync', '-q', '--project', PRINT], { cwd: ROOT });
+    const proc = spawn(python, [join(PRINT, 'session.py'), join(config.gis, p.folder), '/print-fonts/', '/print/' + p.name + '/files/' + cid + '/', cid],
         { cwd: ROOT, stdio: ['pipe', 'pipe', 'inherit'] });
-    s = { proc, waiting: new Map(), next: 1, dead: false, opened: false, dir: null, settings: null, idle: null };
+    s = { proc, waiting: new Map(), next: 1, dead: false, opened: false, dir: null, settings: null, idle: null, heard: Date.now() };
+    const live = [...sessions.values()].filter(x => !x.dead).sort((a, b) => a.heard - b.heard);
+    while (live.length >= MOST) stop(live.shift());
     createInterface({ input: proc.stdout }).on('line', line => {
         let msg;
         try {
@@ -357,13 +366,22 @@ function ask(p, cid, msg) {
     const live = sessions.get(p.name + ':' + cid);
     if (msg.op !== 'open' && !(live && !live.dead && live.opened)) return Promise.reject(STALE);
     const s = session(p, cid);
-    clearTimeout(s.idle);
-    s.idle = setTimeout(() => s.proc.kill(), 30 * 60 * 1000);
+    heard(s);
     return new Promise((ok, no) => {
         const id = s.next++;
         s.waiting.set(id, { ok, no });
         s.proc.stdin.write(JSON.stringify({ ...msg, id }) + '\n');
     });
+}
+function stop(s) {
+    clearTimeout(s.idle);
+    s.proc.stdin.end();
+    s.proc.kill();
+}
+function heard(s) {
+    s.heard = Date.now();
+    clearTimeout(s.idle);
+    s.idle = setTimeout(() => stop(s), QUIET);
 }
 async function openPrint(p, cid) {
     const r = await ask(p, cid, { op: 'open' });
@@ -375,7 +393,15 @@ async function openPrint(p, cid) {
 const declared = new Map();   // piece name -> the settings its map.py declares, as last opened
 // Saving writes the changed values into the project's settings.json (a setting the map has since declared
 // joins the file with it), then rebuilds the PDF in the background
-function savePrint(p, values) {
+// Pins are merged one by one: `base` is the pin list this editor last knew as saved, so what it removed and what
+// it added are told apart from what another tab saved meanwhile, and neither tab's pins are lost.
+function mergePins(disk, base, mine) {
+    const key = x => JSON.stringify(x), had = new Set(base.map(key)), now = new Set(mine.map(key));
+    const kept = disk.filter(x => !(had.has(key(x)) && !now.has(key(x))));          // on disk, and not removed here
+    const there = new Set(kept.map(key));
+    return [...kept, ...mine.filter(x => !had.has(key(x)) && !there.has(key(x)))];   // and what was added here
+}
+function savePrint(p, values, base = {}) {
     const file = join(config.gis, p.folder, 'Scripts', 'settings.json');
     const doc = JSON.parse(readFileSync(file, 'utf8'));
     const decl = declared.get(p.name) || [];
@@ -387,8 +413,9 @@ function savePrint(p, values) {
             if (!d) continue;
             doc.settings.push((s = { ...d }));
         }
-        if (JSON.stringify(s.value) !== JSON.stringify(v)) {
-            s.value = v;
+        const next = s.type === 'labels' && Array.isArray(base[k]) ? mergePins(s.value || [], base[k], v || []) : v;
+        if (JSON.stringify(s.value) !== JSON.stringify(next)) {
+            s.value = next;
             n++;
         }
     }
@@ -416,7 +443,7 @@ function buildPrint(p) {
     builds.set(p.name, b);
 }
 const stopAll = () => {
-    for (const s of sessions.values()) s.proc.kill();
+    for (const s of sessions.values()) stop(s);
     for (const b of builds.values()) b.proc?.kill();
 };
 
@@ -466,7 +493,10 @@ const server = createServer((req, res) => {
                 req.on('end', () => {
                     try {
                         const data = JSON.parse(body);
-                        if (path.startsWith('/api/piece/')) return json(res, 200, savePrint(pp, data.values));
+                        if (path.startsWith('/api/piece/')) return json(res, 200, savePrint(pp, data.values, data.base));
+                        const mine = sessions.get(pp.name + ':' + cid);
+                        if (rest === 'ping') return mine && !mine.dead ? (heard(mine), json(res, 200, { ok: true })) : json(res, 409, { stale: true });
+                        if (rest === 'close') return mine && stop(mine), json(res, 200, { ok: true });
                         if (['set', 'pin', 'view'].includes(rest)) return void ask(pp, cid, { ...data, op: rest }).then(r => json(res, 200, r), fail);
                         json(res, 404, { error: 'no such message' });
                     } catch (e) {

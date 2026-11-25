@@ -9,6 +9,7 @@ const $ = id => document.getElementById(id);
 const stage = $('stage'), panel = $('panel'), status = $('status'), saveBtn = $('save'), revertBtn = $('revert'), select = $('piece');
 let gui = null, current = null, saved = null, values = null, adapter = null, generation = 0, host = stage;
 const EDITOR = crypto.randomUUID().slice(0, 8);   // this tab: a print map's session and unsaved preview are its own
+let editorId = EDITOR;
 
 const say = (text, cls = '') => {
     status.textContent = text;
@@ -125,20 +126,21 @@ async function pageAdapter(piece) {
 // credits are edited on the page itself, the frame is dragged and pinched to change its extent, and labels are
 // dragged (a name on a line slides along it), deleted, reset with a double-click, and reworded with Return.
 async function printAdapter(piece) {
+    const CID = editorId;   // this opening of the map: its session is its own, and goes when it closes
     const name = piece.name, api = '/api/print/' + name + '/';
     const kinds = Object.fromEntries(piece.settings.map(s => [s.key, s]));
     const isPaint = k => kinds[k]?.effect === 'paint';
     const labelsKey = piece.settings.find(s => s.type === 'labels')?.key;
     let alive = true;   // false once another piece is opened: whatever is still on its way back is then dropped
     const send = async (what, body) => {
-        const res = await fetch(api + what + '?cid=' + EDITOR, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const res = await fetch(api + what + '?cid=' + CID, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         return res.json();
     };
     // The session is stopped after half an hour left alone. The next message then finds none: the map is opened
     // again, given back every unsaved value, and the message sent once more.
     const unsaved = () => Object.fromEntries(Object.keys(values).filter(k => !isPaint(k) && JSON.stringify(values[k]) !== JSON.stringify(saved[k])).map(k => [k, values[k]]));
     async function revive() {
-        const res = await fetch('/api/piece/' + name + '?cid=' + EDITOR);
+        const res = await fetch('/api/piece/' + name + '?cid=' + CID);
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'the map could not be opened again');
         const edits = unsaved();
         if (Object.keys(edits).length) {
@@ -496,7 +498,7 @@ async function printAdapter(piece) {
     let ghosts = false;
     async function load() {
         const t0 = performance.now();
-        const url = '/print/' + name + '/page/' + pageN + '?cid=' + EDITOR;
+        const url = '/print/' + name + '/page/' + pageN + '?cid=' + CID;
         if ((await fetch(url, { method: 'HEAD' })).status === 409) await revive();   // the session was stopped while the map sat open
         return new Promise(ok => {
             frame.addEventListener('load', async () => {
@@ -517,6 +519,10 @@ async function printAdapter(piece) {
     await load();
     showNotes(piece.notes);
     let building = 0;
+    // the session lives as long as this editor: word every half minute keeps it, and it is told when the editor goes
+    const beat = setInterval(() => fetch(api + 'ping?cid=' + CID, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => {}), 30000);
+    const bye = () => navigator.sendBeacon(api + 'close?cid=' + CID, new Blob(['{}'], { type: 'application/json' }));
+    addEventListener('pagehide', bye);
     return {
         ownsView: true,
         tokens: Object.fromEntries(piece.settings.filter(s => s.type === 'color').map(s => [s.key, s.label])),
@@ -529,7 +535,7 @@ async function printAdapter(piece) {
         },
         changed() {
             clearTimeout(timer);
-            timer = setTimeout(sync, 150);
+            timer = setTimeout(() => ((timer = 0), sync()), 150);
         },
         view() {},
         goto() {},
@@ -544,15 +550,24 @@ async function printAdapter(piece) {
             const mine = ++building, t0 = performance.now();
             const poll = async () => {
                 if (mine !== building) return;
-                const b = await (await fetch(api + 'build?cid=' + EDITOR)).json();
+                const b = await (await fetch(api + 'build?cid=' + CID)).json();
                 if (b.state === 'building') return setTimeout(poll, 500);
                 times.push({ what: 'build', ms: Math.round(performance.now() - t0) });
                 if (same()) say(b.state === 'done' ? 'Saved. ' + b.message : b.message, b.state === 'done' ? '' : 'error');
             };
             setTimeout(poll, 500);
         },
+        // every change still on its way (a pin dropped, the extent, a control at rest) is in the values before a save reads them
+        async settle() {
+            if (timer) clearTimeout(timer), (timer = 0), sync();
+            await busy;
+        },
+        labelsKey,
         cleanup() {
             alive = false;
+            clearInterval(beat);
+            removeEventListener('pagehide', bye);
+            bye();
             clearTimeout(timer);
             clearTimeout(wheel?.timer);
             building++;
@@ -939,7 +954,8 @@ async function open(name) {
     stage.replaceChildren();
     for (const k in textEls) delete textEls[k];
     try {
-        const res = await fetch('/api/piece/' + name + '?cid=' + EDITOR);
+        editorId = EDITOR + '-' + mine;   // each opening has its own, so the closing of the last cannot stop this one
+        const res = await fetch('/api/piece/' + name + '?cid=' + editorId);
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'could not read it');
         const piece = await res.json();
         if (mine !== generation) return;
@@ -982,8 +998,12 @@ async function open(name) {
 }
 
 saveBtn.addEventListener('click', async () => {
-    // Only what this page changed is sent, so a save from another open workbench is not undone
+    saveBtn.disabled = true;
+    await adapter.settle?.();   // a label or extent change still being drawn is part of what is saved
+    // Only what this page changed is sent, so a save from another open workbench is not undone; a print map's
+    // pins go with the list this page last knew as saved, to be merged pin by pin with what is saved now
     const edits = Object.fromEntries(Object.keys(values).filter(k => JSON.stringify(values[k]) !== JSON.stringify(saved[k])).map(k => [k, values[k]]));
+    const base = adapter.labelsKey && adapter.labelsKey in edits ? { [adapter.labelsKey]: saved[adapter.labelsKey] } : undefined;
     const controls = gui.controllersRecursive();
     const lock = on => {
         if (legendEl) legendEl.inert = on;
@@ -995,7 +1015,7 @@ saveBtn.addEventListener('click', async () => {
     say('Saving…');
     let res = null, body;
     try {
-        res = await fetch('/api/piece/' + current.name, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ values: edits }) });
+        res = await fetch('/api/piece/' + current.name, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ values: edits, base }) });
         body = await res.json();
     } catch (e) {
         body = { error: e.message };
