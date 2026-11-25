@@ -126,6 +126,92 @@ body {
     padding-bottom: 4px;
 }
 
+/* The legend's editing: small buttons beside each heading and item, shown on hover or keyboard focus */
+.wb-legend .map-legend li,
+.wb-legend-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+}
+
+.wb-legend-group {
+    break-inside: avoid;   /* a group and its Add Item stay in one column */
+}
+
+.wb-legend .wb-label,
+.wb-legend h3 {
+    flex: 1;
+    min-width: 0;
+}
+
+.wb-legend-row h3 {
+    margin: 0 0 0.35rem;
+}
+
+.wb-tool {
+    flex: none;
+    font: inherit;
+    font-size: 0.8rem;
+    line-height: 1;
+    padding: 0.1rem 0.3rem;
+    color: var(--stone);
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    cursor: pointer;
+    opacity: 0;
+}
+
+li:hover > .wb-tool,
+.wb-legend-row:hover > .wb-tool,
+.wb-tool:focus-visible {
+    opacity: 1;
+}
+
+.wb-tool:hover {
+    color: var(--ink);
+    border-color: var(--hair);
+}
+
+.wb-add {
+    opacity: 1;
+    margin: -0.6rem 0 1rem;
+    padding-left: 0;
+}
+
+.wb-legend > .wb-add {
+    margin-top: 0;
+}
+
+.wb-swatch {
+    cursor: pointer;
+}
+
+.wb-swatch-edit {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0.2rem 0 0.5rem 1.7rem;
+}
+
+.wb-swatch-edit select,
+.wb-swatch-edit input {
+    font: inherit;
+    font-size: 0.8rem;
+    color: var(--ink);
+    background: var(--wb-field);
+    border: 1px solid var(--hair);
+    border-radius: 2px;
+    padding: 0.1rem 0.3rem;
+}
+
+.wb-swatch-edit input[type=color] {
+    width: 2rem;
+    height: 1.4rem;
+    padding: 0 0.1rem;
+}
+
 /* The map's page as the site lays it out, 1200px across at most */
 .wb-page {
     width: min(1200px, 100%);

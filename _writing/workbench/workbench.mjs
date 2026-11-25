@@ -6,7 +6,9 @@
 //
 // Every map definition in _writing/maps/ is a piece. Each has its page's text (the title, the note and the
 // credits), edited in place on the page as the workbench shows it and saved into the definition, after which
-// the map pages are rebuilt; a new title also goes into the map's entry in the homepage's Maps list. Beyond the text:
+// the map pages are rebuilt; a new title also goes into the map's entry in the homepage's Maps list. The legend
+// beneath the map is edited there too, whole (groups and items added, removed, moved, retyped, recoloured) and
+// saved into the definition. Beyond the text:
 //   interactive maps (a definition with views): exaggeration when it has terrain, the palette colours its
 //     layers use (maps/map.css, light and dark), and its named views; saved into the definition and map.css.
 //   models (a definition with `model` and `build`): the settings their Drive build declares in
@@ -48,15 +50,70 @@ function pieces() {
     }).sort((a, b) => a.title.localeCompare(b.title));
 }
 
-// The page's text, read with PyYAML as build.py reads it
+// The page's text and its legend, read with PyYAML as build.py reads them
 const TEXT = [['title', 'Title'], ['note', 'Description'], ['credits', 'Credits']];
 function textSettings(name) {
     const r = spawnSync('uv', ['run', '-q', '--no-project', '--with', 'pyyaml', 'python3', '-c',
-        'import sys, json, yaml; d = yaml.safe_load(open(sys.argv[1])); print(json.dumps({k: d.get(k) or "" for k in ("title", "note", "credits")}))',
+        'import sys, json, yaml; d = yaml.safe_load(open(sys.argv[1])); print(json.dumps({**{k: d.get(k) or "" for k in ("title", "note", "credits")}, "legend": d.get("legend") or []}))',
         join(MAPS, name + '.yaml')], { encoding: 'utf8' });
     if (r.status !== 0) throw new Error('could not read the definition: ' + (r.stderr || '').trim().split('\n').pop());
     const d = JSON.parse(r.stdout);
-    return TEXT.map(([k, label]) => ({ key: 'text.' + k, label, group: 'Text', type: 'text', value: String(d[k]) }));
+    return [...TEXT.map(([k, label]) => ({ key: 'text.' + k, label, group: 'Text', type: 'text', value: String(d[k]) })),
+        { key: 'legend', label: 'Legend', group: 'Text', type: 'legend', value: d.legend }];
+}
+
+// The legend: groups, each an optional heading and its items, each a label with a swatch (fill, dot or line,
+// a line solid, dashed or dotted) in a hex colour or a --map token, and an optional code
+const ITEM_KEYS = ['code', 'shape', 'dash', 'color', 'label'];
+function checkLegend(legend) {
+    if (!Array.isArray(legend)) throw new Error('the legend is not a list of groups');
+    const colours = palette().light;   // the map's colour tokens (a token holding no colour is refused)
+    return legend.map(g => {
+        const items = (g.items || []).map(it => {
+            const out = {};
+            const label = String(it.label ?? '').replace(/\s+/g, ' ').trim();
+            if (!label) throw new Error('every legend item needs a label');
+            if (!/^#[0-9A-Fa-f]{6}$/.test(it.color || '') && !(it.color in colours)) throw new Error('"' + label + '" has no colour');
+            const shape = it.shape || 'fill';
+            if (!['fill', 'dot', 'line'].includes(shape)) throw new Error('"' + label + '" has an unknown shape');
+            const code = String(it.code ?? '').trim();
+            if (code) out.code = code;
+            if (shape !== 'fill') out.shape = shape;
+            if (shape === 'line' && ['dashed', 'dotted'].includes(it.dash)) out.dash = it.dash;
+            out.color = it.color;
+            out.label = label;
+            return out;
+        });
+        if (!items.length) throw new Error('every legend group needs an item');
+        const heading = String(g.heading ?? '').replace(/\s+/g, ' ').trim();
+        return heading ? { heading, items } : { items };
+    });
+}
+const q = v => "'" + String(v).replace(/'/g, "''") + "'";
+function legendYaml(legend) {
+    const lines = ['legend:'];
+    for (const g of legend) {
+        if (g.heading) lines.push('- heading: ' + q(g.heading), '  items:');
+        else lines.push('- items:');
+        for (const it of g.items) lines.push('  - {' + ITEM_KEYS.filter(k => k in it).map(k => k + ': ' + q(it[k])).join(', ') + '}');
+    }
+    return lines;
+}
+// Replaces the legend block (its line and every line under it, indented or a top-level list item), or adds
+// it at the end; an emptied legend is dropped
+function setLegendYaml(text, legend) {
+    const lines = text.split('\n');
+    const block = legend.length ? legendYaml(legend) : [];
+    const i = lines.findIndex(l => l.startsWith('legend:'));
+    if (i < 0) {
+        while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+        return [...lines, ...block, ''].join('\n');
+    }
+    let end = i + 1;
+    for (let j = i + 1; j < lines.length && (/^(\s+\S|- )/.test(lines[j]) || /^\s*(#|$)/.test(lines[j])); j++)
+        if (!/^\s*(#|$)/.test(lines[j])) end = j + 1;
+    lines.splice(i, end - i, ...block);
+    return lines.join('\n');
 }
 
 // The definition as the site built it, from the map's own page
@@ -139,8 +196,8 @@ function setViewYaml(text, view, cam) {
 const ORDER = ['title', 'date', 'page', 'note', 'start', 'credits'];
 function valueEnd(lines, i) {
     let end = i + 1;
-    for (let j = i + 1; j < lines.length && (/^\s+\S/.test(lines[j]) || !lines[j].trim()); j++)
-        if (lines[j].trim()) end = j + 1;
+    for (let j = i + 1; j < lines.length && (/^\s+\S/.test(lines[j]) || /^\s*(#|$)/.test(lines[j])); j++)
+        if (!/^\s*(#|$)/.test(lines[j])) end = j + 1;
     return end;
 }
 function setTextYaml(text, key, value) {
@@ -180,13 +237,14 @@ function writeAndBuild(file, text, css) {
 function saveDefinition(p, values) {
     const file = join(MAPS, p.name + '.yaml');
     let text = readFileSync(file, 'utf8');
-    const before = piece(p.name).settings.filter(s => s.key.startsWith('text.') || p.kind === 'terrain');
+    const before = piece(p.name).settings.filter(s => s.key.startsWith('text.') || s.key === 'legend' || p.kind === 'terrain');
     const changed = before.filter(s => JSON.stringify(s.value) !== JSON.stringify(values[s.key]) && s.key in values);
     const pal = palette();
     let css = pal.css;
     for (const s of changed) {
         const v = values[s.key];
         if (s.key.startsWith('text.')) text = setTextYaml(text, s.key.slice(5), v);
+        else if (s.key === 'legend') text = setLegendYaml(text, checkLegend(v));
         else if (s.key === 'exaggeration') text = text.replace(/^exaggeration:.*$/m, 'exaggeration: ' + num(v, 2));
         else if (s.key.startsWith('view.')) text = setViewYaml(text, s.key.slice(5), v);
         else if (s.key.startsWith('token.')) {
