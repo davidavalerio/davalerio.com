@@ -15,7 +15,10 @@
 //     <build>/Scripts/settings.json, shown from the build's own web copy (<build>/Web/); saved into that file.
 //   print pages (any other definition): their image, with nothing more to tune.
 // Beside the definitions, every print map in the Drive GIS folder (a project with Scripts/map.py and
-// Scripts/settings.json) is a piece of its own. Opening one starts a Python session for it (the print engine,
+// Scripts/settings.json) is a piece of its own. A print map that names its web map (WEB = '<name>' in its map.py)
+// is that map's print form: it is listed under the web map rather than on its own, its title, credits, legend and
+// colours follow the web map until print changes them (settings.json holds only what print has changed), and a save
+// of the web map rebuilds its PDF, as a save of the palette rebuilds every print map that follows a web map. Opening one starts a Python session for it (the print engine,
 // _writing/print/session.py), kept running and spoken to over its pipes, one JSON message a line; the page it
 // builds is shown in a frame, tuned live, and saved into the project's settings.json, after which its PDF is
 // rebuilt in the background and moved into the project when its checks pass.
@@ -60,6 +63,8 @@ const printTitle = settings => {
 // The title a map.py declares: the value of its text('title' ...) setting, in either kind of quotes
 const DECLARED_TITLE = /\btext\(\s*(['"])(?:[\w.]*\.)?title\1\s*,\s*(['"]).*?\2\s*,\s*(['"]).*?\3\s*,\s*(['"])((?:\\.|(?!\4).)*)\4/;
 
+// The web map a map.py follows, when it names one that is there
+const DECLARED_WEB = /^WEB\s*=\s*(['"])([\w-]+)\1/m;
 // The print maps: every project in the GIS folder with a map.py and a settings.json in its Scripts folder
 function printPieces() {
     let folders;
@@ -71,24 +76,29 @@ function printPieces() {
     return folders.filter(d => d.isDirectory()
         && existsSync(join(config.gis, d.name, 'Scripts', 'map.py')) && existsSync(join(config.gis, d.name, 'Scripts', 'settings.json')))
         .map(d => {
-            // listed by the map's title: the saved one, or the one its map.py declares when none has been saved
-            let title = d.name;
+            // listed by the map's title: the saved one, else its web map's, else the one its map.py declares
+            let title = d.name, web = null;
             const scripts = join(config.gis, d.name, 'Scripts');
             try {
+                const py = readFileSync(join(scripts, 'map.py'), 'utf8');
+                web = py.match(DECLARED_WEB)?.[2] || null;
+                if (web && !existsSync(join(MAPS, web + '.yaml'))) web = null;
                 title = printTitle(JSON.parse(readFileSync(join(scripts, 'settings.json'), 'utf8')).settings)
-                    || readFileSync(join(scripts, 'map.py'), 'utf8').match(DECLARED_TITLE)?.[5].replace(/\\(.)/g, '$1').trim()
+                    || (web && yamlScalar(readFileSync(join(MAPS, web + '.yaml'), 'utf8'), 'title'))
+                    || py.match(DECLARED_TITLE)?.[5].replace(/\\(.)/g, '$1').trim()
                     || title;
             } catch { /* a settings file that will not read still lists, under its folder's name */ }
-            return { name: 'print-' + d.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), title, kind: 'print', folder: d.name, group: 'Print Maps' };
+            return { name: 'print-' + d.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), title, kind: 'print', folder: d.name, web, group: web ? null : 'Print Maps' };
         }).sort((a, b) => a.title.localeCompare(b.title));
 }
 
 function pieces() {
+    const prints = printPieces();
     return [...readdirSync(MAPS).filter(f => f.endsWith('.yaml')).map(f => {
         const text = readFileSync(join(MAPS, f), 'utf8'), name = f.slice(0, -5);
         const kind = /^views:/m.test(text) ? 'terrain' : yamlScalar(text, 'model') && yamlScalar(text, 'build') ? 'model' : 'page';
-        return { name, title: yamlScalar(text, 'title'), kind, build: yamlScalar(text, 'build'), image: yamlScalar(text, 'image') };
-    }).sort((a, b) => a.title.localeCompare(b.title)), ...printPieces()];
+        return { name, title: yamlScalar(text, 'title'), kind, build: yamlScalar(text, 'build'), image: yamlScalar(text, 'image'), print: prints.find(p => p.web === name)?.name || null };
+    }).sort((a, b) => a.title.localeCompare(b.title)), ...prints];
 }
 
 // The page's text and its legend, read with PyYAML as build.py reads them
@@ -456,7 +466,9 @@ async function openPrint(p, cid) {
 }
 const declared = new Map();   // piece name -> the settings its map.py declares, as last opened
 // Saving writes the editor's changed values into the project's settings.json (a setting the map has since
-// declared joins the file with it), then rebuilds the PDF in the background. Nothing is merged: if the file is
+// declared joins the file with it), then rebuilds the PDF in the background. A setting that follows the web map
+// (it carries its web value as `web`) is written only while print holds it to another value; set back to the web
+// value, it leaves the file and follows the web map again. Nothing is merged: if the file is
 // not as this editor read it (another workbench, a hand edit), the save is refused and the editor offered a reload.
 const CONFLICT = Object.assign(new Error('the settings file has changed on disk since this map was opened here'), { conflict: true });
 function savePrint(p, values, mark) {
@@ -466,11 +478,17 @@ function savePrint(p, values, mark) {
     const decl = declared.get(p.name) || [];
     let n = 0;
     for (const [k, v] of Object.entries(values)) {
-        let s = doc.settings.find(x => x.key === k);
+        const d = decl.find(x => x.key === k);
+        const at = doc.settings.findIndex(x => x.key === k);
+        if (d && 'web' in d && sameValue(v, d.web)) {      // back to the web map's value: it follows the web map again
+            if (at >= 0) doc.settings.splice(at, 1), n++;
+            continue;
+        }
+        let s = doc.settings[at];
         if (!s) {
-            const d = decl.find(x => x.key === k);
             if (!d) continue;
-            doc.settings.push((s = { ...d }));
+            const { web, ...own } = d;
+            doc.settings.push((s = { ...own, value: undefined }));
         }
         if (JSON.stringify(s.value) !== JSON.stringify(v)) {
             s.value = v;
@@ -480,9 +498,12 @@ function savePrint(p, values, mark) {
     if (n) writeWhole(file, JSON.stringify(doc, null, 1) + '\n');
     buildPrint(p);
     const saved = Object.fromEntries(doc.settings.map(s => [s.key, s.value]));
-    const settings = (decl.length ? decl : doc.settings).map(s => ({ ...s, value: s.key in saved ? saved[s.key] : s.value }));
+    const settings = (decl.length ? decl : doc.settings).map(s => ({ ...s, value: s.key in saved ? saved[s.key] : 'web' in s ? s.web : s.value }));
     return { saved: n, stamp: stamp(p), piece: { ...p, title: printTitle(settings) || p.title, settings } };
 }
+// Two setting values the same, a colour whatever the case of its letters
+const sameValue = (a, b) => typeof a === 'string' && typeof b === 'string' && a.startsWith('#') && b.startsWith('#')
+    ? a.toUpperCase() === b.toUpperCase() : JSON.stringify(a) === JSON.stringify(b);
 // The build: in scratch, checked, and only then moved into the project; a failed build leaves the last PDF
 function buildPrint(p) {
     builds.get(p.name)?.proc?.kill();
@@ -607,9 +628,13 @@ const server = createServer((req, res) => {
                     if (!p) return json(res, 404, { error: 'no such piece' });
                     const values = JSON.parse(body).values;
                     // The page's text (and an interactive map's settings) go into the definition; a model's other settings into its build
-                    let n = saveDefinition(p, values);
-                    if (p.kind === 'model') n += saveModel(p, values);
-                    json(res, 200, { saved: n, piece: piece(p.name) });
+                    const defined = saveDefinition(p, values);
+                    const n = defined + (p.kind === 'model' ? saveModel(p, values) : 0);
+                    // the print maps that follow what changed are rebuilt: this map's, or with the palette, every one
+                    const palette = Object.keys(values).some(k => k.startsWith('token.'));
+                    const prints = defined ? printPieces().filter(x => x.web === p.name || (palette && x.web)) : [];
+                    prints.forEach(buildPrint);
+                    json(res, 200, { saved: n, piece: piece(p.name), prints: prints.map(x => x.title) });
                 } catch (e) {
                     json(res, 500, { error: e.message });
                 }

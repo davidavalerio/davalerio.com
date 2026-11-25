@@ -2,11 +2,12 @@
 // Each kind of piece has an adapter that draws it and applies a setting to it; the panel is built
 // from the declarations alone (number, color, view), so a new kind needs only its adapter. The page's
 // text (type text) and its legend are not in the panel: they are shown around the piece as on the site and
-// edited in place.
+// edited in place. A map with a print form shows a Web and Print switch beside the list; the print form follows
+// the web map, and the panel lists each value print has changed from it, with a button that returns it.
 import GUI from './lib/lil-gui.esm.min.js';
 
 const $ = id => document.getElementById(id);
-const stage = $('stage'), panel = $('panel'), status = $('status'), saveBtn = $('save'), revertBtn = $('revert'), select = $('piece');
+const stage = $('stage'), panel = $('panel'), status = $('status'), saveBtn = $('save'), revertBtn = $('revert'), select = $('piece'), forms = $('form');
 let gui = null, current = null, saved = null, values = null, adapter = null, generation = 0, host = stage;
 const EDITOR = crypto.randomUUID().slice(0, 8);   // this tab: a print map's session and unsaved preview are its own
 let editorId = EDITOR, notice = '';   // a notice to show once the piece has opened again
@@ -16,6 +17,10 @@ const say = (text, cls = '') => {
     status.className = cls;
 };
 const same = () => JSON.stringify(values) === JSON.stringify(saved);
+// two values the same, a colour whatever the case of its letters
+const sameValue = (a, b) => typeof a === 'string' && typeof b === 'string' && a.startsWith('#') && b.startsWith('#')
+    ? a.toUpperCase() === b.toUpperCase() : JSON.stringify(a) === JSON.stringify(b);
+let followed = [];   // a print map's settings that follow its web map, each with its button in the panel
 let saving = false;   // from a click on Save until its answer is applied: nothing here unlocks a control meanwhile
 function changed() {
     const dirty = !same();
@@ -24,6 +29,18 @@ function changed() {
         say(dirty ? 'Unsaved Changes' : 'Saved', dirty ? 'unsaved' : '');
     }
     adapter?.changed?.();   // a piece that redraws from the values (a print map) hears of every change here
+    showChanges();
+}
+// The panel's list of what print has changed from the web map: a button for each, shown while the value differs
+function showChanges() {
+    if (!followed.length || !values) return;
+    let any = false;
+    for (const { s, c } of followed) {
+        const differs = !sameValue(values[s.key], s.web);
+        c.show(differs);
+        any ||= differs;
+    }
+    followed[0].c.parent.show(any);
 }
 
 // --- Adapters
@@ -1030,6 +1047,20 @@ function build(piece) {
             for (const label of Object.keys(row)) f.add(row, label);
         }
     }
+    followed = [];
+    const own = piece.settings.filter(s => 'web' in s);
+    if (own.length) {
+        const f = gui.addFolder('Changed From the Web Map');
+        for (const s of own) {
+            const c = f.add({ back() {
+                values[s.key] = structuredClone(s.web);
+                apply(s.key, values[s.key]);
+                gui.controllersRecursive().forEach(x => x.updateDisplay());
+                changed();
+            } }, 'back').name('Return ' + s.label + ' to the Web Map');
+            followed.push({ s, c });
+        }
+    }
     if (adapter.parts.length) {
         const f = gui.addFolder('Show (Not Saved)');
         const on = Object.fromEntries(adapter.parts.map(p => [p.id, p.on ?? true]));
@@ -1045,6 +1076,7 @@ async function open(name) {
     adapter?.cleanup?.();
     adapter = null;
     values = saved = null;
+    followed = [];
     gui?.destroy();
     gui = null;
     stage.replaceChildren();
@@ -1090,6 +1122,7 @@ async function open(name) {
     }
     build(current);
     history.replaceState(null, '', '?piece=' + name);
+    showForms(name);
     changed();
     if (adapter.viewOnly) {      // another tab is editing this map: nothing here can be changed
         gui.controllersRecursive().forEach(c => c.disable());
@@ -1157,29 +1190,48 @@ saveBtn.addEventListener('click', async () => {
             apply(k, values[k]);
         }
     controls.forEach(c => c.updateDisplay());
-    // A new title shows in the list of maps and at the head of the panel
+    // A new title shows in the list of maps (a print form's list entry is its web map's) and at the head of the panel
     const title = saved['text.title'] ?? (current.kind === 'print' ? body.piece.title : saved.title) ?? current.title;   // a print map's as the list resolves it
-    select.selectedOptions[0].text = title;
+    if (!current.web) select.selectedOptions[0].text = title;
     gui.title(title);
     saving = false;
     lock(false);
     changed();
     if (adapter.afterSave) adapter.afterSave();
-    else say(current.kind === 'model' ? 'Saved. The next rebuild uses these settings.' : 'Saved. The site changes when the map is deployed.');
+    else say((current.kind === 'model' ? 'Saved. The next rebuild uses these settings.' : 'Saved. The site changes when the map is deployed.')
+        + (body.prints?.length ? ' The print PDF of ' + body.prints.join(', ') + ' is being rebuilt.' : ''));
 });
 
+// A map and its print form share one entry in the list; the switch beside it turns between them
+const entryOf = name => byName[name]?.web || name;
+function showForms(name) {
+    const web = byName[entryOf(name)];
+    select.value = web.name;
+    forms.hidden = !web.print;
+    for (const b of forms.querySelectorAll('button')) b.setAttribute('aria-pressed', String((b.dataset.form === 'print') === (name === web.print)));
+}
+const leave = () => same() || confirm('Leave without saving?');
 revertBtn.addEventListener('click', () => open(current.name));
 select.addEventListener('change', () => {
-    if (!same() && !confirm('Leave without saving?')) return (select.value = current.name);
-    open(select.value);
+    if (!leave()) return (select.value = entryOf(current.name));
+    const web = byName[select.value];
+    open(current?.kind === 'print' && web.print ? web.print : web.name);   // the form in view stays, where the map has it
+});
+forms.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    const web = b && byName[entryOf(current.name)];
+    const to = b && (b.dataset.form === 'print' ? web.print : web.name);
+    if (to && to !== current.name && leave()) open(to);
 });
 addEventListener('beforeunload', e => {
     if (values && !same()) e.preventDefault();
 });
 
 const list = await (await fetch('/api/pieces')).json();
+const byName = Object.fromEntries(list.map(p => [p.name, p]));
 const groups = {};
 for (const p of list) {
+    if (p.web) continue;   // a print form is reached from its web map's entry
     if (!p.group) select.append(new Option(p.title, p.name));
     else {
         if (!groups[p.group]) select.append((groups[p.group] = Object.assign(document.createElement('optgroup'), { label: p.group })));
@@ -1187,5 +1239,4 @@ for (const p of list) {
     }
 }
 const wanted = new URLSearchParams(location.search).get('piece');
-select.value = list.some(p => p.name === wanted) ? wanted : list[0].name;
-open(select.value);
+open(byName[wanted] ? wanted : select.options[0].value);

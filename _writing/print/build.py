@@ -26,10 +26,11 @@ def load(project, scripts=None, **opts):
     sys.dont_write_bytecode = True                    # no __pycache__ beside a map.py in Drive
     spec.loader.exec_module(mod)
     saved = opts.pop('saved', None)
-    m = pm.Map(project, mod.SETTINGS, pm.load_settings(scripts) if saved is None else saved, **opts)
+    m = pm.Map(project, mod.SETTINGS, pm.load_settings(scripts) if saved is None else saved, web=getattr(mod, 'WEB', None), **opts)
     m.name = mod.NAME
     m.output = getattr(mod, 'OUTPUT', None) or mod.NAME.replace(' ', '-') + '-Map'      # the files' name, after the date
     mod.pages(m)
+    m.check_web()
     return m
 
 

@@ -16,6 +16,7 @@ dependencies = [
     "pillow",
     "playwright",
     "pypdf",
+    "pyyaml>=6.0.4",
 ]
 
 [tool.uv]

@@ -55,6 +55,33 @@ body {
     opacity: 0.45;
 }
 
+.wb-form {
+    display: inline-flex;
+}
+
+.wb-form[hidden] {
+    display: none;
+}
+
+.wb-bar .wb-form button {
+    border-radius: 0;
+}
+
+.wb-bar .wb-form button:first-child {
+    border-radius: 4px 0 0 4px;
+}
+
+.wb-bar .wb-form button + button {
+    border-left: 0;
+    border-radius: 0 4px 4px 0;
+}
+
+.wb-bar .wb-form button[aria-pressed="true"] {
+    color: var(--paper);
+    background: var(--ink);
+    border-color: var(--ink);
+}
+
 #save:not(:disabled) {
     border-color: var(--accent);
     color: var(--paper);
