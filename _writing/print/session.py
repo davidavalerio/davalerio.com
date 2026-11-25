@@ -123,7 +123,7 @@ class Session:
         else:
             page, f, l = self.find(msg['label'])
             base = {'page': page.n, 'frame': f.key, 'layer': l.layer, 'key': l.key}
-            lonlat = lambda xy: [round(v, 6) for v in f.frame_to_lonlat(*xy)]
+            lonlat = lambda xy: [round(float(v), 6) for v in f.frame_to_lonlat(*xy)]
             own = next((i for i, p in enumerate(pins) if p is l.pin), None)
             slides = l.glyphs is not None and l.line is not None
             mine = lambda p: (p.get('page', 1), p.get('frame', 'main'), p.get('layer'), str(p.get('key'))) == (page.n, f.key, l.layer, l.key)
@@ -133,7 +133,7 @@ class Session:
                 if slides:
                     return {**base, 'pin': 'place', 'line': l.line, 'along': round(l.along, 1), 'offset': round(l.offset, 2)}
                 if l.kind == 'point':
-                    return {**base, 'pin': 'place', 'offset': [round(l.lines[0][1] - l.anchor[0], 2), round(l.lines[0][2] - l.anchor[1], 2)]}
+                    return {**base, 'pin': 'place', 'offset': [round(float(l.lines[0][1] - l.anchor[0]), 2), round(float(l.lines[0][2] - l.anchor[1]), 2)]}
                 return {**base, 'pin': 'place', 'at': lonlat(l.centre)}
 
             def put(pin):
@@ -155,7 +155,7 @@ class Session:
                     put({**base, 'pin': 'place', 'line': l.line, 'along': round(int(d.argmin()) * LB.STEP / f.s, 1), 'offset': round(l.offset, 2)})
                 elif l.kind == 'point':
                     start = (l.lines[0][1] + msg['dx'], l.lines[0][2] + msg['dy'])
-                    put({**base, 'pin': 'place', 'offset': [round(start[0] - l.anchor[0], 2), round(start[1] - l.anchor[1], 2)]})
+                    put({**base, 'pin': 'place', 'offset': [round(float(start[0] - l.anchor[0]), 2), round(float(start[1] - l.anchor[1]), 2)]})
                 else:
                     put({**base, 'pin': 'place', 'at': lonlat((l.centre[0] + msg['dx'], l.centre[1] + msg['dy']))})
             elif action == 'text':
@@ -255,7 +255,7 @@ def main():
             import traceback
             traceback.print_exc()
             reply = {'id': msg.get('id'), 'error': f'{type(e).__name__}: {e}'}
-        out.write(json.dumps(reply, ensure_ascii=False) + '\n')
+        out.write(json.dumps(reply, ensure_ascii=False, default=float) + '\n')
         out.flush()
 
 
