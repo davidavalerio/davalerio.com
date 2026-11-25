@@ -1,0 +1,22 @@
+[project]
+name = "print-maps"
+version = "0.1.0"
+description = "Print maps built from code: Python does the geography, pinned Chromium prints the page."
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    "geopandas",
+    "pyogrio",
+    "shapely",
+    "pyproj",
+    "rasterio",
+    "numpy",
+    "contourpy",
+    "uharfbuzz",
+    "fonttools",
+    "pillow",
+    "playwright",
+    "pypdf",
+]
+
+[tool.uv]
+package = false

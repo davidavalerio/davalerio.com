@@ -275,6 +275,69 @@ li:hover > .wb-tool,
     visibility: hidden;
 }
 
+/* A print map: its page in a frame, scaled to fit, under a small bar; notes on its labels beneath */
+.wb-page-print {
+    width: 100%;
+}
+
+.wb-print-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+    color: var(--stone);
+    font: 13px/1.4 'Source Serif 4', Georgia, serif;
+}
+
+.wb-print-bar .wb-print-tool,
+.wb-print-bar select {
+    font: inherit;
+    color: var(--ink);
+    background: var(--wb-field);
+    border: 1px solid var(--hair);
+    border-radius: 4px;
+    padding: 0.15rem 0.6rem;
+    cursor: pointer;
+}
+
+.wb-print-viewonly {
+    margin-left: 0.6rem;
+    color: var(--wb-error);
+}
+
+.wb-print-view {
+    overflow: auto;
+    max-height: calc(100vh - 140px);
+}
+
+.wb-print-view > div {
+    border: 1px solid var(--hair);
+    box-sizing: content-box;
+    overflow: hidden;
+}
+
+.wb-print-view iframe {
+    display: block;
+    border: 0;
+    background: #fff;
+    transform-origin: 0 0;
+}
+
+.wb-print-notes {
+    margin-top: 0.8rem;
+    color: var(--stone);
+    font: 13px/1.5 'Source Serif 4', Georgia, serif;
+}
+
+.wb-print-notes p {
+    margin: 0;
+}
+
+.wb-print-notes .wb-tool,
+.wb-print-bar .wb-print-tool {
+    opacity: 1;
+}
+
 /* On a narrow screen the panel goes below the piece */
 @media (max-width: 900px) {
     .wb-bar {
