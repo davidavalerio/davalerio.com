@@ -429,6 +429,7 @@ class Page:
 html,body{{margin:0;padding:0}}
 body{{width:{self.w_in}in;height:{self.h_in}in;position:relative;overflow:hidden;background:#fff;{m.css_vars()}}}
 body>div,body>svg{{position:absolute}}
+body>div{{z-index:1}}
 .title{{{T.css('serif-semibold')};color:{INK};white-space:pre}}
 .subtitle{{{T.css('serif')};color:{STONE};white-space:pre}}
 .credits{{{T.css('serif')};color:{STONE};white-space:pre}}
