@@ -231,10 +231,11 @@ class Session:
             fallback = None
             try:
                 out = self.apply()
-            except pm.BuildError as e:
-                # A saved value the page cannot be built with must not lock the map out: the setting at fault is found
-                # (the first that, put back to its default, lets the page build; failing that, all that differ from their
-                # defaults), the map opens with the default in its place, and the editor is told which.
+            except Exception as e:
+                # A saved value the page cannot be built with must not lock the map out. The settings at fault are found:
+                # the first that, put back to its default, lets the page build; failing that, every setting that differs
+                # from its default is put back, then each is returned to its saved value in turn and kept there if the
+                # page still builds, so only those the fault needs stay at their defaults. The editor is told which.
                 defaults = {d['key']: d['value'] for d in self.mod.SETTINGS}
                 differ = [k for k in self.values if self.values[k] != defaults[k]]
                 out, saved = None, dict(self.values)
@@ -243,10 +244,18 @@ class Session:
                     try:
                         out, bad = self.apply(), [k]
                         break
-                    except pm.BuildError:
+                    except Exception:
                         continue
                 if out is None:
-                    self.values, bad = {**saved, **{k: defaults[k] for k in differ}}, differ
+                    self.values = {**saved, **{k: defaults[k] for k in differ}}
+                    out, bad = self.apply(), list(differ)       # with every default the page must build, or the map cannot open
+                    for k in differ:
+                        self.values[k] = saved[k]
+                        try:
+                            out = self.apply()
+                            bad.remove(k)
+                        except Exception:
+                            self.values[k] = defaults[k]
                     out = self.apply()
                 for d in settings:
                     d['value'] = self.values[d['key']]

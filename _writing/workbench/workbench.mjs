@@ -25,7 +25,7 @@
 // For testing, WORKBENCH_PORT serves a second workbench on another port (not published over Tailscale) and
 // WORKBENCH_GIS points it at another GIS folder.
 import { createServer } from 'node:http';
-import { readFileSync, writeFileSync, readdirSync, existsSync, rmSync, openSync, writeSync, fsyncSync, closeSync, renameSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync, rmSync, openSync, fsyncSync, closeSync, renameSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { createHash } from 'node:crypto';
 import { join, normalize } from 'node:path';
@@ -320,11 +320,14 @@ function writeWhole(file, text) {
     try {
         const fd = openSync(part, 'w');
         try {
-            writeSync(fd, text);
+            writeFileSync(fd, text);     // every byte, however many writes it takes
             fsyncSync(fd);
         } finally {
             closeSync(fd);
         }
+        const back = readFileSync(part, 'utf8');     // what reached the disk is read again before it replaces anything
+        JSON.parse(back);
+        if (back !== text) throw new Error('what was written did not read back whole');
         renameSync(part, file);
     } catch (e) {
         rmSync(part, { force: true });

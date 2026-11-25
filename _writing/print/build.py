@@ -5,7 +5,7 @@ Chromium, joins the pages, checks the PDF, and draws the PNG from it. Everything
 (default: a folder of this build's own under ~/.local/share/workbench/print/<map>-<mark of the project folder>/); with --move, a build that passes every check is then
 moved into the project folder as YYYY-MM-DD-Name-Map.pdf and .png.
 """
-import argparse, fcntl, importlib.util, os, shutil, sys, tempfile, time
+import argparse, fcntl, hashlib, importlib.util, os, shutil, sys, tempfile, time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -15,7 +15,6 @@ from export import print_pdf, pdf_checks, png
 
 def scratch(project, name):
     """A map's working folder, its own for each project folder: a copy of a project elsewhere does not share it."""
-    import hashlib
     return Path.home() / '.local/share/workbench/print' / f'{name}-{hashlib.sha1(str(Path(project).resolve()).encode()).hexdigest()[:8]}'
 
 
@@ -48,12 +47,12 @@ def write_pages(m, out):
 def build(project, scripts=None, out=None, labels=True, move=False, quiet=False, **opts):
     say = (lambda *a: None) if quiet else print
     t0 = time.time()
-    m = load(project, scripts, labels=labels, **opts)
     # One build of a project at a time, whoever starts it (the workbench after a save, or this command by hand):
-    # a second waits for the first, up to two minutes. Each build works in a folder of its own.
-    home = scratch(project, m.name)
-    home.mkdir(parents=True, exist_ok=True)
-    lock = open(home / 'build.lock', 'w')
+    # a second waits for the first, up to two minutes. The lock is taken before the settings and data are read, so
+    # a build that waited builds what is saved when its turn comes. Each build works in a folder of its own.
+    root = Path.home() / '.local/share/workbench/print'
+    root.mkdir(parents=True, exist_ok=True)
+    lock = open(root / f'build-{hashlib.sha1(str(Path(project).resolve()).encode()).hexdigest()[:8]}.lock', 'w')
     waited = time.time()
     while True:
         try:
@@ -63,6 +62,9 @@ def build(project, scripts=None, out=None, labels=True, move=False, quiet=False,
             if time.time() - waited > 120:
                 raise pm.BuildError('another build of this map has been running for two minutes; this one was not started')
             time.sleep(0.25)
+    m = load(project, scripts, labels=labels, **opts)
+    home = scratch(project, m.name)
+    home.mkdir(parents=True, exist_ok=True)
     for old in home.glob('build-*'):        # with the lock held, any working folder left here is from a build that has ended
         shutil.rmtree(old, ignore_errors=True)
     own = out is None
