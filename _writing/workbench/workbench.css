@@ -122,6 +122,7 @@ body {
 
 /* Text edited in place: a faint outline shows what can be clicked into, and an empty box shows its name */
 .wb-edit {
+    white-space: pre-wrap;   /* the markdown's line breaks show while it is edited */
     border-radius: 2px;
     outline: 1px dashed transparent;
     outline-offset: 3px;

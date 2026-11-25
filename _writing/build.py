@@ -111,8 +111,9 @@ def esc(s):
 
 
 # A map's note and credits are markdown: each new line a line break, a blank line a new
-# paragraph, lines starting "- " a list, [text](url) a link, and a bare web address a link.
-TEXT_MD = "markdown+hard_line_breaks+autolink_bare_uris"
+# paragraph, lines starting "- " a list, [text](url) a link, and a full web address (https://…)
+# a link. Raw HTML is not let through.
+TEXT_MD = "markdown+hard_line_breaks+autolink_bare_uris+lists_without_preceding_blankline-raw_html"
 
 
 def md(s):

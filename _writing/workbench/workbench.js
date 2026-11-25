@@ -140,17 +140,20 @@ function textBox(tag, key, cls, placeholder) {
     return el;
 }
 
-// Markdown rendered by build.py, as the map's page renders it
+// Markdown rendered by build.py, as the map's page renders it; only the box's latest render is shown
+const renders = new WeakMap();
 async function render(el, text) {
+    const mine = (renders.get(el) || 0) + 1;
+    renders.set(el, mine);
     if (!text) return void (el.textContent = '');
     try {
         const res = await fetch('/api/render', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
         const { html, error } = await res.json();
         if (error) throw new Error(error);
         // An editable box keeps every line break it holds, so the HTML's own (between its tags) are taken out
-        if (document.activeElement !== el) el.innerHTML = html.replace(/\n/g, '');
+        if (document.activeElement !== el && renders.get(el) === mine) el.innerHTML = html.replace(/\n/g, '');
     } catch (e) {
-        if (document.activeElement !== el) el.textContent = text;
+        if (document.activeElement !== el && renders.get(el) === mine) el.textContent = text;
         say('Could not show the text as the page will: ' + e.message, 'error');
     }
 }
