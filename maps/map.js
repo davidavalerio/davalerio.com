@@ -145,6 +145,30 @@ export function show(state, viewName, animate) {
     else map.jumpTo(cam);
 }
 
+// While the map loads, its still stands in the map's box at the scale and centre the map opens at (the
+// still is the view framed at 1200 × 800), so the hand-over adds ground at the edges at most, never a jump
+// in scale; a still caption gives way to the map.
+function placeStill(el, viewName) {
+    const fig = el.querySelector('.still'), img = fig?.querySelector('img'), v = definition(el.dataset.map).views[viewName];
+    if (!img || !v) return;
+    fig.dataset.style = fig.getAttribute('style') || '';
+    img.dataset.style = img.getAttribute('style') || '';
+    const s = 2 ** (camera(v, el).zoom - v.zoom);
+    Object.assign(fig.style, { position: 'absolute', inset: '0', margin: '0', overflow: 'hidden' });
+    Object.assign(img.style, {
+        position: 'absolute', left: '50%', top: '50%', maxWidth: 'none', border: '0', transform: 'translate(-50%, -50%)',
+        width: +img.getAttribute('width') * s + 'px', height: +img.getAttribute('height') * s + 'px',
+    });
+    fig.querySelector('figcaption')?.style.setProperty('display', 'none');
+}
+function unplaceStill(el) {
+    const fig = el.querySelector('.still'), img = fig?.querySelector('img');
+    if (!img || img.dataset.style === undefined) return;
+    fig.setAttribute('style', fig.dataset.style);
+    img.setAttribute('style', img.dataset.style);
+    fig.querySelector('figcaption')?.style.removeProperty('display');
+}
+
 // The stills stay until the map has drawn once; a failed tile load brings them back.
 function whenDrawn(state, el) {
     state.map.once('idle', () => el.classList.add('ready'));
@@ -152,6 +176,7 @@ function whenDrawn(state, el) {
         console.warn('map:', e.error?.message || e);
         if (e.sourceId || e.tile) {
             el.classList.remove('ready', 'live');
+            unplaceStill(el);
             state.map.remove();
             el.querySelector('.map-canvas')?.remove();
         }
@@ -217,6 +242,7 @@ function scrolly(el) {
 
 function embed(el) {
     el.classList.add('live');
+    placeStill(el, el.dataset.view);
     const state = makeMap(el, el.dataset.map, { view: el.dataset.view, cooperative: true, popups: true });
     state.map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
     state.map.once('load', () => show(state, el.dataset.view, false));
@@ -227,6 +253,7 @@ function full(el) {
     const view = stillView || el.dataset.view;
     if (stillView) document.documentElement.classList.add('still-mode');
     el.classList.add('live');
+    if (!stillView) placeStill(el, view);
     // On a touch screen the page must still scroll past the map, so moving it takes two fingers.
     const state = makeMap(el, el.dataset.map, { view, interactive: !stillView, cooperative: matchMedia('(pointer: coarse)').matches, popups: !stillView });
     if (!stillView) state.map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
