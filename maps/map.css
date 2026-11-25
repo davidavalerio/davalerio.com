@@ -15,21 +15,6 @@
     --map-wide: min(82rem, calc(100vw - 3rem));
 }
 
-@media screen and (prefers-color-scheme: dark) {
-    :root {
-        --map-water: #3F5B70;
-        --map-contour: #5E5A54;
-        --map-city: #3A3833;
-        --map-city-line: #9BA0A4;
-        --map-shadow: #000000;
-        --map-highlight: #3A4045;
-        --map-coal-anthracite: #6B6964;
-        --map-coal-bituminous: #4F4D49;
-        --map-coal-subbituminous: #3A3936;
-        --map-coal-lignite: #2B2C2B;
-    }
-}
-
 /* The canvas and its labels */
 
 .map-canvas {
@@ -60,10 +45,6 @@
     filter: brightness(0.75);
 }
 
-@media (prefers-color-scheme: dark) {
-    .map-label.water { filter: brightness(1.6); }
-}
-
 .map-label.off {
     visibility: hidden;
 }
@@ -73,16 +54,6 @@
     box-shadow: none !important;
     border: 1px solid var(--hair);
     background: var(--paper) !important;
-}
-
-@media (prefers-color-scheme: dark) {
-    .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
-        filter: invert(0.85);
-    }
-
-    .maplibregl-ctrl-group button + button {
-        border-top-color: var(--hair) !important;
-    }
 }
 
 .maplibregl-ctrl-attrib {

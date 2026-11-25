@@ -1,15 +1,9 @@
-/* The workbench: the piece as the site draws it, with a control panel beside it in the house style, light and dark. */
+/* The workbench: the piece as the site draws it, with a control panel beside it in the house style. */
 
 :root {
     --wb-field: color-mix(in srgb, var(--ink) 5%, var(--paper));
     --wb-hover: color-mix(in srgb, var(--ink) 9%, var(--paper));
     --wb-error: #9B3B32;
-}
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        --wb-error: #D9867B;
-    }
 }
 
 body {

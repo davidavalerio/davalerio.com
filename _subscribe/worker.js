@@ -274,7 +274,7 @@ function page(title, text, status, extra = "") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="color-scheme" content="light dark">
+    <meta name="color-scheme" content="light">
     <meta name="robots" content="noindex">
     <title>${title} — David Valerio</title>
     <link rel="icon" type="image/png" sizes="64x64" href="${SITE}/favicon.png">

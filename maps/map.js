@@ -13,7 +13,6 @@ const protocol = new pmtiles.Protocol();
 maplibregl.addProtocol('pmtiles', protocol.tile);
 
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
-const dark = matchMedia('(prefers-color-scheme: dark)');
 const params = new URLSearchParams(location.search);
 const stillView = params.get('still');
 
@@ -76,8 +75,6 @@ export function makeMap(el, name, opts = {}) {
     }
     const state = { map, def, labels, name, current: null };
     if (def.popup && opts.popups) popups(map, def.popup);
-    // Restyle when the device switches between light and dark.
-    dark.addEventListener('change', () => restyle(state));
     return state;
 }
 

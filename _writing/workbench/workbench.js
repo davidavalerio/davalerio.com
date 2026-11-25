@@ -79,24 +79,15 @@ async function terrainAdapter(piece) {
     state.map.addControl(new maplibre.NavigationControl({ visualizePitch: true }), 'top-right');
     await new Promise(ok => state.map.once('load', ok));
     show(state, def.start, false);
-    // The palette goes onto the page as overrides of the tokens, both modes seeded from the settings,
-    // applied for whichever mode the screen is in
+    // The palette goes onto the page as overrides of the tokens, seeded from the settings
     const tokens = {};
-    for (const s of piece.settings) {
-        const m = /^token\.(--map-[\w-]+)\.(light|dark)$/.exec(s.key);
-        if (m) (tokens[m[1]] ||= {})[m[2]] = s.value;
-    }
-    const dark = matchMedia('(prefers-color-scheme: dark)');
+    for (const s of piece.settings) if (s.key.startsWith('token.')) tokens[s.key.slice(6)] = s.value;
     let timer = 0;
     const paint = () => {
-        for (const [t, v] of Object.entries(tokens)) {
-            const val = dark.matches ? v.dark : v.light;
-            if (val) document.documentElement.style.setProperty(t, val);
-        }
+        for (const [t, v] of Object.entries(tokens)) if (v) document.documentElement.style.setProperty(t, v);
         clearTimeout(timer);   // a color picker fires as it is dragged; repaint once it rests
         timer = setTimeout(() => restyle(state), 150);
     };
-    dark.addEventListener('change', paint);
     paint();
     // A view is saved as it would be framed on a 1200 x 800 map: the zoom the site takes off for a smaller map is put back
     const cam = () => {
@@ -109,8 +100,7 @@ async function terrainAdapter(piece) {
                 def.exaggeration = v;
                 if (state.map.getTerrain()) state.map.setTerrain({ source: 'terrain', exaggeration: v });
             } else if (k.startsWith('token.')) {
-                const [, t, mode] = /^token\.(--map-[\w-]+)\.(light|dark)$/.exec(k);
-                (tokens[t] ||= {})[mode] = v;
+                tokens[k.slice(6)] = v;
                 paint();
             } else if (k.startsWith('view.')) {
                 Object.assign(def.views[k.slice(5)], v);
@@ -123,7 +113,6 @@ async function terrainAdapter(piece) {
         parts: [],
         cleanup() {
             Object.keys(tokens).forEach(t => document.documentElement.style.removeProperty(t));
-            dark.removeEventListener('change', paint);
             state.map.remove();
         },
     };
