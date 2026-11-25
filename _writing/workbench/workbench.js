@@ -283,6 +283,70 @@ function swatchEditor(it) {
     return row;
 }
 let openSwatch = null;   // the item whose swatch settings are showing
+
+// Dragging: a group by its heading, an item by its row. A press that moves a few pixels becomes a drag (so a
+// plain click still edits the text), a line in the accent shows where it will land, and letting go moves it.
+let drag = null;
+function dropTarget(x, y) {
+    const el = document.elementFromPoint(x, y);
+    if (!el || !legendEl.contains(el)) return null;
+    if (drag.type === 'group') {
+        const box = el.closest('.wb-legend-group');
+        if (!box) return null;
+        const r = box.getBoundingClientRect();
+        return { el: box, gi: +box.dataset.gi, after: y > r.top + r.height / 2 };
+    }
+    const li = el.closest('li[data-ii]');
+    if (li) {
+        const r = li.getBoundingClientRect();
+        return { el: li, gi: +li.dataset.gi, ii: +li.dataset.ii, after: y > r.top + r.height / 2 };
+    }
+    const box = el.closest('.wb-legend-group');   // over a heading: to the top of that group
+    return box ? { el: box.querySelector('li[data-ii]') || box, gi: +box.dataset.gi, ii: 0, after: false } : null;
+}
+function showDrop(t) {
+    legendEl.querySelectorAll('.wb-drop-before, .wb-drop-after').forEach(e => e.classList.remove('wb-drop-before', 'wb-drop-after'));
+    if (t) t.el.classList.add(t.after ? 'wb-drop-after' : 'wb-drop-before');
+}
+function startDrag(e, what) {
+    if (e.button !== 0 || e.target.closest('button, select, input')) return;
+    drag = { ...what, x: e.clientX, y: e.clientY, on: false, target: null };
+}
+addEventListener('pointermove', e => {
+    if (!drag) return;
+    if (!drag.on) {
+        if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 5) return;
+        drag.on = true;
+        document.activeElement?.blur?.();
+        getSelection().removeAllRanges();
+        document.body.classList.add('wb-dragging');
+    }
+    e.preventDefault();
+    drag.target = dropTarget(e.clientX, e.clientY);
+    showDrop(drag.target);
+});
+addEventListener('pointerup', () => {
+    if (!drag) return;
+    const d = drag;
+    drag = null;
+    if (!d.on) return;
+    document.body.classList.remove('wb-dragging');
+    showDrop(null);
+    addEventListener('click', e => (e.stopPropagation(), e.preventDefault()), { capture: true, once: true });
+    const t = d.target, legend = values.legend;
+    if (!t) return;
+    if (d.type === 'group') {
+        let to = t.gi + (t.after ? 1 : 0);
+        if (d.gi < to) to--;
+        legend.splice(to, 0, legend.splice(d.gi, 1)[0]);
+    } else {
+        const [it] = legend[d.gi].items.splice(d.ii, 1);
+        let to = t.ii + (t.after ? 1 : 0);
+        if (t.gi === d.gi && d.ii < to) to--;
+        legend[t.gi].items.splice(to, 0, it);
+    }
+    legendChanged();
+});
 function drawLegend() {
     if (!legendEl) return;
     const legend = values.legend;
@@ -292,8 +356,10 @@ function drawLegend() {
     legend.forEach((g, gi) => {
         const box = document.createElement('div');
         box.className = 'wb-legend-group';
+        box.dataset.gi = gi;
         const head = document.createElement('div');
         head.className = 'wb-legend-row';
+        head.addEventListener('pointerdown', e => startDrag(e, { type: 'group', gi }));
         head.append(legendText('h3', '', g.heading, 'Heading', v => (v ? (g.heading = v) : delete g.heading)),
             button('↑', 'Move this group up', () => gi > 0 && (move(legend, gi, -1), legendChanged())),
             button('↓', 'Move this group down', () => gi < legend.length - 1 && (move(legend, gi, 1), legendChanged())),
@@ -301,6 +367,9 @@ function drawLegend() {
         const ul = document.createElement('ul');
         g.items.forEach((it, ii) => {
             const li = document.createElement('li');
+            li.dataset.gi = gi;
+            li.dataset.ii = ii;
+            li.addEventListener('pointerdown', e => startDrag(e, { type: 'item', gi, ii }));
             const sw = swatch(it);
             sw.classList.add('wb-swatch');
             sw.title = 'Shape, colour and code';
