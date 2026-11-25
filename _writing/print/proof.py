@@ -1,9 +1,10 @@
 """The proof page: a hand-made page, no engine, that shows what the pinned Chromium writes into a PDF.
 
 Run after any change of Chromium (a Playwright bump): uv run proof.py <out folder>
-It prints letter, tabloid and 24 x 36 in pages and checks each with pdffonts, pdftotext and pdfimages.
+It prints letter, tabloid and 36 x 24 in pages, checks each with pdffonts, pdftotext and pdfimages, and draws
+a PNG of each (letter at 600 dpi) to be read.
 """
-import math, subprocess, sys, time
+import math, sys, time
 from pathlib import Path
 import numpy as np
 from PIL import Image

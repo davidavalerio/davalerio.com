@@ -57,8 +57,9 @@ def pdf_checks(pdf, strings, min_ppi=None, pages=1, size_in=None):
     if size_in and (abs(w - size_in[0] * 72) > 0.5 or abs(h - size_in[1] * 72) > 0.5):
         problems.append(f'page is {w} x {h} pt, expected {size_in[0] * 72} x {size_in[1] * 72}')
     encs = sorted({l[8] for l in images if l[2] == 'image'})
-    report = (f'fonts: {len(fonts)} ' + ', '.join(sorted({l.split()[0].split("+")[-1] for l in fonts})) +
-              f'\nimages: {len(ppis)}, ppi {min(min(p) for p in ppis):.0f} to {max(max(p) for p in ppis):.0f}, encoding {",".join(encs)}' * bool(ppis) +
+    image_line = (f'images: {len(ppis)}, ppi {min(min(p) for p in ppis):.0f} to {max(max(p) for p in ppis):.0f}, encoding {",".join(encs)}'
+                  if ppis else 'images: none')
+    report = (f'fonts: {len(fonts)} ' + ', '.join(sorted({l.split()[0].split("+")[-1] for l in fonts})) + f'\n{image_line}'
               f'\npage: {w} x {h} pt, {n} page(s)\n' + ('problems: ' + ' | '.join(problems) if problems else 'all checks passed'))
     return {'ok': not problems, 'problems': problems, 'report': report, 'text': txt}
 

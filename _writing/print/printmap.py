@@ -444,7 +444,7 @@ class Frame:
                 groups.append(f'<path id="{gid}" class="{L["kind"]}" d="{self.path_d(geoms)}"/>')
         label_svg = res.svg(f'{self.id}-labels') if res else ''
         return (f'<svg id="{self.id}" xmlns="http://www.w3.org/2000/svg" style="left:{self.x * k:.2f}pt;top:{self.y * k:.2f}pt;'
-                f'width:{self.w * k:.2f}pt;height:{self.h * k:.2f}pt" viewBox="0 0 {self.w:.3f} {self.h:.3f}">\n'
+                f'width:{self.w * k:.2f}pt;height:{self.h * k:.2f}pt;overflow:visible" viewBox="0 0 {self.w:.3f} {self.h:.3f}">\n'
                 f'<style>{"".join(css)}</style>\n<defs><clipPath id="{self.id}-clip"><rect width="{self.w:.3f}" height="{self.h:.3f}"/></clipPath></defs>\n'
                 f'<g clip-path="url(#{self.id}-clip)">\n' + '\n'.join(groups) + f'\n{label_svg}\n</g>\n'
                 f'<rect width="{self.w:.3f}" height="{self.h:.3f}" fill="none" stroke="{INK}" stroke-width="0.5"/>\n</svg>')

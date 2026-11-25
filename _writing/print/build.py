@@ -5,7 +5,7 @@ Chromium, joins the pages, checks the PDF, and draws the PNG from it. Everything
 (default ~/.local/share/workbench/print/<map>/build); with --move, a build that passes every check is then
 moved into the project folder as YYYY-MM-DD-Name-Map.pdf and .png.
 """
-import argparse, hashlib, importlib.util, json, shutil, sys, time
+import argparse, importlib.util, shutil, sys, time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -36,15 +36,6 @@ def write_pages(m, out):
         f.write_text(p.html(out))
         files.append(f)
     return files
-
-
-def label_strings(m):
-    out = []
-    for p in m.pages:
-        for f in p.frames:
-            if f.label_result:
-                out += [l.text.replace('\n', ' ') for l in f.label_result.placed]
-    return out
 
 
 def build(project, scripts=None, out=None, labels=True, move=False, quiet=False, **opts):
