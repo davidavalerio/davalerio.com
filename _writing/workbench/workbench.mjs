@@ -340,7 +340,7 @@ const server = createServer((req, res) => {
             return p ? sendFile(req, res, join(config.gis, p.build, 'Web', m[2])) : res.writeHead(404).end();
         }
         if (path === '/' || path.startsWith('/workbench/')) return sendFile(req, res, join(HERE, path === '/' ? 'index.html' : path.slice('/workbench/'.length)));
-        if (path.startsWith('/maps/') || path.startsWith('/writing/')) return sendFile(req, res, join(ROOT, path));
+        if (path.startsWith('/maps/') || path.startsWith('/writing/') || path.startsWith('/fonts/')) return sendFile(req, res, join(ROOT, path));
         res.writeHead(404).end('Not found');
     } catch (e) {
         json(res, 500, { error: e.message });
