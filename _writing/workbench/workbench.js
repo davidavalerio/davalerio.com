@@ -310,6 +310,8 @@ function showDrop(t) {
 }
 function startDrag(e, what) {
     if (e.button !== 0 || e.target.closest('button, select, input')) return;
+    // in a heading or label already being edited, a press selects text rather than dragging
+    if (e.target.closest('[contenteditable]') === document.activeElement) return;
     drag = { ...what, x: e.clientX, y: e.clientY, on: false, target: null };
 }
 addEventListener('pointermove', e => {
@@ -325,14 +327,23 @@ addEventListener('pointermove', e => {
     drag.target = dropTarget(e.clientX, e.clientY);
     showDrop(drag.target);
 });
-addEventListener('pointerup', () => {
-    if (!drag) return;
+// the click a drop ends in is not taken as a click on what lies under it
+let quietUntil = 0;
+addEventListener('click', e => performance.now() < quietUntil && (e.stopPropagation(), e.preventDefault()), { capture: true });
+function endDrag() {
     const d = drag;
     drag = null;
-    if (!d.on) return;
-    document.body.classList.remove('wb-dragging');
-    showDrop(null);
-    addEventListener('click', e => (e.stopPropagation(), e.preventDefault()), { capture: true, once: true });
+    if (d?.on) {
+        document.body.classList.remove('wb-dragging');
+        showDrop(null);
+    }
+    return d;
+}
+addEventListener('pointercancel', endDrag);
+addEventListener('pointerup', () => {
+    const d = endDrag();
+    if (!d?.on) return;
+    quietUntil = performance.now() + 250;
     const t = d.target, legend = values.legend;
     if (!t) return;
     if (d.type === 'group') {
