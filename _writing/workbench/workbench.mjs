@@ -67,12 +67,13 @@ function textSettings(name) {
 const ITEM_KEYS = ['code', 'shape', 'dash', 'color', 'label'];
 function checkLegend(legend) {
     if (!Array.isArray(legend)) throw new Error('the legend is not a list of groups');
+    const colours = palette().light;   // the map's colour tokens (a token holding no colour is refused)
     return legend.map(g => {
         const items = (g.items || []).map(it => {
             const out = {};
             const label = String(it.label ?? '').replace(/\s+/g, ' ').trim();
             if (!label) throw new Error('every legend item needs a label');
-            if (!/^(#[0-9A-Fa-f]{6}|--map-[\w-]+)$/.test(it.color || '')) throw new Error('"' + label + '" has no colour');
+            if (!/^#[0-9A-Fa-f]{6}$/.test(it.color || '') && !(it.color in colours)) throw new Error('"' + label + '" has no colour');
             const shape = it.shape || 'fill';
             if (!['fill', 'dot', 'line'].includes(shape)) throw new Error('"' + label + '" has an unknown shape');
             const code = String(it.code ?? '').trim();
@@ -109,8 +110,8 @@ function setLegendYaml(text, legend) {
         return [...lines, ...block, ''].join('\n');
     }
     let end = i + 1;
-    for (let j = i + 1; j < lines.length && (/^(\s+\S|- )/.test(lines[j]) || !lines[j].trim()); j++)
-        if (lines[j].trim()) end = j + 1;
+    for (let j = i + 1; j < lines.length && (/^(\s+\S|- )/.test(lines[j]) || /^\s*(#|$)/.test(lines[j])); j++)
+        if (!/^\s*(#|$)/.test(lines[j])) end = j + 1;
     lines.splice(i, end - i, ...block);
     return lines.join('\n');
 }
@@ -195,8 +196,8 @@ function setViewYaml(text, view, cam) {
 const ORDER = ['title', 'date', 'page', 'note', 'start', 'credits'];
 function valueEnd(lines, i) {
     let end = i + 1;
-    for (let j = i + 1; j < lines.length && (/^\s+\S/.test(lines[j]) || !lines[j].trim()); j++)
-        if (lines[j].trim()) end = j + 1;
+    for (let j = i + 1; j < lines.length && (/^\s+\S/.test(lines[j]) || /^\s*(#|$)/.test(lines[j])); j++)
+        if (!/^\s*(#|$)/.test(lines[j])) end = j + 1;
     return end;
 }
 function setTextYaml(text, key, value) {

@@ -203,6 +203,8 @@ const button = (text, title, act) => {
     return b;
 };
 function legendChanged() {
+    // a group left with no items goes, so the legend stays saveable
+    for (let i = values.legend.length - 1; i >= 0; i--) if (!values.legend[i].items.length) values.legend.splice(i, 1);
     drawLegend();
     changed();
 }
@@ -218,13 +220,14 @@ function legendText(tag, cls, text, placeholder, set) {
     el.addEventListener('input', () => (set(el.textContent.replace(/\s+/g, ' ').trim()), changed()));
     return el;
 }
-// The colour tokens the map's layers use, from the site's map stylesheet
+// The colour tokens the map's layers use, from the site's map stylesheet (only those holding a colour)
 function mapTokens() {
     const names = new Set();
     for (const sheet of document.styleSheets) {
         try {
             for (const rule of sheet.cssRules)
-                for (const prop of rule.style || []) if (prop.startsWith('--map-')) names.add(prop);
+                for (const prop of rule.style || [])
+                    if (prop.startsWith('--map-') && /^#[0-9A-Fa-f]{6}$/.test(rule.style.getPropertyValue(prop).trim())) names.add(prop);
         } catch { /* a sheet from another origin */ }
     }
     return [...names].sort();
@@ -259,6 +262,15 @@ function swatchEditor(it) {
     row.append(pick([...tokens.map(t => [t, t.slice(6).replace(/-/g, ' ')]), ['custom', 'Other Colour']], custom ? 'custom' : it.color, v => {
         it.color = v === 'custom' ? (custom ? it.color : '#888888') : v;
     }));
+    const code = document.createElement('input');
+    code.type = 'text';
+    code.placeholder = 'Code';
+    code.value = it.code ?? '';
+    code.size = 6;
+    code.addEventListener('change', () => {
+        if (code.value.trim()) it.code = code.value.trim(); else delete it.code;
+        legendChanged();
+    });
     if (custom) {
         const input = document.createElement('input');
         input.type = 'color';
@@ -267,6 +279,7 @@ function swatchEditor(it) {
         input.addEventListener('change', legendChanged);
         row.append(input);
     }
+    row.append(code);
     return row;
 }
 let openSwatch = null;   // the item whose swatch settings are showing
@@ -290,8 +303,12 @@ function drawLegend() {
             const li = document.createElement('li');
             const sw = swatch(it);
             sw.classList.add('wb-swatch');
-            sw.title = 'Shape and colour';
-            sw.addEventListener('click', () => ((openSwatch = openSwatch === it ? null : it), drawLegend()));
+            sw.title = 'Shape, colour and code';
+            sw.tabIndex = 0;
+            sw.setAttribute('role', 'button');
+            const toggle = () => ((openSwatch = openSwatch === it ? null : it), drawLegend());
+            sw.addEventListener('click', toggle);
+            sw.addEventListener('keydown', e => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), toggle()));
             li.append(sw);
             if ('code' in it || g.items.some(x => x.code)) li.append(legendText('span', 'code', it.code, 'Code', v => (v ? (it.code = v) : delete it.code)));
             li.append(legendText('span', 'wb-label', it.label, 'Label', v => (it.label = v)),
