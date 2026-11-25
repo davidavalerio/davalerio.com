@@ -382,7 +382,10 @@ def place(frame):
         else:
             g = L['data']
             feats = {}
-            for k, t, ge in zip([keystr(k) for k in value_of(g, rule['key'])], [str(t) for t in value_of(g, rule['text'])], g.geometry.values):
+            ks = [keystr(k) for k in value_of(g, rule['key'])]
+            if rule.get('per_feature'):        # every feature its own label, keyed by the feature as well
+                ks = [f'{k}:{i}' for k, i in zip(ks, g.index)]
+            for k, t, ge in zip(ks, [str(t) for t in value_of(g, rule['text'])], g.geometry.values):
                 feats.setdefault(k, [t, []])[1].append(ge)
         prepared.append((rule, L, feats))
 
@@ -497,19 +500,21 @@ def place(frame):
         same = lambda key: [l for l in res.placed if l.rule is rule and l.key == key]
 
         if kind in ('point', 'area'):
-            for key, (text, geoms) in feats.items():
-                if pins_for(rule['layer'], key, 'place') or omitted(rule['layer'], key, (0, 0), -1):
-                    continue
+            from printmap import cached
+            sig = repr(sorted((k, str(v)) for k, v in rule.items() if not callable(v)))
+            memo = cached(('spots', str(frame.page.map.project), frame.at, frame.crs.to_wkt(), L['id'], L['where'], sig), dict)
+            quiet = rule.get('quiet', False)
+
+            def spots_for(key, text, geoms):
+                """Where a feature's label may go, cheapest first: (the symbol's place or None, [(cost, xy, align)])."""
                 shape = shapely.transform(shapely.union_all(np.array(geoms, dtype=object)), frame.to_frame)
-                label = Label(rule, key, text, kind)
-                placed = False
                 if kind == 'point':
                     pt = shapely.get_coordinates(shapely.centroid(shape))[0]
                     if not in_frame(pt):
-                        continue
+                        return None, []
                     r = L.get('radius', 0) if L['kind'] == 'point' else 0
                     gap = rule.get('gap', 1.4)
-                    w = T.width(text, rule['style'], size)
+                    w = max(T.width(t, rule['style'], size) for t in text.split('\n'))
                     top, bottom = vertical(text, size)
                     xh = T.metrics(rule['style'], size)['x']
                     d = (r + gap) * 0.75
@@ -517,24 +522,41 @@ def place(frame):
                              'NW': (pt[0] - d - w, pt[1] - d - bottom), 'SW': (pt[0] - d - w, pt[1] + d + top),
                              'E': (pt[0] + r + gap, pt[1] + xh / 2), 'W': (pt[0] - r - gap - w, pt[1] + xh / 2),
                              'N': (pt[0] - w / 2, pt[1] - r - gap - bottom), 'S': (pt[0] - w / 2, pt[1] + r + gap + top)}
-                    options = [(i * 1.0, spots[name], 'left') for i, name in enumerate(POINT_ORDER)]
-                else:
-                    visible = shapely.intersection(shapely.make_valid(shape), box(*inner))
-                    polys = [p for p in shapely.get_parts(visible) if shapely.get_type_id(p) == 3]
-                    if not polys:
-                        continue
-                    big = max(polys, key=lambda p: p.area)
-                    pole = shapely.get_coordinates(shapely.maximum_inscribed_circle(big, tolerance=0.5))[0]
-                    x0, y0, x1, y1 = big.bounds
-                    n = 12
-                    pt = None
-                    grid = np.array([(x0 + (i + 0.5) * (x1 - x0) / n, y0 + (j + 0.5) * (y1 - y0) / n) for j in range(n) for i in range(n)])
-                    pts = shapely.points(grid)
-                    keep = shapely.contains(big, pts)
-                    dist = shapely.distance(shapely.boundary(big), pts[keep])
-                    alts = grid[keep][np.argsort(-dist, kind='stable')]
-                    options = [(0.0, (float(pole[0]), float(pole[1])), 'centre')]
-                    options += [(0.5 + i * 0.05, (float(c[0]), float(c[1])), 'centre') for i, c in enumerate(alts[:60])]
+                    return (float(pt[0]), float(pt[1])), [(i * 1.0, spots[name], 'left') for i, name in enumerate(rule.get('positions', POINT_ORDER))]
+                x0, y0, x1, y1 = shapely.bounds(shape)
+                w, h = T.width(text, rule['style'], size), size
+                if rule.get('inside') and (x1 - x0 < w + 2 or y1 - y0 < h + 2):
+                    return None, []
+                visible = shapely.intersection(shapely.make_valid(shape), box(*inner))
+                polys = [p for p in shapely.get_parts(visible) if shapely.get_type_id(p) == 3]
+                if not polys:
+                    return None, []
+                big = max(polys, key=lambda p: p.area)
+                pole = shapely.get_coordinates(shapely.maximum_inscribed_circle(big, tolerance=0.5))[0]
+                x0, y0, x1, y1 = big.bounds
+                n = 12
+                grid = np.array([(x0 + (i + 0.5) * (x1 - x0) / n, y0 + (j + 0.5) * (y1 - y0) / n) for j in range(n) for i in range(n)])
+                pts = shapely.points(grid)
+                keep = shapely.contains(big, pts)
+                dist = shapely.distance(shapely.boundary(big), pts[keep])
+                alts = grid[keep][np.argsort(-dist, kind='stable')]
+                options = [(0.0, (float(pole[0]), float(pole[1])), 'centre')]
+                options += [(0.5 + i * 0.05, (float(c[0]), float(c[1])), 'centre') for i, c in enumerate(alts[:60])]
+                if rule.get('inside'):         # only where the whole name lies within its area
+                    fits = lambda c: big.contains(box(c[0] - w / 2 - 1, c[1] - h * 0.55, c[0] + w / 2 + 1, c[1] + h * 0.45))
+                    options = [o for o in options[:8] if fits(o[1])]
+                return None, options
+
+            for key, (text, geoms) in feats.items():
+                if pins_for(rule['layer'], key, 'place') or omitted(rule['layer'], key, (0, 0), -1):
+                    continue
+                if key not in memo:
+                    memo[key] = spots_for(key, text, geoms)
+                pt, options = memo[key]
+                if not options:
+                    continue
+                label = Label(rule, key, text, kind)
+                placed = False
                 best = None
                 for cost, xy, align in options:
                     if best is not None and cost >= best[0]:
@@ -551,7 +573,7 @@ def place(frame):
                     label, placed = best[1], True
                 if placed:
                     commit(label)
-                else:
+                elif not quiet:
                     res.unplaced.append(f'{rule["layer"]}: {text}')
                     ghost = Label(rule, key, text, kind)
                     straight(ghost, options[0][1][0], options[0][1][1], align=options[0][2])
@@ -693,14 +715,15 @@ def place(frame):
     for t, polys in clear.items():
         L = by_id[t]
         geoms = np.array(L['geoms'], dtype=object)
-        if L['kind'] == 'fill':
-            geoms = shapely.boundary(geoms)
         if not len(geoms):
             continue
+        areas = L['kind'] == 'fill' or bool(np.isin(shapely.get_type_id(geoms), (3, 6)).any())
+        if areas:                              # an outline is cut as a line; cutting the area would draw a box round the label
+            geoms = shapely.boundary(geoms)
         hole = shapely.union_all(shapely.buffer(np.array(polys, dtype=object), 0.5))
         tree = cut_trees.get(t) or cut_trees.setdefault(t, STRtree(geoms))
         hit = tree.query(hole, predicate='intersects')
         geoms[hit] = shapely.difference(geoms[hit], hole)
-        res.cut[t] = (geoms, None if L['kind'] == 'fill' else hit)
+        res.cut[t] = (geoms, None if areas else hit)
     return res
 

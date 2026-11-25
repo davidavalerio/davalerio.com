@@ -52,7 +52,7 @@ def _elevation(path, empty):
     return _dems[(path, empty)]
 
 
-def render(frame, dem, dpi, stops, low, high, empty=None, exaggeration=1.0, azimuth=292.5, altitude=45.0, strength=0.5, margin=0.0):
+def render(frame, dem, dpi, stops, low, high, empty=None, exaggeration=1.0, azimuth=292.5, altitude=45.0, strength=0.5, margin=0.0, hole='#ffffff'):
     """The relief for a frame (and a margin of ground around it, a share of its width and height) as an RGB
     array at the given dots per inch on the page."""
     k = frame.page.k
@@ -67,15 +67,15 @@ def render(frame, dem, dpi, stops, low, high, empty=None, exaggeration=1.0, azim
     reproject(z, dst, src_transform=src_transform, src_crs=src_crs, src_nodata=np.nan,
                   dst_transform=from_origin(gx0, gy1, cell, (gy1 - gy0) / H), dst_crs=frame.crs.to_wkt(), dst_nodata=np.nan,
                   resampling=Resampling.cubic)
-    hole = np.isnan(dst)
-    zf = np.where(hole, np.nanmin(dst) if not hole.all() else 0, dst)
+    empty_cells = np.isnan(dst)
+    zf = np.where(empty_cells, np.nanmin(dst) if not empty_cells.all() else 0, dst)
     s = shade(zf, cell, exaggeration, azimuth, altitude)
     factor = np.clip(1 + strength * (s - 1), 0, 1.12)
     t = np.clip((zf - low) / (high - low), 0, 1)
     xs = np.linspace(0, 1, len(stops))
     cols = np.array([hex_rgb(c) for c in stops], 'float32')
     rgb = np.stack([np.interp(t, xs, cols[:, i]) for i in range(3)], -1) * factor[..., None]
-    rgb[hole] = 255
+    rgb[empty_cells] = hex_rgb(hole)          # ground the raster does not cover
     return np.clip(rgb + 0.5, 0, 255).astype('uint8')
 
 

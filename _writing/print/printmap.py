@@ -190,45 +190,77 @@ class Map:
 
 
 class Page:
-    """One page, laid out by arithmetic from its size: title block, one main frame (with a legend column beside
-    it when the map has a legend), and beneath it the scale bar, credits and north arrow."""
+    """One page. Left alone, it is laid out by arithmetic from its size: title block, one main frame (with a
+    legend column beside it when the map has a legend), and beneath it the scale bar, credits and north arrow.
+    A map with its own arrangement calls `place` with where each piece goes and gives each frame its rectangle;
+    every position is in reference points from the page's top left."""
     def __init__(self, m, n, size, title, subtitle, credits):
         self.map, self.n, self.size = m, n, size
         self.w_in, self.h_in = PAGES[size]
         self.W, self.H = self.w_in * 72, self.h_in * 72
         self.k = max(1.0, min(self.W, self.H) / 792)          # reference points to page points
         self.title, self.subtitle, self.credits = title, subtitle, credits
-        self.frames = []
+        self.frames, self.notes = [], []
         self._legend = None
+        self.L = None             # where each piece goes
+        self.custom = False
         self.id = f'p{n}'
 
-    # the layout, in reference points (multiply by k for the page)
+    # the standard layout, in reference points (multiply by k for the page)
     MARGIN, TITLE_TOP, SUB_TOP, RULE_Y, FRAME_TOP, FOOT_GAP, BOTTOM = 34, 19, 46.5, 68, 76.5, 10, 30
     CREDIT_SIZE, CREDIT_LEAD, BAR_FRACTION = 6.5, 9.5, 0.26
 
-    def legend(self, groups, width=130, gap=14):
-        """A legend column to the right of the frame: groups, each an optional heading and its items, each a
-        label with a swatch (fill, dot or line; a line solid, dashed or dotted) in a colour or a colour
-        setting's key, and an optional code. Call it before `frame`."""
-        self._legend = (groups or [], width, gap)
+    def legend(self, groups, width=130, gap=14, rect=None, columns=1, swatch=(10.5, 6.6), size=7, lead=9.6, split='group'):
+        """The legend: groups, each an optional heading and its items, each a label with a swatch (fill, dot or
+        line; a line solid, dashed or dotted) in a colour or a colour setting's key, and an optional code. In the
+        standard layout it is a column `width` wide to the right of the frame (call it before `frame`); with
+        `rect` (x, y, w, h) it fills that rectangle in `columns`, whole groups to a column (`split='group'`) or
+        item by item (`split='item'`)."""
+        self._legend = dict(groups=groups or [], width=width, gap=gap, rect=rect, columns=columns, swatch=swatch, size=size, lead=lead, split=split)
+
+    def place(self, **where):
+        """A layout of the map's own: title=(x, y), subtitle=(x, y), rule=(x, y, w), credits=(x, y, w),
+        scale=[(frame key, x, y, greatest width, 'mi' or 'km', segments)], north=(frame key, right, top),
+        title_size, subtitle_size. A piece not named is not drawn."""
+        self.custom = True
+        self.L = {**(self.L or {}), **where}
+
+    def note(self, text, x, y, style='sans', size=7, color=STONE, lead=None, width=None):
+        """A line or paragraph of text set on the page at (x, y), wrapped to `width` when given."""
+        self.notes.append(dict(text=text, x=x, y=y, style=style, size=size, color=color, lead=lead or size * 1.36, width=width))
 
     def _layout(self):
         k = self.k
         Wr, Hr = self.W / k, self.H / k
         full = Wr - 2 * self.MARGIN
-        fw = full - (self._legend[1] + self._legend[2] if self._legend and self._legend[0] else 0)
-        self.full_w = full
-        self.credit_x = self.MARGIN + full * 0.37
-        self.credit_w = full * 0.63 - 40
-        self.credit_lines = self._credit_lines()
-        self.foot_h = max(34, len(self.credit_lines) * self.CREDIT_LEAD + 2)
+        lg = self._legend
+        fw = full - (lg['width'] + lg['gap'] if lg and lg['groups'] else 0)
+        x0 = self.MARGIN
+        self.L = {'title': (x0, self.TITLE_TOP), 'subtitle': (x0, self.SUB_TOP), 'rule': (x0, self.RULE_Y, full),
+                  'credits': (x0 + full * 0.37, 0, full * 0.63 - 40)}
+        lines = self._credit_lines()
+        self.foot_h = max(34, len(lines) * self.CREDIT_LEAD + 2)
         fh = Hr - self.FRAME_TOP - self.FOOT_GAP - self.foot_h - self.BOTTOM
-        self.rect = (self.MARGIN, self.FRAME_TOP, fw, fh)      # the main frame, reference points
+        fy2 = self.FRAME_TOP + fh + self.FOOT_GAP
+        self.L.update(frame=(x0, self.FRAME_TOP, fw, fh), credits=(x0 + full * 0.37, fy2, full * 0.63 - 40),
+                      scale=[('main', x0, fy2, fw * self.BAR_FRACTION, 'mi', 4)], north=('main', x0 + full, fy2))
+        if lg and lg['groups']:
+            lg['rect'] = (x0 + fw + lg['gap'], self.FRAME_TOP, lg['width'], fh)
 
-    def frame(self, crs, view, key='main'):
-        if not hasattr(self, 'rect'):
-            self._layout()
-        f = Frame(self, key, self.rect, crs, view)
+    def frame(self, crs, view, key='main', rect=None, border=True):
+        if rect is None:
+            if self.L is None or 'frame' not in self.L:
+                self._layout()
+            rect = self.L['frame']
+        f = Frame(self, key, rect, crs, view)
+        f.border = border
+        self.frames.append(f)
+        return f
+
+    def image(self, source, rect, key='main', citation=True):
+        """A frame holding a picture (a Blender render) in place of ground: positions in it run 0 to 1 across and
+        down, and labels are pinned by those."""
+        f = ImageFrame(self, key, rect, source, citation)
         self.frames.append(f)
         return f
 
@@ -252,16 +284,16 @@ class Page:
             s = s.replace('{sources}', '  ·  '.join(self.sources()) if with_sources else '')
         return s
 
-    def _credit_lines(self):
-        """Credits wrapped to their column with the page's own font metrics, so the footer's height is known.
-        A line breaks between its items (set apart by a middle dot) before it breaks inside one."""
-        fits = lambda s: T.width(s, 'serif', self.CREDIT_SIZE) <= self.credit_w
+    def _wrap(self, text, style, size, width, items=False):
+        """Text wrapped to a width with the page's own font metrics. With `items`, a line breaks between its items
+        (set apart by a middle dot) before it breaks inside one."""
+        fits = lambda s: T.width(s, style, size) <= width
         lines = []
-        for para in self._credit_text(with_sources=bool(self.frames)).split('\n'):
+        for para in text.split('\n'):
             cur = ''
-            for item in [i.strip() for i in para.split('·') if i.strip()]:
+            for item in ([i.strip() for i in para.split('·') if i.strip()] if items else [para]):
                 trial = f'{cur}  ·  {item}' if cur else item
-                if fits(trial):
+                if items and fits(trial):
                     cur = trial
                     continue
                 if cur:
@@ -274,82 +306,118 @@ class Page:
                         cur = word
                     else:
                         cur = trial
-            if cur:
-                lines.append(cur)
-        return lines
+            lines.append(cur)
+        return [l for l in lines if l] if items else lines
+
+    def _credit_lines(self):
+        return self._wrap(self._credit_text(with_sources=bool(self.frames)), 'serif', self.CREDIT_SIZE, self.L['credits'][2], items=True)
 
     def _legend_svg(self):
-        groups, width, gap = self._legend
+        lg = self._legend
         m, k = self.map, self.k
-        fx, fy, fw, fh = self.rect
-        out, y = [], 0.0
-        size, lead = 7, 9.6
-        for g in groups:
-            if g.get('heading'):
-                y += 8
-                out.append(f'<text x="0" y="{fmt(y)}" style="{T.css("sans-semibold")};font-size:7.5px;fill:{INK}">{esc(g["heading"])}</text>')
-                y += 5
+        x, y0, width, height = lg['rect']
+        cols = lg['columns']
+        gutter = 16
+        cw = (width - gutter * (cols - 1)) / cols
+        size, lead, (sw, sh) = lg['size'], lg['lead'], lg['swatch']
+        blocks = []          # (height, [svg with y from 0], starts a group)
+        for g in lg['groups']:
             coded = any(it.get('code') for it in g.get('items', []))
-            tx = 16 + (18 if coded else 0)
+            tx = sw + 5.5 + (size * 3.3 if coded else 0)
+            first = True
+            if g.get('heading'):
+                blocks.append((size + 6.5, [f'<text x="0" y="{fmt(size + 1)}" style="{T.css("sans-semibold")};font-size:{size + 0.5}px;fill:{INK}">{esc(g["heading"])}</text>'], True, True))
+                first = False
             for it in g.get('items', []):
                 c = m.color(it.get('color', INK))
                 shape = it.get('shape', 'fill')
+                rows = [r for r in self._wrap(str(it.get('label', '')), 'sans', size, cw - tx)] or ['']
+                h = max(sh + 2.6, len(rows) * lead) + 1.2
+                mid = min(sh / 2 + 1.3, h / 2)
+                base = mid + size * 0.34
+                out = []
                 if shape == 'dot':
-                    out.append(f'<circle cx="5" cy="{fmt(y + 4.6)}" r="2.3" style="fill:{c}"/>')
+                    out.append(f'<circle cx="{fmt(sw / 2)}" cy="{fmt(mid)}" r="{fmt(min(sw, sh) * 0.35)}" style="fill:{c}" stroke="#fff" stroke-width="0.4"/>')
                 elif shape == 'line':
-                    dash = {'dashed': ' stroke-dasharray="3 1.6"', 'dotted': ' stroke-dasharray="0.1 2" stroke-linecap="round"'}.get(it.get('dash'), '')
-                    out.append(f'<path d="M0,{fmt(y + 4.6)} H10.5" fill="none" stroke-width="1.1"{dash} style="stroke:{c}"/>')
+                    dash = {'dashed': ' stroke-dasharray="3 1.6"', 'dotted': ' stroke-dasharray="0.1 2.2" stroke-linecap="round"'}.get(it.get('dash'), '')
+                    out.append(f'<path d="M0,{fmt(mid)} H{fmt(sw)}" fill="none" stroke-width="{it.get("weight", 1.1)}"{dash} style="stroke:{c}"/>')
+                elif shape == 'ring':
+                    out.append(f'<circle cx="{fmt(sw / 2)}" cy="{fmt(mid)}" r="2" fill="#fff" stroke-width="0.8" style="stroke:{c}"/>')
                 else:
-                    out.append(f'<rect x="0" y="{fmt(y + 1.3)}" width="10.5" height="6.6" style="fill:{c}"/>')
+                    out.append(f'<rect x="0" y="{fmt(mid - sh / 2)}" width="{fmt(sw)}" height="{fmt(sh)}" style="fill:{c}" stroke="{STONE}" stroke-width="{0.25 if sh > 8 else 0}"/>')
                 if it.get('code'):
-                    out.append(f'<text x="16" y="{fmt(y + 7)}" style="{T.css("sans")};font-size:{size}px;fill:{STONE}">{esc(it["code"])}</text>')
-                words, line, rows = str(it.get('label', '')).split(), '', []
-                for w in words:
-                    trial = f'{line} {w}' if line else w
-                    if line and T.width(trial, 'sans', size) > width - tx:
-                        rows.append(line)
-                        line = w
-                    else:
-                        line = trial
-                rows.append(line)
-                for r in rows:
-                    out.append(f'<text x="{tx}" y="{fmt(y + 7)}" style="{T.css("sans")};font-size:{size}px;fill:{INK}">{esc(r)}</text>')
-                    y += lead
-                y += 1.2
-            y += 5
-        if y > fh:
-            raise BuildError('the legend is taller than the map frame; shorten it')
-        return (f'<svg id="{self.id}-legend" xmlns="http://www.w3.org/2000/svg" style="left:{(fx + fw + gap) * k:.2f}pt;top:{fy * k:.2f}pt;'
-                f'width:{width * k:.2f}pt;height:{fh * k:.2f}pt" viewBox="0 0 {width} {fmt(fh)}">' + ''.join(out) + '</svg>')
+                    out.append(f'<text x="{fmt(sw + 5.5)}" y="{fmt(base)}" style="{T.css("sans-semibold" if sh > 8 else "sans")};font-size:{size}px;fill:{INK if sh > 8 else STONE}">{esc(it["code"])}</text>')
+                for i, r in enumerate(rows):
+                    out.append(f'<text x="{fmt(tx)}" y="{fmt(base + i * lead)}" style="{T.css("sans")};font-size:{size}px;fill:{INK}">{esc(r)}</text>')
+                blocks.append((h, out, first, False))
+                first = False
+        # flow the blocks into the columns
+        if lg['split'] == 'group':
+            units, cur = [], []
+            for b in blocks:
+                if b[2] and cur:
+                    units.append(cur)
+                    cur = []
+                cur.append(b)
+            if cur:
+                units.append(cur)
+        else:
+            units = [[b] for b in blocks]
+        out, col, y = [], 0, 0.0
+        per_col = sum(b[0] for b in blocks) / cols          # whole groups go to the column their middle falls in
+        for u in units:
+            uh = sum(b[0] for b in u)
+            over = y + uh > per_col + 0.01 if lg['split'] == 'item' else y + uh / 2 > per_col
+            if y > 0 and (y + uh > height + 0.01 or over) and col < cols - 1:
+                col, y = col + 1, 0.0
+            if u[0][2] and u[0][3] and y > 0:
+                y += 6.5                       # air above a heading
+            for h, svg, _, _ in u:
+                out.append(f'<g transform="translate({fmt(col * (cw + gutter))} {fmt(y)})">' + ''.join(svg) + '</g>')
+                y += h
+            if y > height + 0.01:
+                raise BuildError('the legend does not fit its place on the page; shorten it')
+        return (f'<svg id="{self.id}-legend" xmlns="http://www.w3.org/2000/svg" style="left:{x * k:.2f}pt;top:{y0 * k:.2f}pt;'
+                f'width:{width * k:.2f}pt;height:{height * k:.2f}pt" viewBox="0 0 {fmt(width)} {fmt(height)}">' + ''.join(out) + '</svg>')
 
     def render(self, raster_dir):
         """The page in pieces: (head, parts), parts a list of (id, html) in order, the id None for the fixed
         markup between the pieces that can change. Rasters are written into `raster_dir`."""
         k = self.k
-        self.credit_lines = self._credit_lines()     # now that every layer is known
-        need = max(34, len(self.credit_lines) * self.CREDIT_LEAD + 2)
-        if need > self.foot_h + 0.01:
-            raise BuildError('the credits need more lines than the page was laid out for; shorten them or the sources')
         m = self.map
-        pt = lambda v: f'{v * k:.2f}pt'
-        x0 = self.MARGIN
-        fx, fy, fw, fh = self.rect
+        L = self.L
         i = self.id
-        parts = [
-            (f'{i}-title', f'<div id="{i}-title" class="title" data-setting="title" style="left:{pt(x0)};top:{pt(self.TITLE_TOP)};font-size:{pt(18)};line-height:{pt(24)}">{esc(self.title)}</div>'),
-            (f'{i}-subtitle', f'<div id="{i}-subtitle" class="subtitle" data-setting="subtitle" style="left:{pt(x0)};top:{pt(self.SUB_TOP)};font-size:{pt(9.5)};line-height:{pt(14)}">{esc(self.subtitle)}</div>'),
-            (None, f'<div class="rule" style="left:{pt(x0)};top:{pt(self.RULE_Y)};width:{pt(self.full_w)};height:{pt(1)}"></div>'),
-        ]
+        pt = lambda v: f'{v * k:.2f}pt'
+        self.credit_lines = self._credit_lines() if 'credits' in L else []     # now that every layer is known
+        if not self.custom and max(34, len(self.credit_lines) * self.CREDIT_LEAD + 2) > self.foot_h + 0.01:
+            raise BuildError('the credits need more lines than the page was laid out for; shorten them or the sources')
+        parts = []
+        if 'title' in L:
+            ts = L.get('title_size', 18)
+            parts.append((f'{i}-title', f'<div id="{i}-title" class="title" data-setting="title" style="left:{pt(L["title"][0])};top:{pt(L["title"][1])};font-size:{pt(ts)};line-height:{pt(ts * 1.33)}">{esc(self.title)}</div>'))
+        if 'subtitle' in L:
+            ss = L.get('subtitle_size', 9.5)
+            parts.append((f'{i}-subtitle', f'<div id="{i}-subtitle" class="subtitle" data-setting="subtitle" style="left:{pt(L["subtitle"][0])};top:{pt(L["subtitle"][1])};font-size:{pt(ss)};line-height:{pt(ss * 1.47)}">{esc(self.subtitle)}</div>'))
+        if 'rule' in L:
+            parts.append((None, f'<div class="rule" style="left:{pt(L["rule"][0])};top:{pt(L["rule"][1])};width:{pt(L["rule"][2])};height:{pt(1)}"></div>'))
         for f in self.frames:
             parts += f.parts(raster_dir)
-        main = self.frames[0]
-        fy2 = fy + fh + self.FOOT_GAP
-        if self._legend and self._legend[0]:
+        by_key = {f.key: f for f in self.frames}
+        if self._legend and self._legend['groups'] and self._legend['rect']:
             parts.append((f'{i}-legend', self._legend_svg()))
-        parts.append((f'{main.id}-scale', main.scale_bar_svg(x0, fy2, fw * self.BAR_FRACTION)))
-        parts.append((f'{i}-credits', f'<div id="{i}-credits" class="credits" data-setting="credits" style="left:{pt(self.credit_x)};top:{pt(fy2)};width:{pt(self.credit_w + 40)};'
-                      f'font-size:{pt(self.CREDIT_SIZE)};line-height:{pt(self.CREDIT_LEAD)}">' + '<br>'.join(esc(l) for l in self.credit_lines) + '</div>'))
-        parts.append((f'{main.id}-north', main.north_arrow_svg(x0 + self.full_w, fy2)))
+        for n, (fk, x, y, max_w, unit, segs) in enumerate(L.get('scale', [])):
+            f = by_key[fk]
+            parts.append((f'{f.id}-scale-{unit}', f.scale_bar_svg(x, y, max_w, unit, segs)))
+        if 'credits' in L:
+            cx, cy, cwid = L['credits']
+            parts.append((f'{i}-credits', f'<div id="{i}-credits" class="credits" data-setting="credits" style="left:{pt(cx)};top:{pt(cy)};width:{pt(cwid + 40)};'
+                          f'font-size:{pt(self.CREDIT_SIZE)};line-height:{pt(self.CREDIT_LEAD)}">' + '<br>'.join(esc(l) for l in self.credit_lines) + '</div>'))
+        if 'north' in L:
+            parts.append((f'{by_key[L["north"][0]].id}-north', by_key[L['north'][0]].north_arrow_svg(L['north'][1], L['north'][2])))
+        for n, t in enumerate(self.notes):
+            rows = self._wrap(t['text'], t['style'], t['size'], t['width']) if t['width'] else t['text'].split('\n')
+            parts.append((f'{i}-note-{n + 1}', f'<div id="{i}-note-{n + 1}" class="note" style="{T.css(t["style"])};color:{t["color"]};left:{pt(t["x"])};top:{pt(t["y"])};'
+                          f'font-size:{pt(t["size"])};line-height:{pt(t["lead"])}">' + '<br>'.join(esc(r) for r in rows) + '</div>'))
         head = f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>{esc(self.title)}</title>
 <style>
@@ -361,6 +429,7 @@ body>div,body>svg{{position:absolute}}
 .title{{{T.css('serif-semibold')};color:{INK};white-space:pre}}
 .subtitle{{{T.css('serif')};color:{STONE};white-space:pre}}
 .credits{{{T.css('serif')};color:{STONE};white-space:pre}}
+.note{{white-space:pre}}
 .rule{{background:{PLUM}}}
 svg text{{white-space:pre;text-rendering:geometricPrecision;font-variant-ligatures:none;font-kerning:normal}}
 svg .fill{{fill-rule:evenodd}}
@@ -394,8 +463,9 @@ class Frame:
         self.ground = (self.gx0, self.gy1 - gh, self.gx0 + gw, self.gy1)
         self.id = f'{page.id}-{key}'
         self.at = (round(self.gx0, 3), round(self.gy1, 3), round(self.s, 12), round(self.w, 4), round(self.h, 4), page.map.margin)   # what a cached stage depends on
-        self.layers, self.rules, self.citations = [], [], []
+        self.layers, self.rules, self.citations, self.notes = [], [], [], []
         self.label_result = None
+        self.border = True
 
     # ground <-> frame
     def to_frame(self, xy):
@@ -440,17 +510,23 @@ class Frame:
         elif show is False:
             return None
         g = self._ground_geoms(source, layer, where)
+        invert = more.pop('invert', False)
         L = {'kind': kind, 'id': id_, 'source': source, 'layer': layer, 'where': where, 'style': style, 'data': g, **more}
-        key = ('frame', str(m.path(source)), layer, where, self.crs.to_wkt(), self.at, m.preview)
+        key = ('frame', str(m.path(source)), layer, where, self.crs.to_wkt(), self.at, m.preview, invert)
 
         # Simplified once for the scale, to a tolerance too small to see, and before it is cut to the frame: what
         # lies in the frame is then the same whatever ground is kept around it, so the preview's labels are the print's
         def simplify():
             out = shapely.simplify(g.geometry.values, 0.04 / self.s, preserve_topology=False)
-            return out[~shapely.is_empty(out)]
+            out = out[~shapely.is_empty(out)]
+            if invert:               # everything but the layer: a veil over the ground outside it
+                gx0, gy0, gx1, gy1 = self.ground
+                far = 3 * max(gx1 - gx0, gy1 - gy0)
+                out = np.array([shapely.difference(box(gx0 - far, gy0 - far, gx1 + far, gy1 + far), shapely.union_all(shapely.make_valid(out)))], dtype=object)
+            return out
 
         def make():
-            geoms = self._to_frame_geoms(cached(('simple', *key[1:5], round(self.s, 12)), simplify))
+            geoms = self._to_frame_geoms(cached(('simple', *key[1:5], round(self.s, 12), invert and self.at), simplify))
             return geoms, ([] if kind in ('data', 'point') else [self.path_one(x) for x in geoms])
         L['geoms'], L['d'] = cached(key, make)
         self.layers.append(L)
@@ -458,8 +534,9 @@ class Frame:
             self.citations.append((f'{Path(source).name}, layer {layer}', cached(('cite', str(m.path(source)), layer), lambda: layer_citation(m.path(source), layer))))
         return L
 
-    def fill(self, id, source, layer, where=None, show=True, fill='none', stroke='none', weight=0, blend=None, opacity=None, dash=None):
-        return self._add('fill', id, source, layer, where, show, dict(fill=fill, stroke=stroke, weight=weight, blend=blend, opacity=opacity, dash=dash))
+    def fill(self, id, source, layer, where=None, show=True, fill='none', stroke='none', weight=0, blend=None, opacity=None, dash=None, invert=False, cite=True):
+        """Areas. With `invert`, the fill covers everything but the layer's areas."""
+        return self._add('fill', id, source, layer, where, show, dict(fill=fill, stroke=stroke, weight=weight, blend=blend, opacity=opacity, dash=dash), cite=cite, invert=invert)
 
     def line(self, id, source, layer, where=None, show=True, stroke=INK, weight=0.3, dash=None, opacity=None, blend=None):
         return self._add('line', id, source, layer, where, show, dict(stroke=stroke, weight=weight, dash=dash, opacity=opacity, blend=blend))
@@ -486,6 +563,14 @@ class Frame:
             return
         self.rules.append({'layer': layer, 'text': text, 'kind': kind, 'style': style, 'size': size, 'color': color,
                            'priority': priority, 'key': key or text, **opts})
+
+    def note(self, text, at, style='sans', size=7, color=STONE, rotate=0, spacing=0):
+        """Lettering set on the map by hand: text centred at a longitude and latitude, turned counter-clockwise by
+        the given degrees and letterspaced. It is drawn as given; labels do not move for it."""
+        x, y = self.lonlat_to_frame(*at)
+        w = T.width(text, style, size, spacing)
+        self.notes.append(f'<text x="{fmt(x - w / 2)}" y="{fmt(y + size * 0.33)}" transform="rotate({-rotate} {fmt(x)} {fmt(y)})" '
+                          f'style="{T.css(style)};font-size:{size}px;fill:{color};letter-spacing:{spacing}px">{esc(text)}</text>')
 
     def place_labels(self):
         if self.label_result is None and self.rules and self.page.map.labels:
@@ -554,6 +639,14 @@ class Frame:
                 continue
             if L['kind'] == 'data':
                 continue
+            if L['kind'] == 'picture':         # copied beside the page, under a name that changes when the picture does
+                import hashlib, shutil
+                src = m.path(L['source'])
+                name = f'{gid}-{hashlib.sha1(src.read_bytes()).hexdigest()[:10]}{src.suffix}'
+                if not (Path(raster_dir) / name).exists():
+                    shutil.copyfile(src, Path(raster_dir) / name)
+                out.append((gid, f'<image id="{gid}" href="{m.raster_base}{name}" x="0" y="0" width="{self.w:.3f}" height="{self.h:.3f}" preserveAspectRatio="none"/>'))
+                continue
             css.append(self._css(L))
             if L['kind'] == 'point':
                 pts = shapely.get_coordinates(L['geoms'])
@@ -579,7 +672,9 @@ class Frame:
                    f'width:{self.w * k:.2f}pt;height:{self.h * k:.2f}pt;overflow:visible" viewBox="0 0 {w} {h}">\n'
                    f'<defs><clipPath id="{self.id}-clip"><rect width="{w}" height="{h}"/></clipPath></defs>\n'
                    f'<g clip-path="url(#{self.id}-clip)"><g id="{self.id}-content">')
-        closing = f'</g></g>\n<rect width="{w}" height="{h}" fill="none" stroke="{INK}" stroke-width="0.5"/>\n</svg>'
+        if self.notes:
+            out.append((f'{self.id}-notes', f'<g id="{self.id}-notes">' + ''.join(self.notes) + '</g>'))
+        closing = '</g></g>\n' + (f'<rect width="{w}" height="{h}" fill="none" stroke="{INK}" stroke-width="0.5"/>\n' if self.border else '') + '</svg>'
         return [(None, opening), (f'{self.id}-style', f'<style id="{self.id}-style">{"".join(css)}</style>'), *out, (None, closing)]
 
     # furniture
@@ -590,22 +685,22 @@ class Frame:
         b = self.to_lonlat.transform(gx1, (gy0 + gy1) / 2)
         return pyproj.Geod(ellps='WGS84').inv(a[0], a[1], b[0], b[1])[2] / self.w
 
-    def scale_bar_svg(self, x, y, max_w):
-        """A bar in miles: four alternating segments of a round length, at most `max_w` wide."""
+    def scale_bar_svg(self, x, y, max_w, unit='mi', segments=4):
+        """A bar in miles or kilometres: alternating segments of a round length, no wider than asked."""
         k = self.page.k
-        per_mile = 1609.344 / self.metres_per_unit()
-        seg = next((s for s in (500, 250, 200, 100, 50, 25, 20, 10, 5, 2.5, 2, 1, 0.5, 0.25, 0.2, 0.1, 0.05) if 4 * s * per_mile <= max_w), 0.05)
-        sw = seg * per_mile
+        per = {'mi': 1609.344, 'km': 1000.0}[unit] / self.metres_per_unit()
+        seg = next((s for s in (500, 250, 200, 100, 50, 25, 20, 10, 5, 2.5, 2, 1, 0.5, 0.25, 0.2, 0.1, 0.05) if segments * s * per <= max_w), 0.05)
+        sw = seg * per
         num = lambda v: f'{v:g}'
         parts = []
-        for i in range(4):
+        for i in range(segments):
             parts.append(f'<rect x="{fmt(i * sw)}" y="11.5" width="{fmt(sw)}" height="4" fill="{INK if i % 2 == 0 else "#fff"}" stroke="{INK}" stroke-width="0.5"/>')
-        for i in range(5):
-            label = num(i * seg) + (' mi' if i == 4 else '')
+        for i in range(segments + 1):
+            label = num(i * seg) + (f' {unit}' if i == segments else '')
             anchor_x = i * sw - T.width(num(i * seg), 'sans', 7) / 2
             parts.append(f'<text x="{fmt(anchor_x)}" y="8" style="{T.css("sans")};font-size:7px;fill:{INK}">{label}</text>')
-        w = 4 * sw + 30
-        return (f'<svg id="{self.id}-scale" xmlns="http://www.w3.org/2000/svg" style="left:{(x - 6) * k:.2f}pt;top:{y * k:.2f}pt;width:{w * k:.2f}pt;height:{20 * k:.2f}pt;overflow:visible" '
+        w = segments * sw + 30
+        return (f'<svg id="{self.id}-scale-{unit}" xmlns="http://www.w3.org/2000/svg" style="left:{(x - 6) * k:.2f}pt;top:{y * k:.2f}pt;width:{w * k:.2f}pt;height:{20 * k:.2f}pt;overflow:visible" '
                 f'viewBox="-6 0 {w:.2f} 20">' + ''.join(parts) + '</svg>')
 
     def north_angle(self):
@@ -623,6 +718,51 @@ class Frame:
         return (f'<svg id="{self.id}-north" xmlns="http://www.w3.org/2000/svg" style="left:{(right - w) * k:.2f}pt;top:{top * k:.2f}pt;width:{w * k:.2f}pt;height:{h * k:.2f}pt;overflow:visible" '
                 f'viewBox="-4 -8 8 16"><g transform="rotate({self.north_angle():.2f})"><path d="M0,-2 L0,8" fill="none" stroke="{INK}" stroke-width="0.5"/>'
                 f'<path d="M0,-8 L2.1,-1.2 L0,-2.6 L-2.1,-1.2Z" fill="{INK}"/></g></svg>')
+
+
+class _Plain:
+    """Stands where a projection would for a frame that shows a picture."""
+    def to_wkt(self):
+        return 'picture'
+
+
+class ImageFrame(Frame):
+    """A rectangle on the page holding a picture in place of ground. Positions in it run 0 to 1 across and down;
+    lettering, lines and labels are given in those, and a label's pin is kept in them."""
+    def __init__(self, page, key, rect, source, citation=True):
+        self.page, self.key, self.view = page, key, None
+        self.x, self.y, self.w, self.h = rect
+        self.crs, self.s = _Plain(), 1.0
+        self.id = f'{page.id}-{key}'
+        self.at = ('picture', str(source), tuple(round(v, 4) for v in rect))
+        self.layers, self.rules, self.citations, self.notes = [], [], [], []
+        self.label_result, self.border = None, False
+        m = page.map
+        self.layers.append({'kind': 'picture', 'id': 'picture', 'source': source})
+        if citation:
+            self.citations.append((Path(source).name, raster_citation(m.path(source))))
+
+    def to_frame(self, xy):
+        return np.asarray(xy, dtype='float64') * [self.w, self.h]
+
+    def lonlat_to_frame(self, u, v):
+        return u * self.w, v * self.h
+
+    def frame_to_lonlat(self, x, y):
+        return x / self.w, y / self.h
+
+    def shapes(self, id, kind, geoms, **style):
+        """Lines, areas or points drawn over the picture, given as shapely geometries in its 0-to-1 positions.
+        For points, `rows` (a dict of columns) gives each its attributes, to be labelled from."""
+        import geopandas as gpd
+        rows = style.pop('rows', None)
+        g = gpd.GeoDataFrame(rows or {}, geometry=list(geoms))
+        L = {'kind': kind, 'id': id, 'source': None, 'layer': id, 'where': None, 'data': g, 'radius': style.pop('radius', 0),
+             'style': {'fill': 'none', 'stroke': 'none', 'weight': 0, **style}}
+        L['geoms'] = shapely.transform(np.array(g.geometry.values, dtype=object), self.to_frame)
+        L['d'] = [] if kind in ('data', 'point') else [self.path_one(x) for x in L['geoms']]
+        self.layers.append(L)
+        return L
 
 
 def load_settings(scripts):

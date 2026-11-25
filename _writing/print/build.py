@@ -23,6 +23,7 @@ def load(project, scripts=None, **opts):
     saved = opts.pop('saved', None)
     m = pm.Map(project, mod.SETTINGS, pm.load_settings(scripts) if saved is None else saved, **opts)
     m.name = mod.NAME
+    m.output = getattr(mod, 'OUTPUT', None) or mod.NAME.replace(' ', '-') + '-Map'      # the files' name, after the date
     mod.pages(m)
     return m
 
@@ -45,7 +46,7 @@ def build(project, scripts=None, out=None, labels=True, move=False, quiet=False,
     out = Path(out or Path.home() / '.local/share/workbench/print' / m.name / 'build')
     files = write_pages(m, out)
     t1 = time.time()
-    stem = f'{m.today}-{m.name.replace(" ", "-")}-Map'
+    stem = f'{m.today}-{m.output}'
     pdfs = []
     for p, f in zip(m.pages, files):
         one = out / f'page-{p.n}.pdf'
@@ -69,16 +70,21 @@ def build(project, scripts=None, out=None, labels=True, move=False, quiet=False,
         r = pdf_checks(one, [s for s in strings if s], min_ppi=m.dpi - 2 if has_raster else None, size_in=(p.w_in, p.h_in))
         ok &= r['ok']
         reports.append(f'page {p.n} ({p.size}):\n{r["report"]}')
-    image = png(pdf, out / f'{stem}.png', 200 if max(m.pages[0].w_in, m.pages[0].h_in) <= 17 else 100)
+    dpi = 200 if max(m.pages[0].w_in, m.pages[0].h_in) <= 17 else 100
+    if len(pdfs) == 1:
+        images = [png(pdf, out / f'{stem}.png', dpi)]
+    else:                                     # a picture of every page
+        images = [png(one, out / f'{stem}-Page-{p.n}.png', dpi) for p, one in zip(m.pages, pdfs)]
+    image = images[0]
     t3 = time.time()
     unplaced = [(f.id, l) for p in m.pages for f in p.frames if f.label_result for l in f.label_result.unplaced]
     placed = sum(len(f.label_result.placed) for p in m.pages for f in p.frames if f.label_result)
     say('\n'.join(reports))
     say(f'labels: {placed} placed, {len(unplaced)} left off' + ''.join(f'\n  left off: {fid} {u}' for fid, u in unplaced))
     say(f'time: pages {t1 - t0:.2f}s, Chromium {t2 - t1:.2f}s, checks and PNG {t3 - t2:.2f}s')
-    result = {'ok': ok, 'pdf': pdf, 'png': image, 'pages': files, 'map': m}
+    result = {'ok': ok, 'pdf': pdf, 'png': image, 'pngs': images, 'pages': files, 'map': m}
     if ok and move:
-        for f in (pdf, image):
+        for f in (pdf, *images):
             shutil.copyfile(f, Path(project) / f.name)
         say('moved into', project)
     say('BUILD', 'PASSED' if ok else 'FAILED', pdf)
