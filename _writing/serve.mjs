@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(fileURLToPath(import.meta.url), '..', '..');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.mjs': 'text/javascript',
     '.json': 'application/json', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.pdf': 'application/pdf',
-    '.xml': 'application/xml', '.pmtiles': 'application/octet-stream', '.woff2': 'font/woff2' };
+    '.xml': 'application/xml', '.pmtiles': 'application/octet-stream', '.woff2': 'font/woff2', '.ttf': 'font/ttf' };
 
 export function serve(port = 8642) {
     const server = createServer((req, res) => {
