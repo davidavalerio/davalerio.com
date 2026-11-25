@@ -128,26 +128,30 @@ function setViewYaml(text, view, cam) {
     return lines.join('\n');
 }
 
-// A text setting replaces its key's whole value (continuation lines included) as one single-quoted line,
-// goes in after the keys that come before it when the definition lacks it, and is dropped when emptied
+// A text setting (markdown) replaces its key's whole value (continuation lines included): one line as a
+// single-quoted line, several as a literal block, so its line breaks, lists and links keep. It goes in after
+// the keys that come before it when the definition lacks it, and is dropped when emptied.
 const ORDER = ['title', 'date', 'page', 'note', 'start', 'credits'];
+function valueEnd(lines, i) {
+    let end = i + 1;
+    for (let j = i + 1; j < lines.length && (/^\s+\S/.test(lines[j]) || !lines[j].trim()); j++)
+        if (lines[j].trim()) end = j + 1;
+    return end;
+}
 function setTextYaml(text, key, value) {
     const lines = text.split('\n');
-    value = value.replace(/\s+/g, ' ').trim();
-    const line = value ? [key + ": '" + value.replace(/'/g, "''") + "'"] : [];
+    value = value.replace(/\r/g, '').split('\n').map(l => l.replace(/\s+$/, '')).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+    const line = !value ? []
+        : value.includes('\n') ? [key + ': |-', ...value.split('\n').map(l => (l ? '  ' + l : ''))]
+        : [key + ": '" + value.replace(/'/g, "''") + "'"];
     let i = lines.findIndex(l => l.startsWith(key + ':'));
     if (i >= 0) {
-        let end = i + 1;
-        while (end < lines.length && /^\s+\S/.test(lines[end])) end++;
-        lines.splice(i, end - i, ...line);
+        lines.splice(i, valueEnd(lines, i) - i, ...line);
     } else if (value) {
         let at = 0;
         for (const k of ORDER.slice(0, ORDER.indexOf(key))) {
-            let j = lines.findIndex(l => l.startsWith(k + ':'));
-            if (j < 0) continue;
-            j++;
-            while (j < lines.length && /^\s+\S/.test(lines[j])) j++;
-            at = Math.max(at, j);
+            const j = lines.findIndex(l => l.startsWith(k + ':'));
+            if (j >= 0) at = Math.max(at, valueEnd(lines, j));
         }
         lines.splice(at, 0, ...line);
     }
@@ -224,8 +228,8 @@ const server = createServer((req, res) => {
             const p = piece(m[1]);
             return p ? json(res, 200, p) : json(res, 404, { error: 'no such piece' });
         }
-        if (m && req.method === 'POST') {
-            // Saves come only from the workbench's own page: JSON (which another site's page cannot send without
+        if ((m || path === '/api/render') && req.method === 'POST') {
+            // Saves (and text to render) come only from the workbench's own page: JSON (which another site's page cannot send without
             // asking first, and is never answered) from the same origin it is served at
             const origin = req.headers.origin;
             if (!/^application\/json\b/.test(req.headers['content-type'] || '') || (origin && new URL(origin).host !== req.headers.host))
@@ -234,6 +238,13 @@ const server = createServer((req, res) => {
             req.on('data', d => (body += d));
             req.on('end', () => {
                 try {
+                    // A note or credits as the map's page will show it, through build.py's own markdown
+                    if (!m) {
+                        const r = spawnSync('uv', ['run', '-q', '--no-project', '--with', 'pyyaml', 'python3', '_writing/build.py', '--md'],
+                            { cwd: ROOT, encoding: 'utf8', input: String(JSON.parse(body).text ?? '') });
+                        if (r.status !== 0) throw new Error('build.py: ' + (r.stderr || 'failed').trim().split('\n').pop());
+                        return json(res, 200, { html: r.stdout.trim() });
+                    }
                     const p = pieces().find(x => x.name === m[1]);
                     if (!p) return json(res, 404, { error: 'no such piece' });
                     const values = JSON.parse(body).values;

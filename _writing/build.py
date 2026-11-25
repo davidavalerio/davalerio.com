@@ -29,6 +29,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 
 import yaml
 
@@ -107,6 +108,32 @@ NOTICES = {
 
 def esc(s):
     return html.escape(s or "", quote=True)
+
+
+# A map's note and credits are markdown: each new line a line break, a blank line a new
+# paragraph, lines starting "- " a list, [text](url) a link, and a full web address (https://…)
+# a link. Raw HTML is not let through.
+TEXT_MD = "markdown+hard_line_breaks+autolink_bare_uris+lists_without_preceding_blankline-raw_html"
+
+
+def md(s):
+    """A map's note or credits as HTML blocks."""
+    if not s:
+        return ""
+    return subprocess.run(["pandoc", "-f", TEXT_MD, "-t", "html", "--wrap=none"], input=s,
+                          capture_output=True, text=True, check=True).stdout.strip()
+
+
+def md_inline(s):
+    """The same text run into one line, for a caption: paragraphs and list items joined, links kept."""
+    out = re.sub(r"</(p|li)>\s*", " ", md(s))
+    out = re.sub(r"<br\s*/?>", " ", re.sub(r"</?(p|ul|ol|li)>", "", out))
+    return re.sub(r"\s+", " ", out).strip()
+
+
+def md_plain(s):
+    """The same text as plain words, for a page's description."""
+    return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", md(s)))).strip()
 
 
 def load(maps=None, folder=SRC, draft=False):
@@ -198,9 +225,9 @@ def notice_page(slug, title, text):
 def offline(p):
     """A piece's body as it reads away from the site (the feed and email), with a map's
     credits once, at the end."""
-    body = re.sub(r'\s*<(p|span) class="map-credits">.*?</\1>', "", p["body"], flags=re.S)
+    body = re.sub(r'\s*<(div|span) class="map-credits">.*?</\1>', "", p["body"], flags=re.S)
     if p.get("credits"):
-        body += '\n<p class="map-credits">{}</p>'.format(esc(p["credits"]))
+        body += '\n<div class="map-credits">{}</div>'.format(md(p["credits"]))
     return body
 
 
@@ -257,7 +284,7 @@ def map_body(body, map_name, m, slug, strict, page=None):
     holds plain prose: a fenced div or code block inside one would end it early."""
     page = page or "/writing/{}/".format(slug)
     out, pos, group, anchors = [], 0, [], {}
-    credits = '<p class="map-credits">{}</p>'.format(esc(m["credits"])) if m.get("credits") else ""
+    credits = '<div class="map-credits">{}</div>'.format(md(m["credits"])) if m.get("credits") else ""
 
     def flush():
         if not group:
@@ -291,7 +318,7 @@ def map_body(body, map_name, m, slug, strict, page=None):
         view, caption = e.group(1), e.group(2).strip()
         img = still(map_name, m, view, strict, caption="")
         img = img.replace('<figure class="still" style="margin: 1.6em 0;">', '<div class="still">').replace("</figure>", "</div>")
-        credit = '<span class="map-credits">{}</span>'.format(esc(m["credits"])) if m.get("credits") else ""
+        credit = '<span class="map-credits">{}</span>'.format(md_inline(m["credits"])) if m.get("credits") else ""
         cap = " ".join(x for x in (re.sub(r"</?p>", "", caption), credit) if x)
         cap = "<figcaption>{}</figcaption>".format(cap) if cap else ""
         return '<figure style="margin: 1.6em 0;"><div class="map-embed" data-map="{}" data-view="{}">{}</div>{}</figure>'.format(
@@ -343,13 +370,13 @@ def map_page(name, m):
     if m.get("model"):
         head += '\n    <script type="module" src="{}"></script>'.format(asset("/maps/model.js"))
     out = HEAD.format(title=esc(m["title"]) + " — David Valerio", og_title=esc(m["title"]),
-                      description=esc(m.get("note", "")), url=url, og_type="article", og_image=og_image(share),
+                      description=esc(md_plain(m.get("note"))), url=url, og_type="article", og_image=og_image(share),
                       favicon=FAVICON, extra_head=map_head(name, {name: m}) if interactive else head, body_class=' class="wide"')
     out += '    <main>\n        <header class="post">\n'
     out += '            <p class="meta">Map · <time datetime="{0}">{0}</time></p>\n'.format(m["date"].isoformat())
     out += '            <h1>{}</h1>\n'.format(esc(m["title"]))
     if m.get("note"):
-        out += '            <p class="subtitle">{}</p>\n'.format(esc(m["note"]))
+        out += '            <div class="subtitle">{}</div>\n'.format(md(m["note"]))
     out += '        </header>\n'
     if interactive:
         out += '        <div class="map-full" data-map="{}" data-view="{}">{}</div>\n'.format(
@@ -364,7 +391,7 @@ def map_page(name, m):
     if m.get("legend"):
         out += legend(m["legend"])
     if m.get("credits"):
-        out += '        <p class="map-credits">{}</p>\n'.format(esc(m["credits"]))
+        out += '        <div class="map-credits">{}</div>\n'.format(md(m["credits"]))
     if m.get("pdf"):
         out += '        <p class="map-downloads"><a href="/maps/{}/{}">Download the PDF</a></p>\n'.format(name, m["pdf"])
     out += '        <footer class="post">\n        {}\n        <a href="/#maps">← Maps</a>\n        </footer>\n    </main>\n'.format(SUBSCRIBE)
@@ -473,7 +500,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--drafts", action="store_true", help="also build _writing/drafts/ into _preview/")
     parser.add_argument("--maps-only", action="store_true", help="build only the map pages (used by stills.mjs)")
+    parser.add_argument("--md", action="store_true", help="print a map note or credits read from stdin as HTML (used by the workbench)")
     args = parser.parse_args()
+    if args.md:
+        print(md(sys.stdin.read()))
+        return
     maps = load_maps()
     if args.maps_only:
         for name, m in maps.items():

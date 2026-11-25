@@ -28,7 +28,7 @@ import urllib.error
 import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from build import KIND_LABEL, SITE, SUBSCRIBE_NAME, esc, load, load_maps, map_page, offline, post_page, still_url  # noqa: E402
+from build import KIND_LABEL, SITE, SUBSCRIBE_NAME, esc, load, load_maps, map_page, md, offline, post_page, still_url  # noqa: E402
 
 FROM = "David Valerio <writing@davalerio.com>"
 REPLY_TO = "david@davalerio.com"
@@ -136,10 +136,12 @@ def piece(name, test, note=None):
         body = '<figure style="margin: 0 0 1.4em;"><a href="{}"><img src="{}" alt="{}" style="display: block; width: 100%; max-width: 100%; height: auto;"></a></figure>\n'.format(
             url, image, esc(alt))
         if m.get("note"):
-            body += "<p>{}</p>\n".format(esc(m["note"]))
+            body += md(m["note"]) + "\n"
         body += '<p><a href="{}">Explore the map on davalerio.com</a></p>\n'.format(url)
         if m.get("credits"):
-            body += '<p class="map-credits">{}</p>\n'.format(esc(m["credits"]))
+            # The credits' own paragraphs and list items carry the credits' small grey type
+            small = '<{} style="margin: 0 0 0.5em; color: #6B7075; font-size: 12.5px; line-height: 1.5;">'
+            body += '<div class="map-credits">{}</div>\n'.format(re.sub(r"<(p|ul|ol|li)>", lambda t: small.format(t.group(1)), md(m["credits"])))
         meta = "Map · {}".format(m["date"].isoformat())
         return ("map:" + name, m["title"], email_html(m["title"], url, meta, None, body, test, note), url,
                 map_page(name, m))
