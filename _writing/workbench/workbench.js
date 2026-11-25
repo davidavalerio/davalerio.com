@@ -121,19 +121,20 @@ const ADAPTERS = { model: modelAdapter, terrain: terrainAdapter, page: pageAdapt
 // --- The page's text, edited in place
 
 const textEls = {};
-function textBox(tag, key, cls, placeholder) {
+function textBox(tag, key, cls, placeholder, plain = false) {
     const el = document.createElement(tag);
     if (cls) el.className = cls;
     el.contentEditable = 'false';   // editable once the piece has loaded and its text is in
     el.spellcheck = true;
     el.dataset.key = key;
     el.dataset.placeholder = placeholder;
+    if (plain) el.dataset.plain = '';   // one line of plain text (the title): Enter ends the edit
     // While being edited the box shows its markdown, line breaks and all; once left, it shows it rendered
     el.addEventListener('focus', () => (el.textContent = values[key] ?? ''));
     el.addEventListener('blur', () => render(el, values[key]));
-    el.addEventListener('keydown', e => e.key === 'Escape' && el.blur());
+    el.addEventListener('keydown', e => (e.key === 'Escape' || (plain && e.key === 'Enter')) && (e.preventDefault(), el.blur()));
     el.addEventListener('input', () => {
-        values[key] = el.innerText.replace(/[ \t]+\n/g, '\n').trim();
+        values[key] = plain ? el.textContent.replace(/\s+/g, ' ').trim() : el.innerText.replace(/[ \t]+\n/g, '\n').trim();
         changed();
     });
     textEls[key] = el;
@@ -145,7 +146,7 @@ const renders = new WeakMap();
 async function render(el, text) {
     const mine = (renders.get(el) || 0) + 1;
     renders.set(el, mine);
-    if (!text) return void (el.textContent = '');
+    if (!text || 'plain' in el.dataset) return void (el.textContent = text ?? '');
     try {
         const res = await fetch('/api/render', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
         const { html, error } = await res.json();
@@ -162,9 +163,7 @@ async function render(el, text) {
 function pageText(piece) {
     const header = document.createElement('header');
     header.className = 'post wb-text';
-    const h1 = document.createElement('h1');
-    h1.textContent = piece.title;
-    header.append(h1, textBox('div', 'text.note', 'subtitle wb-edit', 'Description'));
+    header.append(textBox('h1', 'text.title', 'wb-edit', 'Title', true), textBox('div', 'text.note', 'subtitle wb-edit', 'Description'));
     return { header, credits: textBox('div', 'text.credits', 'map-credits wb-edit', 'Credits') };
 }
 
@@ -287,6 +286,9 @@ saveBtn.addEventListener('click', async () => {
             apply(k, values[k]);
         }
     controls.forEach(c => c.updateDisplay());
+    // A new title shows in the list of maps and at the head of the panel
+    select.selectedOptions[0].text = saved['text.title'];
+    gui.title(saved['text.title']);
     changed();
     say(current.kind === 'model' ? 'Saved. The next rebuild uses these settings.' : 'Saved. The site changes when the map is deployed.');
 });

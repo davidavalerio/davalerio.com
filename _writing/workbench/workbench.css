@@ -111,6 +111,16 @@ body {
     outline-offset: -1px;
 }
 
+/* A long title wraps in the panel's heading rather than running into the first row */
+#panel .lil-gui > .title {
+    height: auto;
+    min-height: var(--title-height);
+    white-space: normal;
+    line-height: 1.3;
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
 /* The map's page as the site lays it out, 1200px across at most */
 .wb-page {
     width: min(1200px, 100%);
