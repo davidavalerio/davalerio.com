@@ -52,6 +52,14 @@ function yamlScalar(text, key) {
     return v;
 }
 
+// A print map's title among its settings (keyed `title`, or `<something>.title`): a string with something in it, or nothing
+const printTitle = settings => {
+    const v = Array.isArray(settings) ? settings.find(s => s && typeof s.key === 'string' && (s.key === 'title' || s.key.endsWith('.title')))?.value : null;
+    return typeof v === 'string' && v.trim() ? v.trim() : '';
+};
+// The title a map.py declares: the value of its text('title' ...) setting, in either kind of quotes
+const DECLARED_TITLE = /\btext\(\s*(['"])(?:[\w.]*\.)?title\1\s*,\s*(['"]).*?\2\s*,\s*(['"]).*?\3\s*,\s*(['"])((?:\\.|(?!\4).)*)\4/;
+
 // The print maps: every project in the GIS folder with a map.py and a settings.json in its Scripts folder
 function printPieces() {
     let folders;
@@ -63,9 +71,13 @@ function printPieces() {
     return folders.filter(d => d.isDirectory()
         && existsSync(join(config.gis, d.name, 'Scripts', 'map.py')) && existsSync(join(config.gis, d.name, 'Scripts', 'settings.json')))
         .map(d => {
+            // listed by the map's title: the saved one, or the one its map.py declares when none has been saved
             let title = d.name;
+            const scripts = join(config.gis, d.name, 'Scripts');
             try {
-                title = JSON.parse(readFileSync(join(config.gis, d.name, 'Scripts', 'settings.json'), 'utf8')).settings.find(s => s.key === 'title')?.value || title;
+                title = printTitle(JSON.parse(readFileSync(join(scripts, 'settings.json'), 'utf8')).settings)
+                    || readFileSync(join(scripts, 'map.py'), 'utf8').match(DECLARED_TITLE)?.[5].replace(/\\(.)/g, '$1').trim()
+                    || title;
             } catch { /* a settings file that will not read still lists, under its folder's name */ }
             return { name: 'print-' + d.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), title, kind: 'print', folder: d.name, group: 'Print Maps' };
         }).sort((a, b) => a.title.localeCompare(b.title));
@@ -440,7 +452,7 @@ async function openPrint(p, cid) {
     const s = sessions.get(p.name + ':' + cid);
     Object.assign(s, { opened: true, dir: r.dir, settings: r.settings, rev: r.rev });
     declared.set(p.name, r.settings);
-    return { ...p, title: r.settings.find(x => x.key === 'title')?.value || p.title, settings: r.settings, pages: r.pages, notes: r.notes, rev: r.rev, fallback: r.fallback, role: mine, stamp: mark, building: builds.get(p.name) || null };
+    return { ...p, title: printTitle(r.settings) || p.title, settings: r.settings, pages: r.pages, notes: r.notes, rev: r.rev, fallback: r.fallback, role: mine, stamp: mark, building: builds.get(p.name) || null };
 }
 const declared = new Map();   // piece name -> the settings its map.py declares, as last opened
 // Saving writes the editor's changed values into the project's settings.json (a setting the map has since
@@ -468,7 +480,8 @@ function savePrint(p, values, mark) {
     if (n) writeWhole(file, JSON.stringify(doc, null, 1) + '\n');
     buildPrint(p);
     const saved = Object.fromEntries(doc.settings.map(s => [s.key, s.value]));
-    return { saved: n, stamp: stamp(p), piece: { ...p, title: saved.title || p.title, settings: (decl.length ? decl : doc.settings).map(s => ({ ...s, value: s.key in saved ? saved[s.key] : s.value })) } };
+    const settings = (decl.length ? decl : doc.settings).map(s => ({ ...s, value: s.key in saved ? saved[s.key] : s.value }));
+    return { saved: n, stamp: stamp(p), piece: { ...p, title: printTitle(settings) || p.title, settings } };
 }
 // The build: in scratch, checked, and only then moved into the project; a failed build leaves the last PDF
 function buildPrint(p) {

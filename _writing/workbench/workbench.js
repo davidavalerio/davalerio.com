@@ -1158,7 +1158,7 @@ saveBtn.addEventListener('click', async () => {
         }
     controls.forEach(c => c.updateDisplay());
     // A new title shows in the list of maps and at the head of the panel
-    const title = saved['text.title'] ?? saved.title ?? current.title;
+    const title = saved['text.title'] ?? (current.kind === 'print' ? body.piece.title : saved.title) ?? current.title;   // a print map's as the list resolves it
     select.selectedOptions[0].text = title;
     gui.title(title);
     saving = false;
