@@ -16,10 +16,13 @@ const say = (text, cls = '') => {
     status.className = cls;
 };
 const same = () => JSON.stringify(values) === JSON.stringify(saved);
+let saving = false;   // from a click on Save until its answer is applied: nothing here unlocks a control meanwhile
 function changed() {
     const dirty = !same();
-    saveBtn.disabled = revertBtn.disabled = !dirty;
-    say(dirty ? 'Unsaved Changes' : 'Saved', dirty ? 'unsaved' : '');
+    if (!saving) {
+        saveBtn.disabled = revertBtn.disabled = !dirty;
+        say(dirty ? 'Unsaved Changes' : 'Saved', dirty ? 'unsaved' : '');
+    }
     adapter?.changed?.();   // a piece that redraws from the values (a print map) hears of every change here
 }
 
@@ -305,7 +308,12 @@ async function printAdapter(piece) {
     }
     // every change but paint goes to the session, a moment after the controls rest, one message at a time
     let timer = 0, busy = Promise.resolve();
-    const queue = job => (busy = busy.then(() => alive && job()).catch(e => (console.error(e), say('The page could not be redrawn: ' + e.message, 'error'))));
+    let refusal = '';   // the last edit the session would not take, for a save that was waiting on it
+    const queue = job => (busy = busy.then(() => alive && job()).catch(e => {
+        console.error(e);
+        refusal = 'The page could not be redrawn: ' + e.message;
+        if (alive) say(refusal, 'error');
+    }));
     function sync() {
         const edits = Object.fromEntries(Object.keys(values).filter(k => !isPaint(k) && JSON.stringify(values[k]) !== JSON.stringify(sent[k])).map(k => [k, structuredClone(values[k])]));
         if (!Object.keys(edits).length) return;
@@ -423,10 +431,10 @@ async function printAdapter(piece) {
             const label = e.target.closest?.('text[data-layer]'), svg = e.target.closest?.('svg[id]');
             if (label) {
                 const s = label.ownerSVGElement;
-                drag = { type: 'label', el: label, svg: s, x: e.clientX, y: e.clientY, start: svgPoint(s, e), on: false,
+                drag = { type: 'label', el: label, id: label.id, rev, svg: s, x: e.clientX, y: e.clientY, start: svgPoint(s, e), on: false,
                     guide: label.dataset.guide ? doc.getElementById(label.dataset.guide) : null, was: ['x', 'y', 'rotate'].map(a => label.getAttribute(a)) };
             } else if (svg && !svg.dataset.fixed && doc.getElementById(svg.id + '-content') && !e.target.closest('[data-setting]')) {
-                drag = { type: 'frame', svg, x: e.clientX, y: e.clientY, start: svgPoint(svg, e), on: false };
+                drag = { type: 'frame', rev, svg, x: e.clientX, y: e.clientY, start: svgPoint(svg, e), on: false };
                 select_(null);
             } else select_(null);
         });
@@ -460,11 +468,16 @@ async function printAdapter(piece) {
             drag = null;
             if (!d) return;
             doc.body.classList.remove('wb-dragging');
+            if (d.on && d.rev !== rev) {   // the page was redrawn under the drag: what was dragged is no longer what is shown
+                say('The page was redrawn while that was being dragged, so it was not applied; the page shows it as it stands.', 'error');
+                return void queue(load);
+            }
+            // the edit goes to the session as made on the preview the drag began on, by the id the label had then
             if (d.type === 'label') {
-                if (!d.on) return select_(d.el);
-                if (d.on_line) pin({ action: 'move', label: d.el.id, x: d.on_line.x, y: d.on_line.y });
-                else pin({ action: 'move', label: d.el.id, dx: d.dx, dy: d.dy, free: true });
-            } else if (d.on) moveView(d.svg, { dx: d.dx, dy: d.dy });
+                if (!d.on) return d.el.isConnected ? select_(d.el) : undefined;
+                if (d.on_line) pin({ action: 'move', label: d.id, x: d.on_line.x, y: d.on_line.y }, d.rev);
+                else pin({ action: 'move', label: d.id, dx: d.dx, dy: d.dy, free: true }, d.rev);
+            } else if (d.on) moveView(d.svg, { dx: d.dx, dy: d.dy }, d.rev);
         };
         doc.addEventListener('pointerup', up);
         doc.addEventListener('pointercancel', up);
@@ -478,7 +491,7 @@ async function printAdapter(piece) {
             if (!content || locked || svg.dataset.fixed || !(e.ctrlKey || e.metaKey)) return;
             e.preventDefault();
             const p = svgPoint(svg, e);
-            wheel ||= { svg, ax: p.x, ay: p.y, zoom: 1 };
+            wheel ||= { svg, ax: p.x, ay: p.y, zoom: 1, rev };
             wheel.zoom = Math.max(0.2, Math.min(5, wheel.zoom * Math.exp(-e.deltaY * 0.01)));
             content.setAttribute('transform', `translate(${wheel.ax} ${wheel.ay}) scale(${wheel.zoom}) translate(${-wheel.ax} ${-wheel.ay})`);
             clearTimeout(wheel.timer);
@@ -491,7 +504,7 @@ async function printAdapter(piece) {
         if (!w) return;
         clearTimeout(w.timer);
         wheel = null;
-        moveView(w.svg, { zoom: w.zoom, ax: w.ax, ay: w.ay });
+        moveView(w.svg, { zoom: w.zoom, ax: w.ax, ay: w.ay }, w.rev);
     }
     const moveView = (svg, how, made = rev) => queue(async () => {
         const t0 = performance.now();
@@ -616,10 +629,13 @@ async function printAdapter(piece) {
             setTimeout(poll, 500);
         },
         // every change still on its way (a pin dropped, the extent, a control at rest) is in the values before a save reads them
+        // (returns the refusal, if an edit drained here was refused: the save then stops)
         async settle() {
+            refusal = '';
             endWheel();
             if (timer) clearTimeout(timer), (timer = 0), sync();
             await busy;
+            return refusal;
         },
         viewOnly,
         demote,
@@ -1010,6 +1026,7 @@ function build(piece) {
 
 async function open(name) {
     const mine = ++generation;   // a later choice of piece wins over a load still under way
+    saving = false;
     say('Loading…');
     select.disabled = true;
     adapter?.cleanup?.();
@@ -1079,9 +1096,20 @@ saveBtn.addEventListener('click', async () => {
         adapter.lock?.(on);
         select.disabled = revertBtn.disabled = saveBtn.disabled = on;
     };
+    const mine = generation, editor = adapter;   // this editor: an answer that comes back to another is not applied
+    saving = true;
     lock(true);
     say('Saving…');
-    await adapter.settle?.();   // a label, a zoom or a control still being drawn is finished first, and is part of what is saved
+    // a label, a zoom or a control still being drawn is finished first, and is part of what is saved; if one of them
+    // is refused, nothing is saved, and the refusal stays in view
+    const refused = await adapter.settle?.();
+    if (mine !== generation || editor !== adapter) return void (saving = false);
+    if (refused) {
+        saving = false;
+        lock(false);
+        changed();
+        return say('Not saved. ' + refused, 'error');
+    }
     // Only what this page changed is sent, so a save from another open workbench is not undone
     const edits = Object.fromEntries(Object.keys(values).filter(k => JSON.stringify(values[k]) !== JSON.stringify(saved[k])).map(k => [k, values[k]]));
     let res = null, body;
@@ -1091,7 +1119,9 @@ saveBtn.addEventListener('click', async () => {
     } catch (e) {
         body = { error: e.message };
     }
+    if (mine !== generation || editor !== adapter) return void (saving = false);   // the editor was replaced while the save was out: its answer is not this one's
     if (!res?.ok) {
+        saving = false;
         lock(false);
         changed();
         if (body.viewer) return adapter.demote?.();
@@ -1113,6 +1143,7 @@ saveBtn.addEventListener('click', async () => {
     const title = saved['text.title'] ?? saved.title ?? current.title;
     select.selectedOptions[0].text = title;
     gui.title(title);
+    saving = false;
     lock(false);
     changed();
     if (adapter.afterSave) adapter.afterSave();

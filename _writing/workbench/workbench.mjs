@@ -398,14 +398,17 @@ function heard(s) {
 }
 // One tab edits a print map at a time. The first to open it is its editor; another tab opening it meanwhile is
 // view-only until it takes over, at which the first becomes view-only (it learns at its next word to the server,
-// within ten seconds, and its unsaved changes are discarded). A tab is known by the first part of its editor id.
-const editors = new Map();    // piece name -> the tab editing it
+// within ten seconds, and its unsaved changes are discarded). Being the editor belongs to the tab, not to its
+// preview session: it ends only when the tab closes, reloads or leaves the map, when nothing has been heard from
+// the tab for two minutes, or when another tab takes over. A session stopped to make room for others does not end
+// it; the tab's next change starts another with its values. A tab is known by the first part of its editor id.
+const editors = new Map();    // piece name -> { tab, cid (its latest opening), heard }
 const tab = cid => cid.split('-')[0];
+const editing = (p, cid) => editors.get(p.name)?.tab === tab(cid);
 function role(p, cid) {
     const ed = editors.get(p.name);
-    const live = ed && [...sessions.entries()].some(([id, x]) => !x.dead && id.startsWith(p.name + ':' + ed + '-'));
-    if (!ed || !live || ed === tab(cid)) editors.set(p.name, tab(cid));
-    return editors.get(p.name) === tab(cid) ? 'editor' : 'viewer';
+    if (!ed || Date.now() - ed.heard > QUIET || ed.tab === tab(cid)) editors.set(p.name, { tab: tab(cid), cid, heard: Date.now() });
+    return editing(p, cid) ? 'editor' : 'viewer';
 }
 const stamp = p => createHash('sha1').update(readFileSync(join(config.gis, p.folder, 'Scripts', 'settings.json'))).digest('hex');
 async function openPrint(p, cid) {
@@ -492,7 +495,7 @@ const server = createServer((req, res) => {
             const cid = (new URL(req.url, 'http://x').searchParams.get('cid') || 'one').replace(/[^\w-]/g, '').slice(0, 40) || 'one';
             const fail = e => json(res, e.stale || e.conflict ? 409 : 500, { error: e.message, stale: !!e.stale, conflict: !!e.conflict });
             const live = sessions.get(pp.name + ':' + cid);
-            const editing = () => editors.get(pp.name) === tab(cid);
+            if (editing(pp, cid)) editors.get(pp.name).heard = Date.now();
             if (req.method === 'GET' || req.method === 'HEAD') {
                 if (path.startsWith('/api/piece/')) return void openPrint(pp, cid).then(p => json(res, 200, p), fail);
                 if (rest === 'build') return json(res, 200, (({ state, message }) => ({ state, message }))(builds.get(pp.name) || { state: 'none', message: '' }));
@@ -520,11 +523,17 @@ const server = createServer((req, res) => {
                     try {
                         const data = JSON.parse(body);
                         const mine = live;
-                        if (rest === 'ping') return mine && !mine.dead ? (heard(mine), json(res, 200, { ok: true, role: editing() ? 'editor' : 'viewer' })) : json(res, 409, { stale: true });
-                        if (rest === 'close') return mine && stop(mine), json(res, 200, { ok: true });
-                        if (rest === 'take') return editors.set(pp.name, tab(cid)), json(res, 200, { ok: true });
+                        const mineRole = editing(pp, cid) ? 'editor' : 'viewer';
+                        // (a session stopped to make room still answers its tab's word: the tab keeps the map, and
+                        // its next change starts another session)
+                        if (rest === 'ping') return mine && !mine.dead && heard(mine), json(res, 200, { ok: true, role: mineRole });
+                        if (rest === 'close') {   // this opening of the map is over: its session stops, and its hold on the map ends
+                            if (editors.get(pp.name)?.cid === cid) editors.delete(pp.name);
+                            return mine && stop(mine), json(res, 200, { ok: true });
+                        }
+                        if (rest === 'take') return editors.set(pp.name, { tab: tab(cid), cid, heard: Date.now() }), json(res, 200, { ok: true });
                         // only the tab editing the map may change or save it
-                        if (!editing()) return json(res, 403, { error: 'this map is being edited in another tab', viewer: true });
+                        if (mineRole !== 'editor') return json(res, 403, { error: 'this map is being edited in another tab', viewer: true });
                         if (path.startsWith('/api/piece/')) return json(res, 200, savePrint(pp, data.values, data.stamp));
                         if (['set', 'pin', 'view'].includes(rest)) return void ask(pp, cid, { ...data, op: rest }).then(r => (r.rev && mine && (mine.rev = r.rev), json(res, 200, r)), fail);
                         json(res, 404, { error: 'no such message' });
