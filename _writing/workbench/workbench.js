@@ -1,7 +1,8 @@
 // The workbench page: pick a map, tune it live from the settings it declares, save or revert.
 // Each kind of piece has an adapter that draws it and applies a setting to it; the panel is built
 // from the declarations alone (number, color, view), so a new kind needs only its adapter. The page's
-// text (type text) is not in the panel: it is shown around the piece as on the site and edited in place.
+// text (type text) and its legend are not in the panel: they are shown around the piece as on the site and
+// edited in place.
 import GUI from './lib/lil-gui.esm.min.js';
 
 const $ = id => document.getElementById(id);
@@ -177,12 +178,160 @@ function pageText(piece) {
     const header = document.createElement('header');
     header.className = 'post wb-text';
     header.append(textBox('h1', 'text.title', 'wb-edit', 'Title', true), textBox('div', 'text.note', 'subtitle wb-edit', 'Description'));
-    return { header, credits: textBox('div', 'text.credits', 'map-credits wb-edit', 'Credits') };
+    legendEl = document.createElement('div');
+    legendEl.className = 'wb-legend';
+    return { header, legend: legendEl, credits: textBox('div', 'text.credits', 'map-credits wb-edit', 'Credits') };
 }
 
 function apply(k, v) {
     if (textEls[k]) render(textEls[k], v);
+    else if (k === 'legend') drawLegend();
     else adapter.set(k, v);
+}
+
+// --- The legend, beneath the map as on its page: headings and labels retyped in place, a swatch clicked to
+// change its shape and colour, and items and groups moved, added and removed with the small buttons beside them
+
+let legendEl = null;
+const button = (text, title, act) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'wb-tool';
+    b.textContent = text;
+    b.title = title;
+    b.addEventListener('click', e => (e.preventDefault(), act()));
+    return b;
+};
+function legendChanged() {
+    drawLegend();
+    changed();
+}
+// One line of text edited in place; Enter or leaving it ends the edit
+function legendText(tag, cls, text, placeholder, set) {
+    const el = document.createElement(tag);
+    el.className = cls + ' wb-edit';
+    el.contentEditable = 'plaintext-only';
+    el.spellcheck = true;
+    el.dataset.placeholder = placeholder;
+    el.textContent = text ?? '';
+    el.addEventListener('keydown', e => (e.key === 'Enter' || e.key === 'Escape') && (e.preventDefault(), el.blur()));
+    el.addEventListener('input', () => (set(el.textContent.replace(/\s+/g, ' ').trim()), changed()));
+    return el;
+}
+// The colour tokens the map's layers use, from the site's map stylesheet
+function mapTokens() {
+    const names = new Set();
+    for (const sheet of document.styleSheets) {
+        try {
+            for (const rule of sheet.cssRules)
+                for (const prop of rule.style || []) if (prop.startsWith('--map-')) names.add(prop);
+        } catch { /* a sheet from another origin */ }
+    }
+    return [...names].sort();
+}
+const swatchColor = c => (c.startsWith('--') ? 'var(' + c + ')' : c);
+function swatch(it) {
+    const el = document.createElement('span');
+    const shape = it.shape || 'fill';
+    el.className = 'swatch' + (shape === 'fill' ? '' : ' ' + shape) + (shape === 'line' && it.dash ? ' ' + it.dash : '');
+    el.style[shape === 'line' ? 'borderTopColor' : 'background'] = swatchColor(it.color);
+    return el;
+}
+// The swatch's settings, opened under its item: shape, line style, and colour (a map token or any colour)
+function swatchEditor(it) {
+    const row = document.createElement('div');
+    row.className = 'wb-swatch-edit';
+    const pick = (options, value, set) => {
+        const sel = document.createElement('select');
+        for (const [v, label] of options) sel.append(new Option(label, v, false, v === value));
+        sel.addEventListener('change', () => (set(sel.value), legendChanged()));
+        return sel;
+    };
+    row.append(pick([['fill', 'Fill'], ['dot', 'Dot'], ['line', 'Line']], it.shape || 'fill', v => {
+        if (v === 'fill') delete it.shape; else it.shape = v;
+        if (v !== 'line') delete it.dash;
+    }));
+    if (it.shape === 'line') row.append(pick([['', 'Solid'], ['dashed', 'Dashed'], ['dotted', 'Dotted']], it.dash || '', v => {
+        if (v) it.dash = v; else delete it.dash;
+    }));
+    const tokens = mapTokens();
+    const custom = !it.color.startsWith('--');
+    row.append(pick([...tokens.map(t => [t, t.slice(6).replace(/-/g, ' ')]), ['custom', 'Other Colour']], custom ? 'custom' : it.color, v => {
+        it.color = v === 'custom' ? (custom ? it.color : '#888888') : v;
+    }));
+    if (custom) {
+        const input = document.createElement('input');
+        input.type = 'color';
+        input.value = it.color.toLowerCase();
+        input.addEventListener('input', () => (it.color = input.value.toUpperCase(), changed(), row.previousElementSibling?.querySelector('.swatch')?.replaceWith(swatch(it))));
+        input.addEventListener('change', legendChanged);
+        row.append(input);
+    }
+    return row;
+}
+let openSwatch = null;   // the item whose swatch settings are showing
+function drawLegend() {
+    if (!legendEl) return;
+    const legend = values.legend;
+    const groups = document.createElement('div');
+    groups.className = 'map-legend';
+    const move = (list, i, by) => list.splice(i + by, 0, list.splice(i, 1)[0]);
+    legend.forEach((g, gi) => {
+        const box = document.createElement('div');
+        box.className = 'wb-legend-group';
+        const head = document.createElement('div');
+        head.className = 'wb-legend-row';
+        head.append(legendText('h3', '', g.heading, 'Heading', v => (v ? (g.heading = v) : delete g.heading)),
+            button('↑', 'Move this group up', () => gi > 0 && (move(legend, gi, -1), legendChanged())),
+            button('↓', 'Move this group down', () => gi < legend.length - 1 && (move(legend, gi, 1), legendChanged())),
+            button('×', 'Remove this group', () => (legend.splice(gi, 1), legendChanged())));
+        const ul = document.createElement('ul');
+        g.items.forEach((it, ii) => {
+            const li = document.createElement('li');
+            const sw = swatch(it);
+            sw.classList.add('wb-swatch');
+            sw.title = 'Shape and colour';
+            sw.addEventListener('click', () => ((openSwatch = openSwatch === it ? null : it), drawLegend()));
+            li.append(sw);
+            if ('code' in it || g.items.some(x => x.code)) li.append(legendText('span', 'code', it.code, 'Code', v => (v ? (it.code = v) : delete it.code)));
+            li.append(legendText('span', 'wb-label', it.label, 'Label', v => (it.label = v)),
+                // up and down cross into the neighbouring group at either end
+                button('↑', 'Move up', () => {
+                    if (ii > 0) move(g.items, ii, -1);
+                    else if (gi > 0) legend[gi - 1].items.push(g.items.shift());
+                    legendChanged();
+                }),
+                button('↓', 'Move down', () => {
+                    if (ii < g.items.length - 1) move(g.items, ii, 1);
+                    else if (gi < legend.length - 1) legend[gi + 1].items.unshift(g.items.pop());
+                    legendChanged();
+                }),
+                button('×', 'Remove', () => (g.items.splice(ii, 1), legendChanged())));
+            ul.append(li);
+            if (openSwatch === it) ul.append(swatchEditor(it));
+        });
+        const add = button('+ Item', 'Add an item to this group', () => {
+            const last = g.items[g.items.length - 1];
+            const it = { color: last?.color || mapTokens()[0] || '#888888', label: '' };
+            if (last?.shape) it.shape = last.shape;
+            if (last?.dash) it.dash = last.dash;
+            if (last && 'code' in last) it.code = '';
+            g.items.push(it);
+            openSwatch = it;
+            legendChanged();
+        });
+        add.classList.add('wb-add');
+        box.append(head, ul, add);
+        groups.append(box);
+    });
+    const addGroup = button('+ Group', 'Add a group to the legend', () => {
+        const it = { color: mapTokens()[0] || '#888888', label: '' };
+        legend.push({ heading: '', items: [it] });
+        openSwatch = it;
+        legendChanged();
+    });
+    addGroup.classList.add('wb-add');
+    legendEl.replaceChildren(groups, addGroup);
 }
 
 // --- The panel
@@ -193,7 +342,7 @@ function build(piece) {
     const folders = {};
     const folder = name => (folders[name] ||= gui.addFolder(name));
     for (const s of piece.settings) {
-        if (s.type === 'text') continue;
+        if (s.type === 'text' || s.type === 'legend') continue;
         const f = folder(s.group || 'Settings');
         if (s.type === 'number') {
             f.add(values, s.key, s.min, s.max, s.step).name(s.label).onChange(v => {
@@ -247,7 +396,7 @@ async function open(name) {
         host = page;
         const drawn = await ADAPTERS[piece.kind](piece);
         if (mine !== generation) return drawn.cleanup?.();
-        page.append(text.credits);
+        page.append(text.legend, text.credits);
         current = piece;
         adapter = drawn;
         saved = Object.fromEntries(current.settings.map(s => [s.key, s.value]));
@@ -256,6 +405,8 @@ async function open(name) {
             render(textEls[k], values[k]);
             textEls[k].contentEditable = 'plaintext-only';
         }
+        openSwatch = null;
+        drawLegend();
     } catch (e) {
         console.error(e);
         if (mine === generation) say('Could not open ' + name + ': ' + e.message, 'error');
@@ -273,6 +424,7 @@ saveBtn.addEventListener('click', async () => {
     const edits = Object.fromEntries(Object.keys(values).filter(k => JSON.stringify(values[k]) !== JSON.stringify(saved[k])).map(k => [k, values[k]]));
     const controls = gui.controllersRecursive();
     const lock = on => {
+        if (legendEl) legendEl.inert = on;
         controls.forEach(c => c.enable(!on));   // nothing can be edited, or the piece switched, while the save is under way
         Object.values(textEls).forEach(el => (el.contentEditable = on ? 'false' : 'plaintext-only'));
         select.disabled = revertBtn.disabled = saveBtn.disabled = on;
