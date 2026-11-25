@@ -118,7 +118,7 @@ function textSettings(name) {
 const ITEM_KEYS = ['code', 'shape', 'dash', 'color', 'label'];
 function checkLegend(legend) {
     if (!Array.isArray(legend)) throw new Error('the legend is not a list of groups');
-    const colours = palette().light;   // the map's colour tokens (a token holding no colour is refused)
+    const colours = palette().colors;   // the map's colour tokens (a token holding no colour is refused)
     return legend.map(g => {
         const items = (g.items || []).map(it => {
             const out = {};
