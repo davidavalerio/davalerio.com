@@ -1182,7 +1182,7 @@ saveBtn.addEventListener('click', async () => {
     controls.forEach(c => c.updateDisplay());
     // A new title shows in the list of maps (a print form's list entry is its web map's) and at the head of the panel
     const title = saved['text.title'] ?? (current.kind === 'print' ? body.piece.title : saved.title) ?? current.title;   // a print map's as the list resolves it
-    if (!current.web) select.selectedOptions[0].text = title;
+    if (!current.web) select.selectedOptions[0].text = label({ ...current, title });
     gui.title(title);
     saving = false;
     lock(false);
@@ -1202,6 +1202,9 @@ saveBtn.addEventListener('click', async () => {
         }
     }
 });
+
+// Each entry in the list leads with the day the map was first made, the list's order
+const label = p => (p.date ? p.date + ' ' : '') + p.title;
 
 // A map and its print form share one entry in the list; the switch beside it turns between them
 const entryOf = name => byName[name]?.web || name;
@@ -1233,10 +1236,10 @@ const byName = Object.fromEntries(list.map(p => [p.name, p]));
 const groups = {};
 for (const p of list) {
     if (p.web) continue;   // a print form is reached from its web map's entry
-    if (!p.group) select.append(new Option(p.title, p.name));
+    if (!p.group) select.append(new Option(label(p), p.name));
     else {
         if (!groups[p.group]) select.append((groups[p.group] = Object.assign(document.createElement('optgroup'), { label: p.group })));
-        groups[p.group].append(new Option(p.title, p.name));
+        groups[p.group].append(new Option(label(p), p.name));
     }
 }
 const wanted = new URLSearchParams(location.search).get('piece');
