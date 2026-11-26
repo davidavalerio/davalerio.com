@@ -88,17 +88,32 @@ function printPieces() {
                     || py.match(DECLARED_TITLE)?.[5].replace(/\\(.)/g, '$1').trim()
                     || title;
             } catch { /* a settings file that will not read still lists, under its folder's name */ }
-            return { name: 'print-' + d.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), title, kind: 'print', folder: d.name, web, group: web ? null : 'Print Maps' };
-        }).sort((a, b) => a.title.localeCompare(b.title));
+            return { name: 'print-' + d.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), title, kind: 'print', folder: d.name, web, group: web ? null : 'Print Maps', date: firstDate(join(config.gis, d.name)) };
+        }).sort(byDate);
 }
+
+// The list runs by when each map was first made, oldest first, and then by title
+const byDate = (a, b) => (a.date || '9999').localeCompare(b.date || '9999') || a.title.localeCompare(b.title);
+// A project's first day: the earliest YYYY-MM-DD its files are named with
+function firstDate(folder) {
+    try {
+        return readdirSync(folder, { withFileTypes: true }).filter(f => f.isFile()).map(f => /^(\d{4}-\d{2}-\d{2})/.exec(f.name)?.[1]).filter(Boolean).sort()[0] || null;
+    } catch {
+        return null;
+    }
+}
+const earliest = (...dates) => dates.filter(Boolean).sort()[0] || null;
 
 function pieces() {
     const prints = printPieces();
     return [...readdirSync(MAPS).filter(f => f.endsWith('.yaml')).map(f => {
         const text = readFileSync(join(MAPS, f), 'utf8'), name = f.slice(0, -5);
         const kind = /^views:/m.test(text) ? 'terrain' : yamlScalar(text, 'model') && yamlScalar(text, 'build') ? 'model' : 'page';
-        return { name, title: yamlScalar(text, 'title'), kind, build: yamlScalar(text, 'build'), image: yamlScalar(text, 'image'), print: prints.find(p => p.web === name)?.name || null };
-    }).sort((a, b) => a.title.localeCompare(b.title)), ...prints];
+        const print = prints.find(p => p.web === name);
+        // made when its definition is dated, or earlier if its print form came first
+        return { name, title: yamlScalar(text, 'title'), kind, build: yamlScalar(text, 'build'), image: yamlScalar(text, 'image'), print: print?.name || null,
+            date: earliest(/^date:\s*['"]?(\d{4}-\d{2}-\d{2})/m.exec(text)?.[1], print?.date) };
+    }).sort(byDate), ...prints];
 }
 
 // The page's text and its legend, read with PyYAML as build.py reads them

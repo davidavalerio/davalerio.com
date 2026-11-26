@@ -365,6 +365,10 @@ li:hover > .wb-tool,
         flex-wrap: wrap;
     }
 
+    .wb-bar select {   /* the list of maps takes a row of its own, so a dated title has the whole width */
+        flex: 1 0 100%;
+    }
+
     .wb-main {
         flex-direction: column;
         align-items: stretch;
