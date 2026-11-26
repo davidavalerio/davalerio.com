@@ -24,5 +24,5 @@ The homepage is a calling card over a line drawing of the Missouri and the Yello
 - Maps → #maps (the Maps list, first, hand-made in index.html)
 - Writing → #writing (the Writing list, generated from `_writing/posts/`)
 - Podcasts → #podcasts (the Podcasts column)
-- Subscribe → #subscribe (the Writing by Email band below the columns)
+- Subscribe → #subscribe (the Posts by Email band below the columns)
 - Email → david@davalerio.com

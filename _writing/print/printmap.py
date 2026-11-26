@@ -169,9 +169,9 @@ PAGES = {'Letter Landscape': (11, 8.5), 'Letter Portrait': (8.5, 11), 'Tabloid L
          'Tabloid Portrait': (11, 17), 'Display 36 × 24': (36, 24), 'Display 24 × 36': (24, 36)}
 INK, STONE, PLUM = '#22282B', '#6B7075', '#5E4B8B'
 
-# The maker's mark: the Horizon mark (the site's mark.svg, in plum) beside the surname and a Latin credit for the
+# The maker's mark: the Horizon mark (the site's mark.svg, in plum) beside David's initials and surname and a Latin credit for the
 # draftsman, set at the right end of the credits' row, opposite the credits.
-MAKER = ('Valerio', 'del.')
+MAKER = ('D.A. Valerio', 'del.')
 
 
 def _print_mark():
@@ -741,7 +741,7 @@ svg .ghosts{{display:none;opacity:0.4}}
             raise BuildError('the credits run off the foot of the page; shorten them')
 
     def _maker_html(self, pt):
-        """The maker's mark at the right end of the credits' row: the Horizon mark, then the surname in semibold and
+        """The maker's mark at the right end of the credits' row: the Horizon mark, then "D.A. Valerio" in semibold and
         "del." in italic, sitting on the baseline of the credits' last line, the mark's foot a hair below it. Sized from
         the credits, a little larger than they are."""
         L, i = self.L, self.id

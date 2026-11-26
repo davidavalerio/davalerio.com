@@ -303,7 +303,7 @@ footer.band img {
     height: 48px;
 }
 
-/* Writing by Email (form markup in _writing/build.py; the homepage's copy of
+/* Posts by Email (form markup in _writing/build.py; the homepage's copy of
    these styles sits in index.html, kept in step) */
 
 .subscribe {

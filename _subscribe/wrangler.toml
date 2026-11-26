@@ -1,4 +1,4 @@
-# The signup service for Writing by Email. Deployed by hand from this
+# The signup service for Posts by Email. Deployed by hand from this
 # folder with `npx wrangler deploy`; secrets RESEND_API_KEY, SEGMENT_ID and
 # SIGNING_KEY are set with `wrangler secret put` (see the site's CLAUDE.md).
 name = "davalerio-subscribe"

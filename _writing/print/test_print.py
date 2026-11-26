@@ -90,7 +90,7 @@ def more(tmp, proj):
     import re
     m = build.load(proj); page = m.pages[0]; html = page.html(tmp)
     left, width = (float(v) for v in re.search(r'id="p1-maker" class="maker" style="left:([\d.]+)pt;top:[\d.]+pt;width:([\d.]+)pt', html).groups())
-    assert abs(left + width - page.L['maker_right'] * page.k) < 0.02 and '>Valerio <span' in html and '>del.</span>' in html, (left, width)
+    assert abs(left + width - page.L['maker_right'] * page.k) < 0.02 and '>D.A. Valerio <span' in html and '>del.</span>' in html, (left, width)
     cx = page.L['credits'][0]
     assert all(cx + T.width(l, 'serif', page.CREDIT_SIZE) < left / page.k for l in page.credit_lines), page.credit_lines
     assert 'clip-path="url(#p1-mark)"' in html and '<mask' not in html

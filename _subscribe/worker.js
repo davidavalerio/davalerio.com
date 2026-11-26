@@ -1,4 +1,4 @@
-// Signup service for Writing by Email on davalerio.com.
+// Signup service for Posts by Email on davalerio.com.
 //
 //   POST /          the site's form: emails a confirmation link, then sends the
 //                   reader to /subscribe/sent/ on the site
@@ -20,7 +20,7 @@ import { DurableObject } from "cloudflare:workers";
 
 const SITE = "https://davalerio.com";
 const SELF = "https://subscribe.davalerio.com";
-const NAME = "Writing by Email";
+const NAME = "Posts by Email";
 const FROM = "David Valerio <writing@davalerio.com>";
 const REPLY_TO = "david@davalerio.com";
 const LINK_DAYS = 7;

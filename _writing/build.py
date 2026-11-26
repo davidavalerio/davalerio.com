@@ -14,7 +14,7 @@ list is hand-made in index.html.
 A piece with `map: <name>` in its frontmatter can turn passages into map steps
 (`::: {.map-step view=<view>}`) or set in a map (`::: {.map-embed view=<view>}`).
 
-It also writes the two subscription landing pages under ../subscribe/ (Writing by Email;
+It also writes the two subscription landing pages under ../subscribe/ (Posts by Email;
 _writing/send.py sends).
 
 `--drafts` also builds the pieces in _writing/drafts/ into ../_preview/<slug>/,
@@ -95,10 +95,10 @@ FOOT = """    <footer class="band"><a href="/" aria-label="Home"><img src="/mark
 </html>
 """
 
-# Writing by Email: the signup form at the foot of every essay, paper and map page.
+# Posts by Email: the signup form at the foot of every essay, paper and map page.
 # The homepage carries a hand-made copy below its lists (index.html); keep the two in step,
 # and the name in step with _subscribe/worker.js and send.py.
-SUBSCRIBE_NAME = "Writing by Email"
+SUBSCRIBE_NAME = "Posts by Email"
 SUBSCRIBE = """<form class="subscribe" action="https://subscribe.davalerio.com/" method="post">
             <label for="subscribe-email">{}</label>
             <div class="row"><input id="subscribe-email" type="email" name="email" placeholder="you@example.com" autocomplete="email" required><button type="submit">Subscribe</button></div>
