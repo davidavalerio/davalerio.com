@@ -191,18 +191,19 @@
                 width: auto;
                 max-width: 30rem;
                 margin: -2.5rem auto 0;
-                padding: 1.75rem 1.25rem 1.5rem;
+                padding: 1.75rem clamp(0.8rem, 4vw, 1.25rem) 1.5rem;
             }
 
+            /* The mark, the gap and the card's sides give way on the narrowest phones, so the tagline keeps its two lines */
             .head {
-                gap: 0.9rem;
+                gap: clamp(0.6rem, 3.5vw, 0.9rem);
                 padding-bottom: 1.1rem;
                 border-bottom-width: 1pt;
             }
 
             .mark {
-                width: 64px;
-                height: 64px;
+                width: clamp(52px, 16.5vw, 64px);
+                height: clamp(52px, 16.5vw, 64px);
                 margin-bottom: -2px;
             }
 

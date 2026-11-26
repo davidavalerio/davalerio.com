@@ -41,7 +41,9 @@ def font_css(base):
 def css(style):
     """The CSS declarations that select a style."""
     fam, weight, italic, _ = STYLES[style]
-    return f"font-family:'{fam}';font-weight:{weight};font-style:{'italic' if italic else 'normal'}"
+    # a display face holds the Latin set alone: other characters fall back to the bundled serif
+    family = f"'{fam}','Source Serif 4'" if style.startswith('serif-display') else f"'{fam}'"
+    return f"font-family:{family};font-weight:{weight};font-style:{'italic' if italic else 'normal'}"
 
 
 @lru_cache(None)

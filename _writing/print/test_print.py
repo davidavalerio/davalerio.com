@@ -100,6 +100,14 @@ def more(tmp, proj):
         raise AssertionError('credits running into the maker\'s mark were let through')
     except pm.BuildError as e:
         assert 'maker' in str(e)
+    assert T.css('serif-display-48').startswith("font-family:'Display Serif Opsz48','Source Serif 4'")
+    low = build.load(proj); p = low.pages[0]
+    p.place(credits=(p.L['credits'][0], p.H / p.k - 20, p.L['credits'][2]))      # a layout of its own, credits near the foot
+    try:
+        p.html(tmp)
+        raise AssertionError('credits running off the foot of the page were let through')
+    except pm.BuildError as e:
+        assert 'foot' in str(e)
     print('the maker\'s mark ends the credits\' row; credits that cannot wrap clear of it stop the build')
     # the footer takes the height the credits need, and the frame what is left
     short = build.load(proj); short.pages[0].html(tmp)
