@@ -170,7 +170,7 @@ PAGES = {'Letter Landscape': (11, 8.5), 'Letter Portrait': (8.5, 11), 'Tabloid L
 INK, STONE, PLUM = '#22282B', '#6B7075', '#5E4B8B'
 
 # The maker's mark: the Horizon mark (the site's mark.svg, in plum) beside the surname and a Latin credit for the
-# draftsman, set at the end of the title block, on the right end of its rule.
+# draftsman, set at the right end of the credits' row, opposite the credits.
 MAKER = ('Valerio', 'del.')
 
 
@@ -480,7 +480,7 @@ class Page:
         fw = full - (lg['width'] + lg['gap'] if lg and lg['groups'] else 0)
         x0 = self.MARGIN
         self.L = {'title': (x0, self.TITLE_TOP), 'subtitle': (x0, self.SUB_TOP), 'rule': (x0, self.RULE_Y, full),
-                  'credits': (x0 + full * 0.37, 0, full * 0.63 - 40)}
+                  'credits': (x0 + full * 0.37, 0, full * 0.63 - 40), 'maker_right': x0 + full - 40}
         lines = self._credit_lines()
         self.foot_h = max(34, len(lines) * self.CREDIT_LEAD + 2)
         fh = Hr - self.FRAME_TOP - self.FOOT_GAP - self.foot_h - self.BOTTOM
@@ -569,7 +569,23 @@ class Page:
         return [l for l in lines if l] if items else lines
 
     def _credit_lines(self):
-        return self._wrap(self._credit_text(with_sources=bool(self.frames)), 'serif', self.L.get('credits_size', self.CREDIT_SIZE), self.L['credits'][2], items=True)
+        """The credits wrapped to their width, narrowed to stop short of the maker's mark at the end of their row."""
+        cx, _, cwid = self.L['credits']
+        mx, _, _, room = self._maker_box()
+        return self._wrap(self._credit_text(with_sources=bool(self.frames)), 'serif', self.L.get('credits_size', self.CREDIT_SIZE), min(cwid, mx - room - cx), items=True)
+
+    def _maker_box(self):
+        """The maker's mark across the credits' row: its left edge, its type size, the mark's height, and the room kept
+        between it and the credits. Its right edge is the title rule's right end (`maker_right` where the layout sets
+        one, as the standard layout does to stay clear of the north arrow; the credits' own right end with no rule)."""
+        L = self.L
+        cx, _, cwid = L['credits']
+        right = L.get('maker_right', L['rule'][0] + L['rule'][2] if 'rule' in L else cx + cwid)
+        size = L.get('credits_size', self.CREDIT_SIZE) * 1.3
+        mark = size * 1.75
+        name, credit = MAKER
+        w = mark + size * 0.42 + T.width(name, 'serif-semibold', size) + T.width(' ', 'serif', size) + T.width(credit, 'serif-italic', size)
+        return right - w, size, mark, size * 1.5
 
     def _legend_svg(self):
         lg = self._legend
@@ -660,7 +676,6 @@ class Page:
             parts.append((f'{i}-subtitle', f'<div id="{i}-subtitle" class="subtitle" data-setting="{self.keys[1]}" style="left:{pt(L["subtitle"][0])};top:{pt(L["subtitle"][1])};font-size:{pt(ss)};line-height:{pt(ss * 1.47)}">{esc(self.subtitle)}</div>'))
         if 'rule' in L:
             parts.append((None, f'<div class="rule" style="left:{pt(L["rule"][0])};top:{pt(L["rule"][1])};width:{pt(L["rule"][2])};height:{pt(1)}"></div>'))
-            parts.append((f'{i}-maker', self._maker_html(pt)))
         for f in self.frames:
             parts += f.parts(raster_dir)
         by_key = {f.key: f for f in self.frames}
@@ -673,6 +688,8 @@ class Page:
             cx, cy, cwid = L['credits']
             parts.append((f'{i}-credits', f'<div id="{i}-credits" class="credits" data-setting="{self.keys[2]}" style="left:{pt(cx)};top:{pt(cy)};width:{pt(cwid + 40)};'
                           f'font-size:{pt(L.get("credits_size", self.CREDIT_SIZE))};line-height:{pt(L.get("credits_lead", self.CREDIT_LEAD))}">' + '<br>'.join(esc(l) for l in self.credit_lines) + '</div>'))
+        if 'credits' in L:
+            parts.append((f'{i}-maker', self._maker_html(pt)))
         if 'north' in L:
             parts.append((f'{by_key[L["north"][0]].id}-north', by_key[L['north'][0]].north_arrow_svg(L['north'][1], L['north'][2])))
         for n, t in enumerate(self.notes):
@@ -705,46 +722,25 @@ svg .ghosts{{display:none;opacity:0.4}}
         return head, parts
 
     def _maker_html(self, pt):
-        """The maker's mark, its right edge on the right end of the title rule: the Horizon mark, then the surname in
-        semibold and "del." in italic, sitting on the subtitle's baseline (just above the rule when there is none),
-        the mark's foot a hair below it. Sized from the subtitle, so it scales with the title block."""
+        """The maker's mark at the right end of the credits' row: the Horizon mark, then the surname in semibold and
+        "del." in italic, sitting on the baseline of the credits' last line, the mark's foot a hair below it. Sized from
+        the credits, a little larger than they are."""
         L, i = self.L, self.id
-        rx, ry, rw = L['rule']
-        ss = L.get('subtitle_size', 9.5)
-        size = ss if 'subtitle' in L else L.get('title_size', 18) * 0.53
-        if 'subtitle' in L:
-            lead = ss * 1.47
-            base = _baseline('serif', ss, L['subtitle'][1], lead) + lead * (len(self.subtitle.split('\n')) - 1)
-        else:
-            base = ry - size * 0.75
-        mark, gap = size * 1.75, size * 0.42
+        cx, cy, cwid = L['credits']
+        cs, lead = L.get('credits_size', self.CREDIT_SIZE), L.get('credits_lead', self.CREDIT_LEAD)
+        x, size, mark, room = self._maker_box()
+        if cx + max((T.width(l, 'serif', cs) for l in self.credit_lines), default=0) > x - room + 0.01:
+            raise BuildError('the credits run into the maker\'s mark; shorten them')
+        base = _baseline('serif', cs, cy, lead) + lead * max(0, len(self.credit_lines) - 1)
+        top, line = base - mark * 0.965, size * 1.2
+        ty = _baseline('serif-semibold', size, 0, line)
         name, credit = MAKER
-        tw = T.width(name, 'serif-semibold', size) + T.width(' ', 'serif', size) + T.width(credit, 'serif-italic', size)
-        w = mark + gap + tw
-        x, top = rx + rw - w, base - mark * 0.965
-        lead = size * 1.2
-        self._check_maker(x, top, base, size)
-        ty = _baseline('serif-semibold', size, 0, lead)
+        w = L.get('maker_right', L['rule'][0] + L['rule'][2] if 'rule' in L else cx + cwid) - x
         svg = f'<defs><clipPath id="{i}-mark"><path clip-rule="evenodd" d="{_MARK_CLIP}"/></clipPath></defs>' + _MARK.replace('{clip}', f'{i}-mark')
         return (f'<div id="{i}-maker" class="maker" style="left:{pt(x)};top:{pt(top)};width:{pt(w)};height:{pt(mark)}">'
                 f'<svg viewBox="0 0 100 100" style="position:absolute;left:0;top:0;width:{pt(mark)};height:{pt(mark)}">{svg}</svg>'
-                f'<div style="position:absolute;right:0;top:{pt(base - top - ty)};font-size:{pt(size)};line-height:{pt(lead)}">'
+                f'<div style="position:absolute;right:0;top:{pt(base - top - ty)};font-size:{pt(size)};line-height:{pt(line)}">'
                 f'{esc(name)} <span style="{T.css("serif-italic")}">{esc(credit)}</span></div></div>')
-
-    def _check_maker(self, x, top, base, size):
-        """The maker's mark must stand clear of the title and subtitle beside it."""
-        L, room = self.L, size * 0.9
-        if 'subtitle' in L:
-            sx = L['subtitle'][0]
-            if any(sx + T.width(line, 'serif', L.get('subtitle_size', 9.5)) > x - room for line in self.subtitle.split('\n')[-1:]):
-                raise BuildError('the subtitle runs into the maker\'s mark; shorten it')
-        if 'title' in L:
-            ts = L.get('title_size', 18)
-            lines = self.title.split('\n')
-            tb = _baseline('serif-semibold', ts, L['title'][1], ts * 1.33) + ts * 1.33 * (len(lines) - 1)
-            ink = tb + ts * 0.24                     # the title's descenders
-            if ink > top and L['title'][0] + T.width(lines[-1], T.title_style(ts * self.k), ts) > x - room:
-                raise BuildError('the title runs into the maker\'s mark; shorten it')
 
     def html(self, raster_dir):
         """The page as one static HTML document."""
