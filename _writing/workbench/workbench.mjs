@@ -97,7 +97,7 @@ const byDate = (a, b) => (a.date || '9999').localeCompare(b.date || '9999') || a
 // A project's first day: the earliest YYYY-MM-DD its files are named with
 function firstDate(folder) {
     try {
-        return readdirSync(folder).map(f => /^(\d{4}-\d{2}-\d{2})/.exec(f)?.[1]).filter(Boolean).sort()[0] || null;
+        return readdirSync(folder, { withFileTypes: true }).filter(f => f.isFile()).map(f => /^(\d{4}-\d{2}-\d{2})/.exec(f.name)?.[1]).filter(Boolean).sort()[0] || null;
     } catch {
         return null;
     }
@@ -112,7 +112,7 @@ function pieces() {
         const print = prints.find(p => p.web === name);
         // made when its definition is dated, or earlier if its print form came first
         return { name, title: yamlScalar(text, 'title'), kind, build: yamlScalar(text, 'build'), image: yamlScalar(text, 'image'), print: print?.name || null,
-            date: earliest(yamlScalar(text, 'date'), print?.date) };
+            date: earliest(/^date:\s*['"]?(\d{4}-\d{2}-\d{2})/m.exec(text)?.[1], print?.date) };
     }).sort(byDate), ...prints];
 }
 
