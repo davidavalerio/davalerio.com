@@ -249,8 +249,30 @@ def load_maps():
                 m = yaml.safe_load(open(os.path.join(MAP_SRC, name), encoding="utf-8"))
                 d = m["date"]
                 m["date"] = d if isinstance(d, datetime.date) else datetime.date.fromisoformat(str(d))
+                m["revised"] = revised(name[:-5], m["date"])
                 maps[name[:-5]] = m
     return maps
+
+
+def revised(name, published):
+    """The day a map last changed, from its own files (definition, tile script, tiles, stills, image, model; not its
+    generated page): today while any of them has uncommitted changes, otherwise the date of the last commit to touch
+    them. None when that is not after the published date, or when git cannot say."""
+    paths = ["_writing/maps/{}.yaml".format(name), "_writing/maps/{}.py".format(name), "maps/{}".format(name),
+             ":(exclude)maps/{}/index.html".format(name)]
+    git = lambda *a: subprocess.run(["git", "-C", ROOT, *a, "--", *paths], capture_output=True, text=True)
+    try:
+        status = git("status", "--porcelain")
+        if status.returncode:
+            return None
+        if status.stdout.strip():
+            day = datetime.date.today()
+        else:
+            last = git("log", "-1", "--format=%cs").stdout.strip()
+            day = datetime.date.fromisoformat(last) if last else None
+    except (OSError, ValueError):
+        return None
+    return day if day and day > published else None
 
 
 def still_url(map_name, view):
@@ -376,7 +398,8 @@ def map_page(name, m):
                       description=esc(md_plain(m.get("note"))), url=url, og_type="article", og_image=og_image(share),
                       favicon=FAVICON, extra_head=map_head(name, {name: m}) if interactive else head, body_class=' class="wide"')
     out += '    <main>\n        <header class="post">\n'
-    out += '            <p class="meta">Map · <time datetime="{0}">{0}</time></p>\n'.format(m["date"].isoformat())
+    rev = ' · Revised <time datetime="{0}">{0}</time>'.format(m["revised"].isoformat()) if m.get("revised") else ""
+    out += '            <p class="meta">Map · <time datetime="{0}">{0}</time>{1}</p>\n'.format(m["date"].isoformat(), rev)
     out += '            <h1>{}</h1>\n'.format(esc(m["title"]))
     if m.get("note"):
         out += '            <div class="subtitle">{}</div>\n'.format(md(m["note"]))
@@ -493,7 +516,7 @@ def feed(posts):
 def sitemap(posts, maps):
     urls = [(SITE + "/", posts[0]["date"])]
     urls += [("{}/writing/{}/".format(SITE, p["slug"]), p["date"]) for p in posts]
-    urls += [("{}/maps/{}/".format(SITE, n), m["date"]) for n, m in sorted(maps.items()) if m.get("page")]
+    urls += [("{}/maps/{}/".format(SITE, n), m.get("revised") or m["date"]) for n, m in sorted(maps.items()) if m.get("page")]
     rows = "".join("  <url><loc>{}</loc>{}</url>\n".format(
         u, "<lastmod>{}</lastmod>".format(d.isoformat()) if d else "") for u, d in urls)
     return '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + rows + '</urlset>\n'
@@ -512,6 +535,15 @@ def main():
     if args.maps_only:
         for name, m in maps.items():
             write(os.path.join(MAP_OUT, name, "index.html"), map_page(name, m))
+        # the sitemap's map entries take the same dates, without rebuilding the writing
+        path = os.path.join(ROOT, "sitemap.xml")
+        if os.path.exists(path):
+            text = open(path, encoding="utf-8").read()
+            for name, m in maps.items():
+                if m.get("page"):
+                    text = re.sub(r"(<loc>{}/maps/{}/</loc><lastmod>)[0-9-]+(</lastmod>)".format(re.escape(SITE), re.escape(name)),
+                                  lambda x: x.group(1) + (m.get("revised") or m["date"]).isoformat() + x.group(2), text)
+            write(path, text)
         return
     posts = load(maps)
     for p in posts:
