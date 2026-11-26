@@ -19,7 +19,7 @@ Static HTML. Source Serif 4 via Google Fonts. The homepage is hand-made with inl
 - `content.md` — plain-text copy for the calling card (edit here, then sync to index.html)
 - `mark.svg` — the Horizon mark on the card, a copy of `1-Practice/Branding/Horizon Mark.svg` in Drive
 - `headshot.jpg` — professional headshot, kept as the person image in the homepage's structured data
-- `favicon.png`, `apple-touch-icon.png` — DV favicon fallbacks
+- `favicon.png`, `apple-touch-icon.png` — Horizon favicon fallbacks
 - `CNAME` — points to davalerio.com
 - `_writing/posts/` — one source file per piece; the filename is the slug. YAML frontmatter (`title`, `date`, `kind`: essay | paper | conversation, optional `subtitle`, optional `map`), then the body. `.html` bodies are used as they are (the pieces carried over from Ghost); `.md` bodies go through Pandoc.
 - `_writing/appearances.yaml` — podcast episodes David appeared on as a guest (show, title, date, Apple Podcasts episode link), merged by date into the homepage's Podcasts list
@@ -73,7 +73,7 @@ Consecutive steps share one map, pinned beside the text on desktop and above it 
 
 **Name:** "David Valerio" is the canonical name. No middle initial.
 
-**Favicon:** the initials DV in Source Serif bold, muted plum (`#5E4B8B`), on a clear background, drawn as outlines inline in `index.html` (source in `_writing/favicon.txt`). `favicon.png` is the same mark as a transparent 64px fallback for Safari, rendered from the drawing with headless Chrome (`--default-background-color=00000000`). `apple-touch-icon.png` keeps the mark on the paper color, because iOS paints transparent areas black.
+**Favicon:** the Horizon mark (`1-Practice/Branding/Horizon Mark.svg` in Drive) in muted plum (`#5E4B8B`) on a clear background, inline in `index.html` (source in `_writing/favicon.txt`), a lighter copy whose globe lines keep every third point so the inline icon stays small. `favicon.png` is the same mark as a transparent 64px fallback for Safari, rendered with headless Chrome (`--default-background-color=00000000`). `apple-touch-icon.png` sets the full mark at 72% on the paper color, because iOS paints transparent areas black.
 
 ## Design System
 
