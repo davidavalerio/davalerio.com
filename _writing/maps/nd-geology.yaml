@@ -439,12 +439,14 @@ labels:
     kind: water
   yellowstone-river:
     text: Yellowstone River
-    at: [-103.92, 47.93]
+    at: [-103.98, 47.965]
     kind: water
+    anchor: left
   red-river:
     text: Red River
-    at: [-96.98, 47.65]
+    at: [-96.92, 47.65]
     kind: water
+    anchor: right
 popup:
   layer: units
   title: '{label}'
