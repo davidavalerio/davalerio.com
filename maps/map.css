@@ -13,6 +13,7 @@
     --map-coal-subbituminous: #D6D3CD;
     --map-coal-lignite: #E7E4DF;
     --map-wide: min(82rem, calc(100vw - 3rem));
+    --frame: #BDB7AC;   /* the edge of anything readers can move: maps and models */
 }
 
 /* The canvas and its labels */
@@ -92,7 +93,7 @@
     top: 1rem;
     height: calc(100svh - 2rem);
     margin-bottom: 1rem;
-    border: 1px solid var(--hair);
+    border: 1px solid var(--frame);
 }
 
 .scrolly.live .steps {
@@ -167,7 +168,8 @@
         height: 40svh;
         margin: 0 -1.5rem;
         border: 0;
-        border-bottom: 1px solid var(--hair);
+        border-top: 1px solid var(--frame);
+        border-bottom: 1px solid var(--frame);
         z-index: 2;
     }
 
@@ -205,7 +207,7 @@
 .map-embed.live {
     position: relative;
     height: clamp(20rem, 55svh, 32rem);
-    border: 1px solid var(--hair);
+    border: 1px solid var(--frame);
 }
 
 .map-embed.ready .still {
@@ -232,7 +234,7 @@ body.wide main {
 .map-full.live {
     height: min(80svh, 56rem);
     min-height: 24rem;
-    border: 1px solid var(--hair);
+    border: 1px solid var(--frame);
 }
 
 .map-full.ready .still {
@@ -318,6 +320,7 @@ div.map-credits li + li {
     height: min(86svh, 60rem);
     min-height: 26rem;
     overflow: hidden;
+    border: 1px solid var(--frame);
 }
 
 .model-view:not(.ready) .model-stage,
