@@ -53,7 +53,7 @@ maptiles.vectors({
     "glacial": (gpkg, "SELECT FEATURE1 AS kind, FEATURE2 AS certainty, geom FROM linear_features"),
     "counties": (gpkg, "SELECT geom FROM counties"),
     "towns": (gpkg, "SELECT name, pop2020, geom FROM towns"),
-}, os.path.join(OUT, "vectors.pmtiles"), scratch, minzoom=5, maxzoom=11)
+}, os.path.join(OUT, "vectors.pmtiles"), scratch, minzoom=4, maxzoom=11)
 
 # 3DEP at about 600 m over the map's bounds, so the relief runs on past the project's own
 # elevation instead of ending at a cliff, and the project's 100 m faded into it.
@@ -68,7 +68,7 @@ fine = os.path.join(scratch, "project-dem.tif")
 maptiles.feather(os.path.join(SRC, "Elevation.tif"), coarse, fine, trim=5, cells=40)
 n = maptiles.terrain([coarse, fine], os.path.join(OUT, "terrain.pmtiles"), scratch,
                      region=(-106.5, 44.6, -94.1, 50.3), core=(-104.7, 45.6, -96.2, 49.3),
-                     region_maxzoom=8, core_maxzoom=10)
+                     region_maxzoom=8, core_maxzoom=10, minzoom=4)
 print("terrain tiles:", n)
 for f in ("vectors.pmtiles", "terrain.pmtiles"):
     print(f, round(os.path.getsize(os.path.join(OUT, f)) / 1e6, 1), "MB")

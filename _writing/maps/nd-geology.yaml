@@ -7,7 +7,7 @@ note: Surface geology of North Dakota, after Lee Clayton's 1:500,000 Geologic Ma
 start: state
 credits: 'Geology: North Dakota Geological Survey, Surface Geology after Clayton (1980), ND GIS Hub. Elevation: USGS 3D Elevation Program. Boundaries
   and towns: U.S. Census Bureau TIGER. Unit colors and legend wording condensed from the survey''s descriptions.'
-bounds: [-106.5, 44.6, -94.1, 50.3]
+bounds: [-108.0, 42.0, -92.6, 53.0]
 exaggeration: 2
 sources:
   vectors: {type: vector, url: vectors.pmtiles}
