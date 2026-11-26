@@ -168,6 +168,7 @@
         height: 40svh;
         margin: 0 -1.5rem;
         border: 0;
+        border-top: 1px solid var(--frame);
         border-bottom: 1px solid var(--frame);
         z-index: 2;
     }
