@@ -169,6 +169,51 @@ PAGES = {'Letter Landscape': (11, 8.5), 'Letter Portrait': (8.5, 11), 'Tabloid L
          'Tabloid Portrait': (11, 17), 'Display 36 × 24': (36, 24), 'Display 24 × 36': (24, 36)}
 INK, STONE, PLUM = '#22282B', '#6B7075', '#5E4B8B'
 
+# The maker's mark: the Horizon mark (the site's mark.svg, in plum) beside the surname and a Latin credit for the
+# draftsman, set at the right end of the credits' row, opposite the credits.
+MAKER = ('Valerio', 'del.')
+
+
+def _print_mark():
+    """mark.svg's drawing for print: its knock-out (a mask, which Chromium would print as a picture) redrawn as a clip
+    of vector outlines, the V's own outline grown by half the knock-out's stroke and cut from the box. Returns the
+    globe and V markup, with `{clip}` where the clip's id goes, and the clip's path. The file is read as XML: the globe
+    is the group's children, the V the path filled in plum, the knock-out's width the mask path's stroke."""
+    import xml.etree.ElementTree as ET
+    ns = '{http://www.w3.org/2000/svg}'
+    root = ET.parse(REPO / 'mark.svg').getroot()
+    local = lambda el: el.tag.removeprefix(ns)
+    markup = lambda el, **over: '<{} {}/>'.format(local(el), ' '.join(f'{k}="{_html.escape(v)}"' for k, v in {**el.attrib, **over}.items()))
+    globe = ''.join(markup(el) for el in root.find(f'{ns}g'))
+    v = next(el for el in root.findall(f'{ns}path') if el.get('fill'))
+    knock = float(root.find(f'.//{ns}mask/{ns}path').get('stroke-width'))
+    a, _, _, d, e, f = (float(n) for n in re.search(r'matrix\(([^)]+)\)', v.get('transform')).group(1).replace(',', ' ').split())
+    rings, ring = [], []
+    for cmd, nums in re.findall(r'([MLHVZ])([^MLHVZ]*)', v.get('d')):
+        n = [float(t) for t in nums.replace(',', ' ').split()]
+        if cmd == 'M':
+            ring = [(n[0], n[1])]; rings.append(ring); n = n[2:]; cmd = 'L'
+        if cmd == 'L':
+            ring += list(zip(n[0::2], n[1::2]))
+        elif cmd == 'H':
+            ring += [(h, ring[-1][1]) for h in n]
+        elif cmd == 'V':
+            ring += [(ring[-1][0], w) for w in n]
+    shape = shapely.union_all([shapely.make_valid(shapely.Polygon(r)) for r in rings]).buffer(knock / 2, join_style='round', quad_segs=8)
+    outline = ''.join('M' + 'L'.join(f'{a * px + e:.2f} {d * py + f:.2f}' for px, py in ring.coords[:-1]) + 'Z'
+                      for poly in getattr(shape, 'geoms', [shape]) for ring in (poly.exterior, *poly.interiors))
+    body = f'<g clip-path="url(#{{clip}})" fill="none" stroke="{PLUM}">{globe}</g>' + markup(v, fill=PLUM)
+    return body, 'M0 0H100V100H0Z' + outline
+
+
+_MARK, _MARK_CLIP = _print_mark()
+
+
+def _baseline(style, size, top, lead):
+    """Where the first baseline of a line box `lead` tall, set in `style` at `size`, falls when its top is at `top`."""
+    mt = T.metrics(style, size)
+    return top + (lead - (mt['ascender'] - mt['descender'])) / 2 + mt['ascender']
+
 
 class Var:
     """A paint setting used in a style: written as a CSS variable, so the workbench can change it in place."""
@@ -439,7 +484,7 @@ class Page:
         fw = full - (lg['width'] + lg['gap'] if lg and lg['groups'] else 0)
         x0 = self.MARGIN
         self.L = {'title': (x0, self.TITLE_TOP), 'subtitle': (x0, self.SUB_TOP), 'rule': (x0, self.RULE_Y, full),
-                  'credits': (x0 + full * 0.37, 0, full * 0.63 - 40)}
+                  'credits': (x0 + full * 0.37, 0, full * 0.63 - 40), 'maker_right': x0 + full - 40}
         lines = self._credit_lines()
         self.foot_h = max(34, len(lines) * self.CREDIT_LEAD + 2)
         fh = Hr - self.FRAME_TOP - self.FOOT_GAP - self.foot_h - self.BOTTOM
@@ -528,7 +573,23 @@ class Page:
         return [l for l in lines if l] if items else lines
 
     def _credit_lines(self):
-        return self._wrap(self._credit_text(with_sources=bool(self.frames)), 'serif', self.L.get('credits_size', self.CREDIT_SIZE), self.L['credits'][2], items=True)
+        """The credits wrapped to their width, narrowed to stop short of the maker's mark at the end of their row."""
+        cx, _, cwid = self.L['credits']
+        mx, _, _, room = self._maker_box()
+        return self._wrap(self._credit_text(with_sources=bool(self.frames)), 'serif', self.L.get('credits_size', self.CREDIT_SIZE), min(cwid, mx - room - cx), items=True)
+
+    def _maker_box(self):
+        """The maker's mark across the credits' row: its left edge, its type size, the mark's height, and the room kept
+        between it and the credits. Its right edge is the title rule's right end (`maker_right` where the layout sets
+        one, as the standard layout does to stay clear of the north arrow; the credits' own right end with no rule)."""
+        L = self.L
+        cx, _, cwid = L['credits']
+        right = L.get('maker_right', L['rule'][0] + L['rule'][2] if 'rule' in L else cx + cwid)
+        size = L.get('credits_size', self.CREDIT_SIZE) * 1.3
+        mark = size * 1.75
+        name, credit = MAKER
+        w = mark + size * 0.42 + T.width(name, 'serif-semibold', size) + T.width(' ', 'serif', size) + T.width(credit, 'serif-italic', size)
+        return right - w, size, mark, size * 1.5
 
     def _legend_svg(self):
         lg = self._legend
@@ -610,10 +671,12 @@ class Page:
         self.finalize()
         L = self.L
         self.credit_lines = self._credit_lines() if 'credits' in L else []
+        if 'credits' in L:
+            self._check_foot()
         parts = []
         if 'title' in L:
             ts = L.get('title_size', 18)
-            parts.append((f'{i}-title', f'<div id="{i}-title" class="title" data-setting="{self.keys[0]}" style="left:{pt(L["title"][0])};top:{pt(L["title"][1])};font-size:{pt(ts)};line-height:{pt(ts * 1.33)}">{esc(self.title)}</div>'))
+            parts.append((f'{i}-title', f'<div id="{i}-title" class="title" data-setting="{self.keys[0]}" style="{T.css(T.title_style(ts * k))};left:{pt(L["title"][0])};top:{pt(L["title"][1])};font-size:{pt(ts)};line-height:{pt(ts * 1.33)}">{esc(self.title)}</div>'))
         if 'subtitle' in L:
             ss = L.get('subtitle_size', 9.5)
             parts.append((f'{i}-subtitle', f'<div id="{i}-subtitle" class="subtitle" data-setting="{self.keys[1]}" style="left:{pt(L["subtitle"][0])};top:{pt(L["subtitle"][1])};font-size:{pt(ss)};line-height:{pt(ss * 1.47)}">{esc(self.subtitle)}</div>'))
@@ -631,6 +694,8 @@ class Page:
             cx, cy, cwid = L['credits']
             parts.append((f'{i}-credits', f'<div id="{i}-credits" class="credits" data-setting="{self.keys[2]}" style="left:{pt(cx)};top:{pt(cy)};width:{pt(cwid + 40)};'
                           f'font-size:{pt(L.get("credits_size", self.CREDIT_SIZE))};line-height:{pt(L.get("credits_lead", self.CREDIT_LEAD))}">' + '<br>'.join(esc(l) for l in self.credit_lines) + '</div>'))
+        if 'credits' in L:
+            parts.append((f'{i}-maker', self._maker_html(pt)))
         if 'north' in L:
             parts.append((f'{by_key[L["north"][0]].id}-north', by_key[L['north'][0]].north_arrow_svg(L['north'][1], L['north'][2])))
         for n, t in enumerate(self.notes):
@@ -649,6 +714,7 @@ body>div{{z-index:1}}
 .title{{{T.css('serif-semibold')};color:{INK};white-space:pre}}
 .subtitle{{{T.css('serif')};color:{STONE};white-space:pre}}
 .credits{{{T.css('serif')};color:{STONE};white-space:pre}}
+.maker{{{T.css('serif-semibold')};color:{INK};white-space:pre}}
 .note{{white-space:pre}}
 .rule{{background:{PLUM}}}
 svg text{{white-space:pre;text-rendering:geometricPrecision;font-variant-ligatures:none;font-kerning:normal}}
@@ -660,6 +726,40 @@ svg .ghosts{{display:none;opacity:0.4}}
 <body>
 '''
         return head, parts
+
+    def _check_foot(self):
+        """The credits, narrowed beside the maker's mark, and the mark itself must end a quarter inch above the page's
+        bottom edge, where a printer can still print: a layout of the map's own does not give way to them as the
+        standard one does."""
+        L = self.L
+        cx, cy, _ = L['credits']
+        lead = L.get('credits_lead', self.CREDIT_LEAD)
+        _, size, mark, _ = self._maker_box()
+        base = _baseline('serif', L.get('credits_size', self.CREDIT_SIZE), cy, lead) + lead * max(0, len(self.credit_lines) - 1)
+        bottom = max(cy + lead * len(self.credit_lines), base + mark * 0.035)
+        if bottom > (self.H - 18) / self.k:
+            raise BuildError('the credits run off the foot of the page; shorten them')
+
+    def _maker_html(self, pt):
+        """The maker's mark at the right end of the credits' row: the Horizon mark, then the surname in semibold and
+        "del." in italic, sitting on the baseline of the credits' last line, the mark's foot a hair below it. Sized from
+        the credits, a little larger than they are."""
+        L, i = self.L, self.id
+        cx, cy, cwid = L['credits']
+        cs, lead = L.get('credits_size', self.CREDIT_SIZE), L.get('credits_lead', self.CREDIT_LEAD)
+        x, size, mark, room = self._maker_box()
+        if cx + max((T.width(l, 'serif', cs) for l in self.credit_lines), default=0) > x - room + 0.01:
+            raise BuildError('the credits run into the maker\'s mark; shorten them')
+        base = _baseline('serif', cs, cy, lead) + lead * max(0, len(self.credit_lines) - 1)
+        top, line = base - mark * 0.965, size * 1.2
+        ty = _baseline('serif-semibold', size, 0, line)
+        name, credit = MAKER
+        w = L.get('maker_right', L['rule'][0] + L['rule'][2] if 'rule' in L else cx + cwid) - x
+        svg = f'<defs><clipPath id="{i}-mark"><path clip-rule="evenodd" d="{_MARK_CLIP}"/></clipPath></defs>' + _MARK.replace('{clip}', f'{i}-mark')
+        return (f'<div id="{i}-maker" class="maker" style="left:{pt(x)};top:{pt(top)};width:{pt(w)};height:{pt(mark)}">'
+                f'<svg viewBox="0 0 100 100" style="position:absolute;left:0;top:0;width:{pt(mark)};height:{pt(mark)}">{svg}</svg>'
+                f'<div style="position:absolute;right:0;top:{pt(base - top - ty)};font-size:{pt(size)};line-height:{pt(line)}">'
+                f'{esc(name)} <span style="{T.css("serif-italic")}">{esc(credit)}</span></div></div>')
 
     def html(self, raster_dir):
         """The page as one static HTML document."""

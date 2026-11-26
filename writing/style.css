@@ -19,6 +19,7 @@ html {
 }
 
 body {
+    --gutter: 1.5rem;
     font-family: 'Source Serif 4', Georgia, 'Times New Roman', serif;
     font-optical-sizing: auto;
     font-weight: 400;
@@ -26,8 +27,11 @@ body {
     background: var(--paper);
     line-height: 1.65;
     -webkit-font-smoothing: antialiased;
-    padding: 0 1.5rem;
+    padding: 0 var(--gutter);
     overflow-wrap: break-word;
+    display: flex;
+    flex-direction: column;
+    min-height: 100svh;
 }
 
 a {
@@ -47,6 +51,7 @@ a:focus-visible {
 
 header.site,
 main {
+    width: 100%;
     max-width: var(--measure);
     margin: 0 auto;
 }
@@ -273,6 +278,31 @@ footer.post {
     border-top: 1px solid var(--hair);
 }
 
+/* The plum band at the foot of every page (FOOT in _writing/build.py), carrying the mark in paper,
+   the page's width edge to edge and held to the bottom of a short window */
+
+footer.band {
+    margin: auto calc(-1 * var(--gutter)) 0;
+    display: flex;
+    justify-content: center;
+    padding: 2.4rem 1rem;
+    background: var(--accent);
+}
+
+footer.band a {
+    display: block;
+}
+
+footer.band a:focus-visible {
+    outline-color: var(--paper);
+}
+
+footer.band img {
+    display: block;
+    width: 48px;
+    height: 48px;
+}
+
 /* Writing by Email (form markup in _writing/build.py; the homepage's copy of
    these styles sits in index.html, kept in step) */
 
@@ -358,7 +388,7 @@ footer.post .subscribe {
 
 @media (max-width: 560px) {
     body {
-        padding: 0 1.15rem;
+        --gutter: 1.15rem;
     }
 
     header.site {
@@ -378,6 +408,7 @@ footer.post .subscribe {
 @media print {
     header.site,
     footer.post,
+    footer.band,
     .body iframe {
         display: none;
     }

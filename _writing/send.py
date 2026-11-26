@@ -91,7 +91,7 @@ def styled(body, page):
 def email_html(title, url, meta, subtitle, body, test, note=None):
     sub = ""
     if subtitle:
-        sub = ('<p style="margin: 0 0 10px; color: #6B7075; font-size: 17px; '
+        sub = ('<p style="margin: 0 0 8px; color: #6B7075; font-size: 17px; '
                'line-height: 1.45;">{}</p>\n').format(esc(subtitle))
     unsubscribe = ('Test send to you alone' if test else
                    '<a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color: #6B7075; text-decoration: none;">Unsubscribe</a>')
@@ -101,8 +101,12 @@ def email_html(title, url, meta, subtitle, body, test, note=None):
 </head>
 <body style="margin: 0; background: #ffffff;">
 <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: {font}; font-size: 15px; line-height: 1.66; color: #22282B;">
-<h1 style="color: #22282B; font-size: 26px; font-weight: 600; line-height: 1.15; margin: 0 0 8px;"><a href="{url}" style="color: #22282B; text-decoration: none;">{title}</a></h1>
-{sub}<p style="color: #6B7075; font-size: 12.5px; letter-spacing: 0.05em; margin: 0 0 24px; padding-bottom: 16px; border-bottom: 1px solid #D8D4CC;">{meta}</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse; margin: 0 0 24px;"><tr>
+<td width="48" style="width: 48px; padding: 0 14px 16px 0; vertical-align: bottom; border-bottom: 1px solid #D8D4CC;"><img src="https://davalerio.com/mark-email.png" width="48" height="48" alt="Horizon mark" style="display: block; border: 0;"></td>
+<td style="padding: 0 0 16px; vertical-align: bottom; border-bottom: 1px solid #D8D4CC;">
+<h1 style="color: #22282B; font-size: 26px; font-weight: 600; line-height: 1.15; margin-top: 0; margin-bottom: 6px;"><a href="{url}" style="color: #22282B; text-decoration: none;">{title}</a></h1>
+{sub}<p style="color: #6B7075; font-size: 12.5px; letter-spacing: 0.05em; margin: 0;">{meta}</p>
+</td></tr></table>
 {note}{body}
 <p style="margin: 32px 0 0; padding-top: 16px; border-top: 1px solid #E6E3DC; color: #6B7075; font-size: 12.5px;"><a href="{url}" style="color: #6B7075; text-decoration: none;">Read on davalerio.com</a> · {unsubscribe}<br>You receive this because you subscribed to {name} at davalerio.com.</p>
 </div>

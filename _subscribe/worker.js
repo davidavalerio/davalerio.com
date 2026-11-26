@@ -267,7 +267,7 @@ function esc(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-// A page in the site's own look: same masthead and stylesheet as the writing pages.
+// A page in the site's own look: same masthead, stylesheet and plum band as the writing pages.
 function page(title, text, status, extra = "") {
   return new Response(`<!DOCTYPE html>
 <html lang="en">
@@ -298,6 +298,7 @@ function page(title, text, status, extra = "") {
         </div>
         <footer class="post"><a href="${SITE}/">← Home</a></footer>
     </main>
+    <footer class="band"><a href="${SITE}/" aria-label="Home"><img src="${SITE}/mark-paper.svg" alt="Horizon mark" width="48" height="48"></a></footer>
 </body>
 </html>
 `, { status, headers: { "Content-Type": "text/html; charset=utf-8", ...PRIVATE } });
@@ -312,8 +313,12 @@ function confirmationEmail(link) {
 </head>
 <body style="margin: 0; background: #ffffff;">
 <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: ${font}; font-size: 15px; line-height: 1.66; color: #22282B;">
-<h1 style="color: #22282B; font-size: 26px; font-weight: 600; line-height: 1.15; margin: 0 0 6px;">David Valerio</h1>
-<p style="color: #6B7075; font-size: 12.5px; letter-spacing: 0.05em; margin: 0; padding-bottom: 16px; border-bottom: 1px solid #D8D4CC;">${NAME}</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse;"><tr>
+<td width="48" style="width: 48px; padding: 0 14px 16px 0; vertical-align: bottom; border-bottom: 1px solid #D8D4CC;"><img src="https://davalerio.com/mark-email.png" width="48" height="48" alt="Horizon mark" style="display: block; border: 0;"></td>
+<td style="padding: 0 0 16px; vertical-align: bottom; border-bottom: 1px solid #D8D4CC;">
+<h1 style="color: #22282B; font-size: 26px; font-weight: 600; line-height: 1.15; margin-top: 0; margin-bottom: 6px;">David Valerio</h1>
+<p style="color: #6B7075; font-size: 12.5px; letter-spacing: 0.05em; margin: 0;">${NAME}</p>
+</td></tr></table>
 <div style="background: #F3F1EC; border: 1px solid #E6E3DC; padding: 20px; margin: 20px 0;">
 <p style="margin: 0 0 6px; font-size: 16px; font-weight: 600;">Confirm Your Subscription</p>
 <p style="margin: 0 0 14px;">New writing will arrive by email.</p>

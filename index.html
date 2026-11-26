@@ -113,29 +113,42 @@
             left: calc(50% - 15 * var(--px));
             top: calc(405 * var(--px));
             transform: translate(-50%, -50%);
-            width: calc(520 * var(--px));
-            padding: calc(40 * var(--px)) calc(44 * var(--px)) calc(36 * var(--px));
+            width: calc(592 * var(--px));
+            padding: calc(36 * var(--px)) calc(44 * var(--px)) calc(30 * var(--px));
             background: var(--paper);
             border: 1px solid var(--hair);
             text-align: center;
         }
 
+        /* The letterhead: the mark beside the name and tagline, bottoms aligned, closed by a 1pt plum rule */
+        .head {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: calc(18 * var(--px));
+            padding-bottom: calc(22 * var(--px));
+            border-bottom: max(1px, calc(1.5 * var(--px))) solid var(--accent);
+            text-align: left;
+        }
+
         .mark {
+            flex: none;
             display: block;
-            width: calc(96 * var(--px));
-            height: calc(96 * var(--px));
-            margin: 0 auto calc(22 * var(--px));
+            width: calc(76 * var(--px));
+            height: calc(76 * var(--px));
+            margin-bottom: calc(-2 * var(--px));
         }
 
         .name {
-            font-size: calc(40.8 * var(--px));
+            font-size: calc(38 * var(--px));
             font-weight: 600;
             line-height: 1.1;
         }
 
         .tagline {
-            margin-top: calc(10 * var(--px));
-            font-size: calc(17.9 * var(--px));
+            margin-top: calc(6 * var(--px));
+            font-size: calc(17 * var(--px));
+            line-height: 1.35;
             color: var(--stone);
             text-wrap: balance;
         }
@@ -146,7 +159,7 @@
             justify-content: center;
             gap: 0.3rem calc(27 * var(--px));
             list-style: none;
-            margin-top: calc(24 * var(--px));
+            margin-top: calc(20 * var(--px));
             font-size: calc(17.6 * var(--px));
         }
 
@@ -178,22 +191,35 @@
                 width: auto;
                 max-width: 30rem;
                 margin: -2.5rem auto 0;
-                padding: 1.75rem 1.25rem 1.5rem;
+                padding: 1.75rem clamp(0.8rem, 4vw, 1.25rem) 1.5rem;
+            }
+
+            /* The mark, the gap and the card's sides give way on the narrowest phones, so the tagline keeps its two lines */
+            .head {
+                gap: clamp(0.6rem, 3.5vw, 0.9rem);
+                padding-bottom: 1.1rem;
+                border-bottom-width: 1pt;
             }
 
             .mark {
-                width: 72px;
-                height: 72px;
-                margin-bottom: 1rem;
+                width: clamp(52px, 16.5vw, 64px);
+                height: clamp(52px, 16.5vw, 64px);
+                margin-bottom: -2px;
             }
 
             .name {
-                font-size: 1.8rem;
+                font-size: 1.7rem;
             }
 
             .tagline {
-                margin-top: 0.4rem;
-                font-size: 1rem;
+                margin-top: 0.2rem;
+                font-size: 0.95rem;
+            }
+
+            /* Two lines broken by hand, so the text is no wider than its longest line and the
+               letterhead stays centered in the card */
+            .tagline span {
+                display: block;
             }
 
             /* Inline and balanced, so a narrow card breaks the links into even lines
@@ -458,8 +484,37 @@
             }
         }
 
+        /* The plum band at the foot of the page, carrying the mark in paper; held to the bottom of a short window */
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100svh;
+        }
+
+        .band {
+            margin-top: auto;
+            display: flex;
+            justify-content: center;
+            padding: 2.4rem 1rem;
+            background: var(--accent);
+        }
+
+        .band a {
+            display: block;
+        }
+
+        .band a:focus-visible {
+            outline-color: var(--paper);
+        }
+
+        .band img {
+            display: block;
+            width: 48px;
+            height: 48px;
+        }
+
         @media print {
-            .subscribe-band, .top {
+            .subscribe-band, .top, .band {
                 display: none;
             }
         }
@@ -475,9 +530,13 @@
     <header class="card-screen" id="home">
         <div class="drawing" role="img" aria-label="Line drawing of the Missouri and the Yellowstone at Williston"></div>
         <div class="card">
-            <img src="mark.svg" alt="Horizon mark: a V standing on the curve of the Earth" class="mark" width="96" height="96">
-            <h1 class="name">David Valerio</h1>
-            <p class="tagline">Catholic cartographer and writer in Williston, ND</p>
+            <div class="head">
+                <img src="mark.svg" alt="Horizon mark: a V standing on the curve of the Earth" class="mark" width="76" height="76">
+                <div>
+                    <h1 class="name">David Valerio</h1>
+                    <p class="tagline">Catholic cartographer and <span>writer in Williston, ND</span></p>
+                </div>
+            </div>
             <ul class="links">
                 <li><a href="#maps">Maps</a></li>
                 <li><a href="#writing">Writing</a></li>
@@ -624,5 +683,6 @@
         </div>
     </section>
     </main>
+    <footer class="band"><a href="#home" aria-label="Back to Top"><img src="mark-paper.svg" alt="Horizon mark" width="48" height="48"></a></footer>
 </body>
 </html>
