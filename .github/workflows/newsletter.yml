@@ -1,10 +1,10 @@
-# Writing by Email: sends one piece or map page when run by hand
+# Posts by Email: sends one piece or map page when run by hand
 # (_writing/send.py). Nothing runs on publish. Run it from the Actions tab's
 # Run button, or `gh workflow run newsletter.yml -f name=<name> -f to=test`;
 # a test goes to David alone, and only `to=subscribers` mails the list: from
 # main only, and only after a successful test of the same piece on the same
 # commit.
-name: Writing by Email
+name: Posts by Email
 run-name: ${{ inputs.to }} ${{ inputs.name }}
 
 on:
