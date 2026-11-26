@@ -13,7 +13,7 @@ The homepage is a calling card over a line drawing of the Missouri and the Yello
 
 ## Calling Card
 
-**Headshot:** headshot.jpg
+**Mark:** mark.svg (the Horizon mark)
 
 **Name:** David Valerio
 
