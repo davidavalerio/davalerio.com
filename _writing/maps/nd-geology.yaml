@@ -1,13 +1,13 @@
-# Geologic Map of Western North Dakota. Tiles are built by western-nd-geology.py beside this file,
-# from the Western North Dakota Geology project in Drive. Unit colors and legend wording are the print map's.
-title: Geologic Map of Western North Dakota
+# Geologic Map of North Dakota. Tiles are built by nd-geology.py beside this file,
+# from the North Dakota Geology project in Drive. Unit colors and legend wording are the print map's.
+title: Geologic Map of North Dakota
 date: '2026-11-17'
 page: true
-note: Surface geology of North Dakota west of 100.5° W, after Lee Clayton's 1:500,000 Geologic Map of North Dakota (1980), over shaded relief.
-start: west
+note: Surface geology of North Dakota, after Lee Clayton's 1:500,000 Geologic Map of North Dakota (1980), over shaded relief.
+start: state
 credits: 'Geology: North Dakota Geological Survey, Surface Geology after Clayton (1980), ND GIS Hub. Elevation: USGS 3D Elevation Program. Boundaries
   and towns: U.S. Census Bureau TIGER. Unit colors and legend wording condensed from the survey''s descriptions.'
-bounds: [-106.3, 44.6, -99.3, 50.2]
+bounds: [-106.5, 44.6, -94.1, 50.3]
 exaggeration: 2
 sources:
   vectors: {type: vector, url: vectors.pmtiles}
@@ -56,6 +56,8 @@ layers:
     - '#DFE8D2'
     - Qcew
     - '#C4DCE6'
+    - Qcs
+    - '#CDBB8C'
     - Qcoh
     - '#A9C4E0'
     - Qcof
@@ -92,6 +94,10 @@ layers:
     - '#7FBEA6'
     - Kp
     - '#93AAA2'
+    - Kn
+    - '#B5CFC9'
+    - SP
+    - '#E4DED2'
     - water
     - '#BCD6E8'
     - '#EEEEEE'
@@ -162,133 +168,265 @@ layers:
   source-layer: towns
   paint: {circle-radius: 2.6, circle-color: --ink, circle-stroke-color: --paper, circle-stroke-width: 1}
 labels:
+  fargo:
+    text: Fargo
+    at: [-96.834, 46.8389]
+    kind: place
   bismarck:
     text: Bismarck
-    at: [-100.7701, 46.8146]
+    at: [-100.7665, 46.8145]
+    kind: place
+  grand-forks:
+    text: Grand Forks
+    at: [-97.0649, 47.9221]
     kind: place
   minot:
     text: Minot
-    at: [-101.2776, 48.2361]
+    at: [-101.3006, 48.2379]
+    kind: place
+  west-fargo:
+    text: West Fargo
+    at: [-96.898, 46.8492]
     kind: place
   williston:
     text: Williston
-    at: [-103.6381, 48.1806]
+    at: [-103.6276, 48.2065]
     kind: place
   dickinson:
     text: Dickinson
-    at: [-102.7973, 46.8927]
+    at: [-102.7851, 46.888]
     kind: place
   mandan:
     text: Mandan
-    at: [-100.8871, 46.8295]
+    at: [-100.8861, 46.8285]
     kind: place
+  jamestown:
+    text: Jamestown
+    at: [-98.7053, 46.9105]
+    kind: town
+  wahpeton:
+    text: Wahpeton
+    at: [-96.6117, 46.2672]
+    kind: town
+  devils-lake:
+    text: Devils Lake
+    at: [-98.8788, 48.1129]
+    kind: town
+  valley-city:
+    text: Valley City
+    at: [-97.9988, 46.9223]
+    kind: town
   watford-city:
     text: Watford City
-    at: [-103.2648, 47.8027]
+    at: [-103.2513, 47.7959]
+    kind: town
+  grafton:
+    text: Grafton
+    at: [-97.42, 48.4153]
     kind: town
   beulah:
     text: Beulah
-    at: [-101.7707, 47.2668]
+    at: [-101.7793, 47.2666]
     kind: town
   new-town:
     text: New Town
-    at: [-102.4883, 47.9891]
+    at: [-102.4973, 47.9917]
+    kind: town
+  rugby:
+    text: Rugby
+    at: [-99.993, 48.3641]
     kind: town
   stanley:
     text: Stanley
-    at: [-102.4008, 48.3135]
+    at: [-102.3895, 48.3127]
     kind: town
   hazen:
     text: Hazen
-    at: [-101.6248, 47.2984]
+    at: [-101.6228, 47.3]
+    kind: town
+  lisbon:
+    text: Lisbon
+    at: [-97.684, 46.4345]
     kind: town
   tioga:
     text: Tioga
-    at: [-102.9435, 48.3946]
+    at: [-102.9454, 48.3929]
+    kind: town
+  bottineau:
+    text: Bottineau
+    at: [-100.4381, 48.8255]
+    kind: town
+  carrington:
+    text: Carrington
+    at: [-99.1249, 47.4512]
+    kind: town
+  langdon:
+    text: Langdon
+    at: [-98.3789, 48.7653]
+    kind: town
+  hillsboro:
+    text: Hillsboro
+    at: [-97.0606, 47.404]
     kind: town
   bowman:
     text: Bowman
-    at: [-103.4029, 46.1843]
+    at: [-103.4063, 46.1836]
     kind: town
   garrison:
     text: Garrison
-    at: [-101.4219, 47.6532]
+    at: [-101.4172, 47.6533]
+    kind: town
+  new-rockford:
+    text: New Rockford
+    at: [-99.1325, 47.6779]
     kind: town
   washburn:
     text: Washburn
-    at: [-101.0278, 47.294]
+    at: [-101.0295, 47.2916]
+    kind: town
+  cavalier:
+    text: Cavalier
+    at: [-97.6259, 48.7937]
+    kind: town
+  rolla:
+    text: Rolla
+    at: [-99.6303, 48.8531]
+    kind: town
+  ellendale:
+    text: Ellendale
+    at: [-98.5249, 46.0065]
+    kind: town
+  cando:
+    text: Cando
+    at: [-99.205, 48.4848]
     kind: town
   hettinger:
     text: Hettinger
-    at: [-102.6346, 46.0035]
+    at: [-102.6382, 46.0057]
+    kind: town
+  linton:
+    text: Linton
+    at: [-100.232, 46.2682]
     kind: town
   crosby:
     text: Crosby
-    at: [-103.2966, 48.9162]
+    at: [-103.2957, 48.9122]
+    kind: town
+  cooperstown:
+    text: Cooperstown
+    at: [-98.1239, 47.4461]
     kind: town
   beach:
     text: Beach
-    at: [-104.0054, 46.9187]
+    at: [-104.0099, 46.924]
     kind: town
   kenmare:
     text: Kenmare
-    at: [-102.072, 48.6728]
+    at: [-102.0796, 48.6744]
     kind: town
   killdeer:
     text: Killdeer
-    at: [-102.7462, 47.3688]
+    at: [-102.7505, 47.3682]
+    kind: town
+  lamoure:
+    text: LaMoure
+    at: [-98.2957, 46.3589]
+    kind: town
+  napoleon:
+    text: Napoleon
+    at: [-99.769, 46.5051]
     kind: town
   glen-ullin:
     text: Glen Ullin
-    at: [-101.8335, 46.8117]
+    at: [-101.8336, 46.8122]
     kind: town
   mohall:
     text: Mohall
-    at: [-101.517, 48.7661]
+    at: [-101.5185, 48.7655]
+    kind: town
+  lakota:
+    text: Lakota
+    at: [-98.3468, 48.0429]
+    kind: town
+  steele:
+    text: Steele
+    at: [-99.918, 46.8556]
     kind: town
   mott:
     text: Mott
-    at: [-102.3189, 46.3744]
+    at: [-102.3267, 46.3732]
+    kind: town
+  ashley:
+    text: Ashley
+    at: [-99.3747, 46.0341]
     kind: town
   center:
     text: Center
-    at: [-101.2977, 47.1149]
+    at: [-101.2963, 47.1163]
     kind: town
   elgin:
     text: Elgin
-    at: [-101.8474, 46.4015]
+    at: [-101.8494, 46.401]
+    kind: town
+  forman:
+    text: Forman
+    at: [-97.6361, 46.1049]
+    kind: town
+  towner:
+    text: Towner
+    at: [-100.4071, 48.3466]
+    kind: town
+  fessenden:
+    text: Fessenden
+    at: [-99.6265, 47.6496]
+    kind: town
+  finley:
+    text: Finley
+    at: [-97.8358, 47.5105]
     kind: town
   stanton:
     text: Stanton
-    at: [-101.382, 47.3185]
+    at: [-101.3813, 47.319]
+    kind: town
+  mcclusky:
+    text: McClusky
+    at: [-100.4419, 47.4853]
     kind: town
   bowbells:
     text: Bowbells
-    at: [-102.2458, 48.8022]
+    at: [-102.2462, 48.8021]
     kind: town
   carson:
     text: Carson
-    at: [-101.5706, 46.4223]
+    at: [-101.5706, 46.4254]
     kind: town
   halliday:
     text: Halliday
-    at: [-102.3388, 47.352]
+    at: [-102.3384, 47.3508]
+    kind: town
+  minnewaukan:
+    text: Minnewaukan
+    at: [-99.2489, 48.07]
     kind: town
   fort-yates:
     text: Fort Yates
-    at: [-100.6301, 46.0866]
+    at: [-100.6297, 46.0854]
     kind: town
   medora:
     text: Medora
-    at: [-103.5265, 46.9113]
+    at: [-103.525, 46.9107]
     kind: town
   amidon:
     text: Amidon
-    at: [-103.3196, 46.4822]
+    at: [-103.3193, 46.483]
     kind: town
   lake-sakakawea:
     text: Lake Sakakawea
     at: [-102.05, 47.62]
+    kind: water
+  lake-oahe:
+    text: Lake Oahe
+    at: [-100.58, 46.3]
     kind: water
   missouri-river:
     text: Missouri River
@@ -302,20 +440,25 @@ labels:
     text: Yellowstone River
     at: [-103.92, 47.93]
     kind: water
+  red-river:
+    text: Red River
+    at: [-96.98, 47.65]
+    kind: water
 popup:
   layer: units
   title: '{label}'
   lines: ['{abbr}']
 views:
-  west:
-    center: [-102.3, 47.45]
-    zoom: 6.25
+  state:
+    center: [-100.3, 47.45]
+    zoom: 6.6
     terrain: true
-    show: [units, hillshade, counties, ice-known, ice-uncertain, erratics, eskers, towns, bismarck, minot, williston, dickinson, lake-sakakawea,
-      missouri-river, little-missouri-river, yellowstone-river]
-    alt: 'Western North Dakota colored by surface geology: greens and blues of glacial sediment north and east of the Missouri River, tans and
-      oranges of Paleocene bedrock in the southwest, with the ice margin and the limit of glacial erratics drawn across the state.'
-    caption: Western North Dakota, west of 100.5° W.
+    show: [units, hillshade, counties, ice-known, ice-uncertain, erratics, eskers, towns, fargo, bismarck, grand-forks, minot, williston, dickinson,
+      jamestown, lake-sakakawea, lake-oahe, missouri-river, red-river]
+    alt: 'North Dakota colored by surface geology: greens and blues of glacial sediment across the north and east, the old lake floor of the
+      Red River Valley along the eastern edge, tans and oranges of Paleocene bedrock in the southwest, with the ice margin and the limit of
+      glacial erratics drawn across the state.'
+    caption: North Dakota.
   missouri:
     center: [-102.75, 47.75]
     zoom: 8.1
@@ -349,6 +492,7 @@ legend:
   - {code: Qcer, color: '#CDE2DC', label: Eroded by meltwater rivers}
   - {code: Qces, color: '#DFE8D2', label: Eroded by slopewash on valley sides}
   - {code: Qcew, color: '#C4DCE6', label: Eroded by waves}
+  - {code: Qcs, color: '#CDBB8C', label: 'Shoreline sediment: beach-ridge complexes'}
   - {code: Qcoh, color: '#A9C4E0', label: Ice-walled-lake and collapsed lake sediment}
   - {code: Qcof, color: '#C8D8EE', label: Proglacial-lake sediment}
   - {code: Qcoe, color: '#B6BFE0', label: Eroded lake sediment on valley sides}
@@ -373,9 +517,11 @@ legend:
   - {code: Kh, color: '#A3D0B6', label: Hell Creek Formation}
   - {code: Kf, color: '#7FBEA6', label: 'Fox Hills Formation, marine'}
   - {code: Kp, color: '#93AAA2', label: 'Pierre Formation, marine shale'}
+  - {code: Kn, color: '#B5CFC9', label: 'Niobrara and Carlile Formations, marine shale'}
 - heading: Other
   items:
   - {color: '#BCD6E8', label: Water}
+  - {code: SP, color: '#E4DED2', label: Not described in the survey's data}
 - heading: Glacial Features
   items:
   - {shape: line, color: '#9A3324', label: 'Ice margin, located'}
