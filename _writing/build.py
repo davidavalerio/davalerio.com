@@ -535,6 +535,15 @@ def main():
     if args.maps_only:
         for name, m in maps.items():
             write(os.path.join(MAP_OUT, name, "index.html"), map_page(name, m))
+        # the sitemap's map entries take the same dates, without rebuilding the writing
+        path = os.path.join(ROOT, "sitemap.xml")
+        if os.path.exists(path):
+            text = open(path, encoding="utf-8").read()
+            for name, m in maps.items():
+                if m.get("page"):
+                    text = re.sub(r"(<loc>{}/maps/{}/</loc><lastmod>)[0-9-]+(</lastmod>)".format(re.escape(SITE), re.escape(name)),
+                                  lambda x: x.group(1) + (m.get("revised") or m["date"]).isoformat() + x.group(2), text)
+            write(path, text)
         return
     posts = load(maps)
     for p in posts:
