@@ -179,8 +179,8 @@ export async function turnable(view, opts = {}) {
     el('span', null, spacing, 'True Depth');
     const slider = el('input', null, spacing);
     Object.assign(slider, { type: 'range', min: 0, max: 1, step: 0.001, value: 1 });
-    slider.setAttribute('aria-label', 'Spacing between surfaces, from true depth to exploded');
-    el('span', null, spacing, 'Exploded');
+    slider.setAttribute('aria-label', 'Spacing between surfaces, from true depth to expanded');
+    el('span', null, spacing, 'Expanded');
     const note = el('p', 'model-note', bar);
     const key = el('ul', 'model-key', null);
     bar.after(key);
