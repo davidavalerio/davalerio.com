@@ -85,6 +85,20 @@ def more(tmp, proj):
         raise AssertionError('a map with no citations built once its credits stopped printing them')
     except pm.BuildError:
         print('citations are checked whether or not the credits print them')
+    # the maker's mark ends the title block, its right edge on the rule's; a large title takes the display face;
+    # a subtitle that runs into the mark stops the build
+    m = build.load(proj); page = m.pages[0]; html = page.html(tmp)
+    rx, ry, rw = page.L['rule']
+    left, width = (float(v) for v in __import__('re').search(r'id="p1-maker" class="maker" style="left:([\d.]+)pt;top:[\d.]+pt;width:([\d.]+)pt', html).groups())
+    assert abs(left + width - (rx + rw) * page.k) < 0.02 and '>Valerio <span' in html and '>del.</span>' in html, (left, width, rx + rw)
+    assert 'clip-path="url(#p1-mark)"' in html and '<mask' not in html
+    assert [T.title_style(v) for v in (18, 36, 56.7)] == ['serif-semibold', 'serif-display-48', 'serif-display-60']
+    try:
+        build.load(proj, saved=[{'key': 'subtitle', 'value': 'A subtitle long enough to reach across the page to the far end of the rule, ' * 3}]).pages[0].html(tmp)
+        raise AssertionError('a subtitle running into the maker\'s mark was let through')
+    except pm.BuildError as e:
+        assert 'maker' in str(e)
+    print('the maker\'s mark ends the title block; a subtitle that runs into it stops the build')
     # the footer takes the height the credits need, and the frame what is left
     short = build.load(proj); short.pages[0].html(tmp)
     long = build.load(proj, saved=[{'key': 'credits', 'value': '\n'.join(['A line of credits'] * 7) + '\n{sources}'}]); long.pages[0].html(tmp)

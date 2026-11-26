@@ -90,7 +90,7 @@ def build(project, scripts=None, out=None, labels=True, move=False, quiet=False,
     t2 = time.time()
     ok, reports = True, []
     for p, one in zip(m.pages, pdfs):
-        strings = [p.title, p.subtitle, *p.credit_lines]
+        strings = [p.title, p.subtitle, *p.credit_lines, *([' '.join(pm.MAKER)] if 'rule' in p.L else [])]
         strings += [l.text.replace('\n', ' ') for f in p.frames if f.label_result for l in f.label_result.placed]
         has_raster = any(L['kind'] == 'relief' for f in p.frames for L in f.layers)
         r = pdf_checks(one, [s for s in strings if s], min_ppi=m.dpi - 2 if has_raster else None, size_in=(p.w_in, p.h_in))

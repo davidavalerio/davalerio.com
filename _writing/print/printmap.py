@@ -169,6 +169,47 @@ PAGES = {'Letter Landscape': (11, 8.5), 'Letter Portrait': (8.5, 11), 'Tabloid L
          'Tabloid Portrait': (11, 17), 'Display 36 × 24': (36, 24), 'Display 24 × 36': (24, 36)}
 INK, STONE, PLUM = '#22282B', '#6B7075', '#5E4B8B'
 
+# The maker's mark: the Horizon mark (the site's mark.svg, in plum) beside the surname and a Latin credit for the
+# draftsman, set at the end of the title block, on the right end of its rule.
+MAKER = ('Valerio', 'del.')
+
+
+def _print_mark():
+    """mark.svg's drawing for print: its knock-out (a mask, which Chromium would print as a picture) redrawn as a clip
+    of vector outlines, the V's own outline grown by half the knock-out's stroke and cut from the box. Returns the
+    globe and V markup, with `{clip}` where the clip's id goes, and the clip's path."""
+    src = (REPO / 'mark.svg').read_text()
+    globe = re.search(r'<g [^>]*>(.*?)</g>', src, re.S).group(1)
+    v = re.search(r'<path d="([^"]+)" transform="matrix\(([^)]+)\)" fill="#5E4B8B"/>', src)
+    knock = float(re.search(r'stroke-width="([\d.]+)" stroke-linejoin="round"', src).group(1))
+    a, _, _, d, e, f = (float(n) for n in v.group(2).split())
+    rings, ring, x, y = [], [], 0.0, 0.0
+    for cmd, nums in re.findall(r'([MLHVZ])([^MLHVZ]*)', v.group(1)):
+        n = [float(t) for t in nums.replace(',', ' ').split()]
+        if cmd == 'M':
+            ring = [(n[0], n[1])]; rings.append(ring); n = n[2:]; cmd = 'L'
+        if cmd == 'L':
+            ring += list(zip(n[0::2], n[1::2]))
+        elif cmd == 'H':
+            ring += [(h, ring[-1][1]) for h in n]
+        elif cmd == 'V':
+            ring += [(ring[-1][0], w) for w in n]
+    shape = shapely.union_all([shapely.make_valid(shapely.Polygon(r)) for r in rings]).buffer(knock / 2, join_style='round', quad_segs=8)
+    outline = ''.join('M' + 'L'.join(f'{a * px + e:.2f} {d * py + f:.2f}' for px, py in ring.coords[:-1]) + 'Z'
+                      for poly in getattr(shape, 'geoms', [shape]) for ring in (poly.exterior, *poly.interiors))
+    body = (f'<g clip-path="url(#{{clip}})" fill="none" stroke="{PLUM}">{globe}</g>'
+            f'<path d="{v.group(1)}" transform="matrix({v.group(2)})" fill="{PLUM}"/>')
+    return body, 'M0 0H100V100H0Z' + outline
+
+
+_MARK, _MARK_CLIP = _print_mark()
+
+
+def _baseline(style, size, top, lead):
+    """Where the first baseline of a line box `lead` tall, set in `style` at `size`, falls when its top is at `top`."""
+    mt = T.metrics(style, size)
+    return top + (lead - (mt['ascender'] - mt['descender'])) / 2 + mt['ascender']
+
 
 class Var:
     """A paint setting used in a style: written as a CSS variable, so the workbench can change it in place."""
@@ -613,12 +654,13 @@ class Page:
         parts = []
         if 'title' in L:
             ts = L.get('title_size', 18)
-            parts.append((f'{i}-title', f'<div id="{i}-title" class="title" data-setting="{self.keys[0]}" style="left:{pt(L["title"][0])};top:{pt(L["title"][1])};font-size:{pt(ts)};line-height:{pt(ts * 1.33)}">{esc(self.title)}</div>'))
+            parts.append((f'{i}-title', f'<div id="{i}-title" class="title" data-setting="{self.keys[0]}" style="{T.css(T.title_style(ts * k))};left:{pt(L["title"][0])};top:{pt(L["title"][1])};font-size:{pt(ts)};line-height:{pt(ts * 1.33)}">{esc(self.title)}</div>'))
         if 'subtitle' in L:
             ss = L.get('subtitle_size', 9.5)
             parts.append((f'{i}-subtitle', f'<div id="{i}-subtitle" class="subtitle" data-setting="{self.keys[1]}" style="left:{pt(L["subtitle"][0])};top:{pt(L["subtitle"][1])};font-size:{pt(ss)};line-height:{pt(ss * 1.47)}">{esc(self.subtitle)}</div>'))
         if 'rule' in L:
             parts.append((None, f'<div class="rule" style="left:{pt(L["rule"][0])};top:{pt(L["rule"][1])};width:{pt(L["rule"][2])};height:{pt(1)}"></div>'))
+            parts.append((f'{i}-maker', self._maker_html(pt)))
         for f in self.frames:
             parts += f.parts(raster_dir)
         by_key = {f.key: f for f in self.frames}
@@ -649,6 +691,7 @@ body>div{{z-index:1}}
 .title{{{T.css('serif-semibold')};color:{INK};white-space:pre}}
 .subtitle{{{T.css('serif')};color:{STONE};white-space:pre}}
 .credits{{{T.css('serif')};color:{STONE};white-space:pre}}
+.maker{{{T.css('serif-semibold')};color:{INK};white-space:pre}}
 .note{{white-space:pre}}
 .rule{{background:{PLUM}}}
 svg text{{white-space:pre;text-rendering:geometricPrecision;font-variant-ligatures:none;font-kerning:normal}}
@@ -660,6 +703,48 @@ svg .ghosts{{display:none;opacity:0.4}}
 <body>
 '''
         return head, parts
+
+    def _maker_html(self, pt):
+        """The maker's mark, its right edge on the right end of the title rule: the Horizon mark, then the surname in
+        semibold and "del." in italic, sitting on the subtitle's baseline (just above the rule when there is none),
+        the mark's foot a hair below it. Sized from the subtitle, so it scales with the title block."""
+        L, i = self.L, self.id
+        rx, ry, rw = L['rule']
+        ss = L.get('subtitle_size', 9.5)
+        size = ss if 'subtitle' in L else L.get('title_size', 18) * 0.53
+        if 'subtitle' in L:
+            lead = ss * 1.47
+            base = _baseline('serif', ss, L['subtitle'][1], lead) + lead * (len(self.subtitle.split('\n')) - 1)
+        else:
+            base = ry - size * 0.75
+        mark, gap = size * 1.75, size * 0.42
+        name, credit = MAKER
+        tw = T.width(name, 'serif-semibold', size) + T.width(' ', 'serif', size) + T.width(credit, 'serif-italic', size)
+        w = mark + gap + tw
+        x, top = rx + rw - w, base - mark * 0.965
+        lead = size * 1.2
+        self._check_maker(x, top, base, size)
+        ty = _baseline('serif-semibold', size, 0, lead)
+        svg = f'<defs><clipPath id="{i}-mark"><path clip-rule="evenodd" d="{_MARK_CLIP}"/></clipPath></defs>' + _MARK.replace('{clip}', f'{i}-mark')
+        return (f'<div id="{i}-maker" class="maker" style="left:{pt(x)};top:{pt(top)};width:{pt(w)};height:{pt(mark)}">'
+                f'<svg viewBox="0 0 100 100" style="position:absolute;left:0;top:0;width:{pt(mark)};height:{pt(mark)}">{svg}</svg>'
+                f'<div style="position:absolute;right:0;top:{pt(base - top - ty)};font-size:{pt(size)};line-height:{pt(lead)}">'
+                f'{esc(name)} <span style="{T.css("serif-italic")}">{esc(credit)}</span></div></div>')
+
+    def _check_maker(self, x, top, base, size):
+        """The maker's mark must stand clear of the title and subtitle beside it."""
+        L, room = self.L, size * 0.9
+        if 'subtitle' in L:
+            sx = L['subtitle'][0]
+            if any(sx + T.width(line, 'serif', L.get('subtitle_size', 9.5)) > x - room for line in self.subtitle.split('\n')[-1:]):
+                raise BuildError('the subtitle runs into the maker\'s mark; shorten it')
+        if 'title' in L:
+            ts = L.get('title_size', 18)
+            lines = self.title.split('\n')
+            tb = _baseline('serif-semibold', ts, L['title'][1], ts * 1.33) + ts * 1.33 * (len(lines) - 1)
+            ink = tb + ts * 0.24                     # the title's descenders
+            if ink > top and L['title'][0] + T.width(lines[-1], T.title_style(ts * self.k), ts) > x - room:
+                raise BuildError('the title runs into the maker\'s mark; shorten it')
 
     def html(self, raster_dir):
         """The page as one static HTML document."""

@@ -1,4 +1,5 @@
-"""Type: the eight static TrueType faces, and text measured with HarfBuzz against the same files the page loads."""
+"""Type: the eight static TrueType faces, two display instances of the semibold serif for titles, and text measured
+with HarfBuzz against the same files the page loads."""
 from functools import lru_cache
 from pathlib import Path
 import uharfbuzz as hb
@@ -14,7 +15,18 @@ STYLES = {
     'sans-italic': ('Source Sans 3', 400, True, 'SourceSans3-It.ttf'),
     'sans-semibold': ('Source Sans 3', 600, False, 'SourceSans3-Semibold.ttf'),
     'sans-semibold-italic': ('Source Sans 3', 600, True, 'SourceSans3-SemiboldIt.ttf'),
+    'serif-display-48': ('Display Serif Opsz48', 600, False, 'DisplaySerif-Semibold-Opsz48.ttf'),
+    'serif-display-60': ('Display Serif Opsz60', 600, False, 'DisplaySerif-Semibold-Opsz60.ttf'),
 }
+# The semibold serif at each optical size the engine has, in px: the static semibold is the text size
+OPTICAL = {20: 'serif-semibold', 48: 'serif-display-48', 60: 'serif-display-60'}
+
+
+def title_style(points):
+    """The semibold serif for a title set at `points` on the page: the face whose optical size is nearest the size in
+    px, as a browser picks from the variable font (optical size is px, up to 60)."""
+    px = min(60.0, points * 4 / 3)
+    return OPTICAL[min(OPTICAL, key=lambda o: abs(o - px))]
 
 
 def font_css(base):

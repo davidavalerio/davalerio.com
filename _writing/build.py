@@ -88,7 +88,10 @@ SANS = '\n    <link rel="preload" href="/fonts/source-sans-3-normal-latin.woff2"
 
 HEAD = HEAD.replace("{style}", asset("/writing/style.css"))
 
-FOOT = """</body>
+# The plum band at the foot of every page, carrying the Horizon mark in paper; the homepage has its own copy
+# (index.html), as does the signup service's page (_subscribe/worker.js).
+FOOT = """    <footer class="band"><a href="/" aria-label="Home"><img src="/mark-paper.svg" alt="Horizon mark" width="48" height="48"></a></footer>
+</body>
 </html>
 """
 

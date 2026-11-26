@@ -267,7 +267,7 @@ function esc(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-// A page in the site's own look: same masthead and stylesheet as the writing pages.
+// A page in the site's own look: same masthead, stylesheet and plum band as the writing pages.
 function page(title, text, status, extra = "") {
   return new Response(`<!DOCTYPE html>
 <html lang="en">
@@ -298,6 +298,7 @@ function page(title, text, status, extra = "") {
         </div>
         <footer class="post"><a href="${SITE}/">← Home</a></footer>
     </main>
+    <footer class="band"><a href="${SITE}/" aria-label="Home"><img src="${SITE}/mark-paper.svg" alt="Horizon mark" width="48" height="48"></a></footer>
 </body>
 </html>
 `, { status, headers: { "Content-Type": "text/html; charset=utf-8", ...PRIVATE } });
