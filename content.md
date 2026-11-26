@@ -7,7 +7,7 @@ The homepage is a calling card over a line drawing of the Missouri and the Yello
 ## Site Metadata
 
 - **Title:** David Valerio
-- **Description:** David Valerio. Catholic writer and cartographer in Williston, ND.
+- **Description:** David Valerio. Catholic cartographer and writer in Williston, ND.
 
 ---
 
@@ -17,7 +17,7 @@ The homepage is a calling card over a line drawing of the Missouri and the Yello
 
 **Name:** David Valerio
 
-**Tagline:** Catholic writer and cartographer in Williston, ND
+**Tagline:** Catholic cartographer and writer in Williston, ND
 
 **Links:**
 
