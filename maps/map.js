@@ -71,7 +71,9 @@ export function makeMap(el, name, opts = {}) {
         const div = document.createElement('div');
         div.className = 'map-label off ' + (l.kind || '');
         div.textContent = l.text;
-        labels[id] = new maplibregl.Marker({ element: div }).setLngLat(l.at).addTo(map);
+        // `anchor` sets a name beside its point (on that side of the name) instead of centred on it
+        const away = { left: [5, 0], right: [-5, 0], top: [0, 5], bottom: [0, -5] }[l.anchor];
+        labels[id] = new maplibregl.Marker({ element: div, anchor: away ? l.anchor : 'center', offset: away || [0, 0] }).setLngLat(l.at).addTo(map);
     }
     const state = { map, def, labels, name, current: null };
     if (def.popup && opts.popups) popups(map, def.popup);

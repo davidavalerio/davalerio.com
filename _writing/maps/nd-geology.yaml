@@ -172,6 +172,7 @@ labels:
     text: Fargo
     at: [-96.834, 46.8389]
     kind: place
+    anchor: right
   bismarck:
     text: Bismarck
     at: [-100.7665, 46.8145]
@@ -180,13 +181,10 @@ labels:
     text: Grand Forks
     at: [-97.0649, 47.9221]
     kind: place
+    anchor: right
   minot:
     text: Minot
     at: [-101.3006, 48.2379]
-    kind: place
-  west-fargo:
-    text: West Fargo
-    at: [-96.898, 46.8492]
     kind: place
   williston:
     text: Williston
@@ -208,6 +206,7 @@ labels:
     text: Wahpeton
     at: [-96.6117, 46.2672]
     kind: town
+    anchor: right
   devils-lake:
     text: Devils Lake
     at: [-98.8788, 48.1129]
@@ -268,6 +267,7 @@ labels:
     text: Hillsboro
     at: [-97.0606, 47.404]
     kind: town
+    anchor: right
   bowman:
     text: Bowman
     at: [-103.4063, 46.1836]
@@ -320,6 +320,7 @@ labels:
     text: Beach
     at: [-104.0099, 46.924]
     kind: town
+    anchor: left
   kenmare:
     text: Kenmare
     at: [-102.0796, 48.6744]

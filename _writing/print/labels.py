@@ -1,6 +1,7 @@
 """Label placement: one deterministic engine for the four kinds of label a map carries.
 
-point    a name beside its symbol, in one of eight positions, upper right preferred
+point    a name beside its symbol, in one of eight positions, upper right preferred; with `within` (a fill layer's
+         id), only positions where the whole name lies inside that layer's shapes
 area     a name inside its polygon, at the point farthest from the edge, then at others
 line     a name along a stream: same-name pieces joined, a smoothed guide, the text set glyph by glyph above it
 contour  a figure on its line, the line cut beneath it
@@ -520,6 +521,10 @@ def place(frame):
             sig = repr(sorted((k, str(v)) for k, v in rule.items() if not callable(v)))
             memo = cached(('spots', str(frame.page.map.project), frame.at, frame.crs.to_wkt(), L['id'], L['where'], sig), dict)
             quiet = rule.get('quiet', False)
+            within = None
+            if kind == 'point' and rule.get('within') in by_id:
+                within = shapely.union_all(np.array(by_id[rule['within']]['geoms'], dtype=object))
+                shapely.prepare(within)
 
             def spots_for(key, text, geoms):
                 """Where a feature's label may go, cheapest first: (the symbol's place or None, [(cost, xy, align)])."""
@@ -582,6 +587,8 @@ def place(frame):
                     trial = Label(rule, key, text, kind)
                     straight(trial, xy[0], xy[1], align=align)
                     if not fits_frame(trial) or index.hits(np.array(trial.boxes, dtype=object)):
+                        continue
+                    if within is not None and not within.contains(trial.area()):
                         continue
                     total = cost + CLUTTER * clutter(trial)
                     if best is None or total < best[0]:
