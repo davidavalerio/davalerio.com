@@ -150,7 +150,12 @@
             font-size: calc(17 * var(--px));
             line-height: 1.35;
             color: var(--stone);
-            text-wrap: balance;
+        }
+
+        /* Two lines broken by hand, so the text is no wider than its longest line and the
+           letterhead (mark, name and tagline together) sits centered in the card */
+        .tagline span {
+            display: block;
         }
 
         .links {
@@ -214,12 +219,6 @@
             .tagline {
                 margin-top: 0.2rem;
                 font-size: clamp(0.78rem, 4vw, 0.95rem);
-            }
-
-            /* Two lines broken by hand, so the text is no wider than its longest line and the
-               letterhead stays centered in the card */
-            .tagline span {
-                display: block;
             }
 
             /* Inline and balanced, so a narrow card breaks the links into even lines
