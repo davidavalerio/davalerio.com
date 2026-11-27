@@ -113,17 +113,16 @@
             left: calc(50% - 15 * var(--px));
             top: calc(405 * var(--px));
             transform: translate(-50%, -50%);
-            width: calc(592 * var(--px));
+            width: calc(650 * var(--px));
             padding: calc(36 * var(--px)) calc(44 * var(--px)) calc(30 * var(--px));
             background: var(--paper);
             border: 1px solid var(--hair);
-            text-align: center;
         }
 
-        /* The letterhead: the mark beside the name and tagline, bottoms aligned, closed by a 1pt plum rule */
+        /* The letterhead: the mark beside the name and tagline, bottoms aligned, set from the card's
+           left edge and closed by a 1pt plum rule */
         .head {
             display: flex;
-            justify-content: center;
             align-items: flex-end;
             gap: calc(18 * var(--px));
             padding-bottom: calc(22 * var(--px));
@@ -147,21 +146,16 @@
 
         .tagline {
             margin-top: calc(6 * var(--px));
-            font-size: calc(17 * var(--px));
+            font-size: calc(15.5 * var(--px));
             line-height: 1.35;
             color: var(--stone);
         }
 
-        /* Two lines broken by hand, so the text is no wider than its longest line and the
-           letterhead (mark, name and tagline together) sits centered in the card */
-        .tagline span {
-            display: block;
-        }
-
+        /* The links spread from one end of the plum rule to the other */
         .links {
             display: flex;
             flex-wrap: wrap;
-            justify-content: center;
+            justify-content: space-between;
             gap: 0.3rem calc(27 * var(--px));
             list-style: none;
             margin-top: calc(20 * var(--px));
@@ -221,20 +215,28 @@
                 font-size: clamp(0.78rem, 4vw, 0.95rem);
             }
 
-            /* Inline and balanced, so a narrow card breaks the links into even lines
-               rather than leaving one alone on the second. */
+            /* Two lines broken by hand, so the text is no wider than its longest line */
+            .tagline span {
+                display: block;
+            }
+
+            /* Too narrow to spread: the links run from the rule's left end, inline and balanced,
+               so they break into even lines rather than leaving one alone on the second */
             .links {
                 display: block;
                 margin-top: 1rem;
                 font-size: 1rem;
                 line-height: 1.9;
-                text-align: center;
                 text-wrap: balance;
             }
 
             .links li {
                 display: inline;
-                margin: 0 0.6rem;
+                margin-right: 1.2rem;
+            }
+
+            .links li:last-child {
+                margin-right: 0;
             }
         }
 
