@@ -480,9 +480,11 @@ def maps_list(maps, shown=3):
     its thumbnail from _writing/thumbs.yaml, the first three shown and the rest behind All Maps."""
     thumbs = yaml.safe_load(open(os.path.join(HERE, "thumbs.yaml"), encoding="utf-8")) or {}
     items = sorted(((n, m) for n, m in maps.items() if m.get("page")), key=lambda x: (x[1]["date"], x[0]), reverse=True)
+    # A map joins the list once it has a thumbnail, so a new map's stills can be captured before one is chosen.
     missing = [n for n, _ in items if n not in thumbs]
     if missing:
-        sys.exit("no thumbnail in _writing/thumbs.yaml for: " + ", ".join(missing))
+        print("left out of the Maps list, no thumbnail in _writing/thumbs.yaml: " + ", ".join(missing), file=sys.stderr)
+    items = [x for x in items if x[0] in thumbs]
 
     def row(i, name, m):
         t, href = thumbs[name], "/maps/{}/".format(name)
@@ -557,7 +559,7 @@ def sitemap(posts, maps):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--drafts", action="store_true", help="also build _writing/drafts/ into _preview/")
-    parser.add_argument("--maps-only", action="store_true", help="build only the map pages (used by stills.mjs)")
+    parser.add_argument("--maps-only", action="store_true", help="build only the map pages, their sitemap dates and the homepage Maps list (used by stills.mjs and the workbench)")
     parser.add_argument("--md", action="store_true", help="print a map note or credits read from stdin as HTML (used by the workbench)")
     args = parser.parse_args()
     if args.md:
