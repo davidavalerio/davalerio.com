@@ -1,0 +1,17 @@
+# The thumbnail each map shows in the homepage's Maps list, by the map's name in _writing/maps/:
+# the image, its alt text, and optionally the crop's object-position. The list's order comes from
+# each map's date, not from here. Kept apart from the definitions so a new thumbnail does not
+# mark the map revised.
+missouri-yellowstone:
+  image: /maps/missouri-yellowstone/stills/above.jpg
+  alt: Line drawing of the Missouri from the Yellowstone to Williston and Lake Sakakawea, contours and waterlines
+basin-exploded:
+  image: home/map-basin.jpg
+  alt: Five subsurface horizons of the Williston Basin as floating discs
+  position: center 42%
+nd-geology:
+  image: /maps/nd-geology/stills/missouri.jpg
+  alt: Surface geology around Lake Sakakawea in muted colors over the relief
+byzantine-parishes:
+  image: /maps/byzantine-parishes/stills/northeast.jpg
+  alt: Byzantine Catholic parishes from Ohio to New England as colored points
