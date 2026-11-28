@@ -220,9 +220,9 @@
                 display: block;
             }
 
-            /* The links keep one line across the rule, as on desktop, their size giving way on the narrowest phones */
+            /* The links keep one line across the rule, as on desktop, their size giving way on narrow phones;
+               they wrap inside the card only when enlarged text leaves no room */
             .links {
-                flex-wrap: nowrap;
                 gap: 0.4rem;
                 margin-top: 1rem;
                 font-size: clamp(0.75rem, 3.9vw, 1rem);
