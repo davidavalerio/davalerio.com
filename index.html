@@ -72,11 +72,12 @@
         }
 
         /* The bounce past either end of a page (iOS) shows the root's colour: paper above, plum below the
-           band, switched halfway down by the page's own scroll; body's paper covers it everywhere else */
+           band, switched halfway down by the page's own scroll; body's paper covers it everywhere else.
+           Not on a phone held sideways, where the root colour also fills the bars beside the notch */
         @supports (animation-timeline: scroll()) {
-            @media screen {
-                html {
-                    animation: underpage steps(2, jump-none);
+            @media screen and (not ((orientation: landscape) and (max-height: 500px))) {
+                html:has(footer.band) {
+                    animation: underpage steps(2, jump-none) both;
                     animation-timeline: scroll(root);
                 }
             }
