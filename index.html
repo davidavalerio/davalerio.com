@@ -210,17 +210,22 @@
                 padding: 1.75rem clamp(0.8rem, 4vw, 1.25rem) 1.5rem;
             }
 
-            /* The mark, the gap, the card's sides and the tagline's size give way on the narrowest phones, so the tagline keeps its two lines */
+            /* The gap, the card's sides and the tagline's size give way on the narrowest phones, so the tagline keeps its two lines */
             .head {
+                --tag: clamp(0.78rem, 4vw, 0.95rem);
+                align-items: flex-start;
                 gap: clamp(0.6rem, 3.5vw, 0.9rem);
                 padding-bottom: 1.1rem;
                 border-bottom-width: 1pt;
             }
 
+            /* As on desktop, the mark spans the name and the tagline's first line, standing a little
+               above the name and below that line; the second line runs on beneath it */
             .mark {
-                width: clamp(52px, 16.5vw, 64px);
-                height: clamp(52px, 16.5vw, 64px);
-                margin-bottom: -2px;
+                --size: calc(1.7rem * 1.1 + 0.2rem + var(--tag) * 1.35 + 0.33rem);
+                width: var(--size);
+                height: var(--size);
+                margin: -0.24rem 0 0;
             }
 
             .name {
@@ -229,7 +234,7 @@
 
             .tagline {
                 margin-top: 0.2rem;
-                font-size: clamp(0.78rem, 4vw, 0.95rem);
+                font-size: var(--tag);
             }
 
             /* Two lines broken by hand, so the text is no wider than its longest line */
