@@ -220,23 +220,12 @@
                 display: block;
             }
 
-            /* Too narrow to spread: the links run from the rule's left end, inline and balanced,
-               so they break into even lines rather than leaving one alone on the second */
+            /* The links keep one line across the rule, as on desktop, their size giving way on the narrowest phones */
             .links {
-                display: block;
+                flex-wrap: nowrap;
+                gap: 0.4rem;
                 margin-top: 1rem;
-                font-size: 1rem;
-                line-height: 1.9;
-                text-wrap: balance;
-            }
-
-            .links li {
-                display: inline;
-                margin-right: 1.2rem;
-            }
-
-            .links li:last-child {
-                margin-right: 0;
+                font-size: clamp(0.75rem, 3.9vw, 1rem);
             }
         }
 
