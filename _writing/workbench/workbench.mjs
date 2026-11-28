@@ -40,7 +40,6 @@ const PORT = +(process.env.WORKBENCH_PORT || 8795), PUBLIC_PORT = 8796;
 const HERE = join(ROOT, '_writing', 'workbench');
 const MAPS = join(ROOT, '_writing', 'maps');
 const CSS = join(ROOT, 'maps', 'map.css');
-const HOME = join(ROOT, 'index.html');
 const config = JSON.parse(readFileSync(join(homedir(), '.local/share/workbench/config.json'), 'utf8'));
 if (process.env.WORKBENCH_GIS) config.gis = process.env.WORKBENCH_GIS;
 
@@ -283,7 +282,7 @@ function setTextYaml(text, key, value) {
     return lines.join('\n');
 }
 
-// Writes the definition (and the palette), then rebuilds the map pages, which carry both, for the workbench
+// Writes the definition (and the palette), then rebuilds the map pages, which carry both, and the homepage's Maps list, for the workbench
 // and the site to read; if the build fails, both go back as they were
 function writeAndBuild(file, text, css) {
     const original = readFileSync(file, 'utf8'), originalCss = readFileSync(CSS, 'utf8');
@@ -316,19 +315,7 @@ function saveDefinition(p, values) {
     }
     if (changed.some(s => s.key === 'text.title') && !values['text.title'].trim()) throw new Error('a map needs a title');
     if (changed.length) writeAndBuild(file, text, css === pal.css ? undefined : css);
-    syncHome(p.name);
     return changed.length;
-}
-
-// The map's entry in the homepage's Maps list carries its title; every save brings it in line with the
-// definition, so a save whose homepage write failed is put right by the next
-function syncHome(name) {
-    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const title = esc(textSettings(name).find(s => s.key === 'text.title').value);
-    if (!title) return;
-    const home = readFileSync(HOME, 'utf8');
-    const next = home.replace(new RegExp('(<a href="/maps/' + name + '/">)[^<]*(</a>)', 'g'), (_, a, b) => a + title + b);
-    if (next !== home) writeFileSync(HOME, next);
 }
 
 function saveModel(p, values) {
